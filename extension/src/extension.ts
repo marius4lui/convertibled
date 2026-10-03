@@ -14,6 +14,7 @@ import {WindowOverview} from './overview.js';
 import {Widgets} from './widgets.js';
 import {WindowController} from './windows.js';
 import {SplitController} from './split-controller.js';
+import {TouchNavigation} from './touch.js';
 export default class TabletExtension extends Extension {
     private cleanup?: Cleanup;
     private bridge?: SessionBridge;
@@ -30,9 +31,13 @@ export default class TabletExtension extends Extension {
     private animations: any;
     private reported = '';
     private splitController?: SplitController;
+    private touch?: TouchNavigation;
     enable(): void {
         this.cleanup = new Cleanup(); this.settings = this.getSettings();
         this.splitController = new SplitController(this.windows,this.settings);
+        this.touch = new TouchNavigation(() => this.monitor,
+            () => this.active && this.settings.get_boolean('gesture-enabled'), surface => this.navigate(surface));
+        this.cleanup.signal(global.stage,'captured-event', (_stage: any,event: any) => this.touch?.handle(event));
         this.animations = new Gio.Settings({schema_id:'org.gnome.desktop.interface'});
         this.home = new Home(app => this.activateApp(app));
         this.dock = new Dock(surface => this.navigate(surface), app => this.activateApp(app));
@@ -75,7 +80,7 @@ export default class TabletExtension extends Extension {
             // Do not open Home or take focus from the application during folding.
             this.dock?.actor.show();
         } else if (!allowed && this.active) {
-            this.active = false; this.splitController?.clear(); this.hideSurfaces(); this.dock?.actor.hide(); this.windows.restore();
+            this.active = false; this.touch?.cancel(); this.splitController?.clear(); this.hideSurfaces(); this.dock?.actor.hide(); this.windows.restore();
         } else if (allowed) this.position();
         const report = {tablet_workspace:this.active,rotation_lock:false,
             status:this.active ? 'applied' : this.status?.desired.tablet_workspace ? 'unsupported' : 'applied',
@@ -118,7 +123,7 @@ export default class TabletExtension extends Extension {
             this.hideSurfaces();
     }
     disable(): void {
-        this.active = false; this.splitController?.clear(); this.windows.restore();
+        this.active = false; this.touch?.cancel(); this.splitController?.clear(); this.windows.restore();
         this.bridge?.destroy(); this.display?.destroy(); this.cleanup?.clear();
         this.widgets?.destroy(); this.home?.destroy(); this.dock?.destroy(); this.overview?.destroy();
         this.bridge = undefined; this.display = undefined; this.cleanup = undefined;

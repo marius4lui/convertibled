@@ -73,3 +73,8 @@ Split selection places two compatible resizable windows and creates a visible
 divider to cycle ratios. Display changes recalculate the portrait-aware layout;
 window closure removes the divider. Incompatible minimums leave both windows
 untouched and produce a concise explanation.
+
+Touch navigation listens only to touchscreen events and coordinates on the
+identified internal output. Other input event types propagate immediately;
+no keystrokes are stored. Multitouch/cancel stops recognition. The
+`gesture-enabled` setting disables it while keeping visible Home/Overview.
