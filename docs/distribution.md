@@ -62,3 +62,10 @@ The isolated Python helper exposes fixed verbs: `status`, `check`, `prepare`,
 stable|preview`, and systemd-only `scheduled`. All mutations require effective
 root and a transaction lock. `status` reads a sanitized root-owned public JSON
 snapshot; update keys, internal sessions and private logs are excluded.
+
+Polkit restricts the fixed helper to active-session administrator authentication.
+The root systemd timer runs preparation/activation checks every two minutes,
+with a bounded oneshot, filesystem allowlist and no interactive authentication.
+The daemon's separate service-owned `health/shell-health.json` receipt is written
+only after D-Bus/logind caller validation. This authenticates the local session,
+not cryptographic attestation of GNOME extension code.

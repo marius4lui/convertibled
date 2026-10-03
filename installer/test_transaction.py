@@ -30,5 +30,5 @@ class TransactionTests(unittest.TestCase):
             layout.initialize()
             transaction = Transaction(layout, sessions=lambda: [])
             atomic(transaction.journal, {"schema": 1, "candidate": "0.2.0", "previous": "0.1.0", "phase": "awaiting_shell"})
-            atomic(layout.state / "shell-health.json", {"version": "0.2.0", "healthy": True})
+            atomic(layout.state / "health/shell-health.json", {"version": "0.2.0", "healthy": True})
             self.assertEqual(transaction.recover()["phase"], "complete")

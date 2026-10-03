@@ -1,0 +1,12 @@
+[Unit]
+Description=Check convertibled updates and logout activation
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=2min
+AccuracySec=10s
+Persistent=true
+Unit=convertibled-update.service
+
+[Install]
+WantedBy=timers.target

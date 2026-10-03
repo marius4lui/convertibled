@@ -82,7 +82,7 @@ class Transaction:
             self.record(value, "rolled_back")
             return value
         if phase == "awaiting_shell":
-            receipt = read(self.layout.state / "shell-health.json", {})
+            receipt = read(self.layout.state / "health/shell-health.json", {})
             if receipt.get("version") == value["candidate"] and receipt.get("healthy") is True:
                 self.record(value, "complete")
                 return value
