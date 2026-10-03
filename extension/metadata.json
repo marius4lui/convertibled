@@ -1,0 +1,8 @@
+{
+  "uuid": "convertibled@convertibled.org",
+  "name": "convertibled",
+  "description": "Native tablet workspace coordinated by convertibled-session",
+  "shell-version": ["50"],
+  "version": 1,
+  "settings-schema": "org.gnome.shell.extensions.convertibled"
+}

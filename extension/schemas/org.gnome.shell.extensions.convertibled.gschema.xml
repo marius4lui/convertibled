@@ -1,0 +1,6 @@
+<schemalist>
+  <schema id="org.gnome.shell.extensions.convertibled" path="/org/gnome/shell/extensions/convertibled/">
+    <key name="widgets" type="as"><default>['clock', 'battery', 'actions']</default><summary>Ordered visible local widgets</summary></key>
+    <key name="split-ratio" type="s"><default>'half'</default><summary>Preferred split ratio</summary></key>
+  </schema>
+</schemalist>
