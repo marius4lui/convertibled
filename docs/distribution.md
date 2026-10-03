@@ -27,3 +27,8 @@ executables prevent accepting an incomplete product bundle.
 Network reads require HTTPS to GitHub release/API/asset hosts, including every
 redirect. Metadata is capped at 256 KiB and payloads at the signed size (512 MiB
 maximum). Connection/read timeouts and streaming SHA256 enforce download bounds.
+
+Preflight enforces Fedora 44 x86_64, GNOME Shell 50, required platform tools and
+disk space plus a recovery reserve. Known competing installed dock/tiling
+extensions produce a review error. Logind Wayland/X11 user sessions block
+activation regardless of active/locked state; greeters do not count.
