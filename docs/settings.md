@@ -18,3 +18,7 @@ inherited from the Rust workspace; settings must not report an independent relea
 The async session client uses `org.convertibled.Session1`, five-second call
 timeouts, typed replies, bounded JSON and explicit profile validation. It never
 blocks GTK on service IO or starts a missing daemon as a side effect of reading.
+
+Overview loads actual session status and offers retry. A connection failure
+clears stale values; detected posture, selected/manual profile, requested and
+applied workspace, action result and error remain individually visible.

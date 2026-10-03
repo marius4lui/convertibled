@@ -10,6 +10,7 @@ pub fn run() -> glib::ExitCode {
 }
 
 fn build_window(app: &adw::Application) {
+    let text = crate::strings::Strings::detect();
     if let Some(window) = app.active_window() {
         window.present();
         return;
@@ -21,8 +22,8 @@ fn build_window(app: &adw::Application) {
         .default_height(720)
         .search_enabled(true)
         .build();
+    window.add(&crate::overview::page(&window, text));
     for (title, icon) in [
-        ("Overview", "computer-symbolic"),
         ("Profiles", "preferences-system-symbolic"),
         ("Hardware", "input-tablet-symbolic"),
         ("Tablet", "view-grid-symbolic"),
