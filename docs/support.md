@@ -1,7 +1,8 @@
 # Hardware and desktop support
 
-No platform has been physically validated. GNOME, KDE, Linux x86_64, and
-ThinkPad X1 Yoga Gen 8 are candidates, not a support matrix.
+No platform has been physically validated. Fedora 44, GNOME 50, Wayland and
+x86_64 ThinkPad X1 Yoga Gen 8 are the selected acceptance target. Other desktops
+and versions are deferred; selection is not a verified support matrix.
 
 ## Evidence labels
 
