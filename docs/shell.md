@@ -27,3 +27,8 @@ Only touchscreen sequences starting in the integrated display's bottom 24
 pixels are candidates. A short upward swipe reveals the dock, a longer swipe
 opens Home, and a swipe held for 500 ms opens the app overview. Cancellation and
 diagonal gestures do nothing; touchpad gesture handling remains with GNOME.
+
+The session bus bridge subscribes to `org.convertibled.Session1.Changed` and
+reads `GetStatus` asynchronously with a three-second timeout. Service loss or
+invalid versioned status exits tablet mode. Calls are canceled on disable.
+`ReportApplied` reports observed outcomes, never treats a request as success.
