@@ -63,3 +63,11 @@ Local widgets show system-local clock/date, UPower display-battery state and
 quick actions. Ordered `widgets` GSettings controls visibility and order; unknown
 identifiers and duplicates are ignored. UPower uses asynchronous local D-Bus,
 with an explicit unavailable label. There are no accounts or network widgets.
+
+The extension entrypoint wires surfaces, service/display observers and window
+management. Folding reveals navigation without opening Home or changing app
+focus. Lock/inactive shell modes, daemon loss and disable restore owned windows
+and hide surfaces. Home/Overview open only through explicit navigation; app
+activation closes them. Reduced-motion preferences disable 200 ms opacity easing.
+Split selection is visible but placement is added in the following controller
+batch; this intermediate build reports the unavailable action explicitly.
