@@ -32,3 +32,9 @@ Preflight enforces Fedora 44 x86_64, GNOME Shell 50, required platform tools and
 disk space plus a recovery reserve. Known competing installed dock/tiling
 extensions produce a review error. Logind Wayland/X11 user sessions block
 activation regardless of active/locked state; greeters do not count.
+
+Host integration uses an explicit fixed destination map. Links resolve through
+`current` and are journaled in `owned.json`; conflicting files are never replaced.
+Removal checks original link ownership and retains later user modifications.
+The extension is installed system-wide but must be explicitly enabled by the
+installing user's GNOME session. The helper never changes another user's settings.
