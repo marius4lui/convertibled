@@ -22,3 +22,8 @@ Resource cleanup runs in reverse order, continues after errors and is idempotent
 App search uses installed application names, descriptions and keywords with
 accent-insensitive token matching. Dock order preserves GNOME favorites and
 adds running apps once. Grid columns adapt to the integrated display width.
+
+Only touchscreen sequences starting in the integrated display's bottom 24
+pixels are candidates. A short upward swipe reveals the dock, a longer swipe
+opens Home, and a swipe held for 500 ms opens the app overview. Cancellation and
+diagonal gestures do nothing; touchpad gesture handling remains with GNOME.
