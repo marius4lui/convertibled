@@ -1,5 +1,5 @@
 ﻿[workspace]
-members = ["crates/core", "crates/settings"]
+members = ["crates/core", "crates/settings", "crates/daemon"]
 resolver = "2"
 
 [workspace.package]
@@ -18,6 +18,3 @@ clap = { version = "4", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 zbus = "5"
 libc = "0.2"
-
-
-

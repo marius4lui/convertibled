@@ -9,3 +9,9 @@ and automatic scaling remain unavailable pending their required evidence.
 
 Host unit checks prove policy only; Linux buses, evdev and physical UX require
 Linux integration and the reference-device acceptance procedure.
+
+The system observer rediscovers tablet-switch devices and queries EVIOCGSW every
+250 ms without reading event streams. Failed/conflicting switches become unknown.
+SensorProxy orientation is read without competing claims; GNOME retains rotation
+ownership. Linux cross compilation checks validate D-Bus and ioctl code, but do
+not establish hardware access or physical detection.
