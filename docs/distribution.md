@@ -56,3 +56,9 @@ keyring then channel metadata, persists monotonic counters, downloads/hashes and
 extracts into root-owned staging, and renames a verified candidate into versions.
 Published version bytes are immutable: reuse with different metadata is rejected.
 Normal settings never supply URLs, keys, destination paths or executable hooks.
+
+The isolated Python helper exposes fixed verbs: `status`, `check`, `prepare`,
+`install`, `activate`, `recover`, `rollback`, `automatic on|off`, `channel
+stable|preview`, and systemd-only `scheduled`. All mutations require effective
+root and a transaction lock. `status` reads a sanitized root-owned public JSON
+snapshot; update keys, internal sessions and private logs are excluded.
