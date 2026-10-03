@@ -10,3 +10,7 @@ requested state. Windows can test the model but cannot validate GTK rendering.
 Run `cargo test -p convertibled-settings` and build on Linux with GTK4 and
 libadwaita development libraries. Actual accessibility and portrait rendering
 require a GNOME session and remain unverified until recorded acceptance.
+
+German/English text is selected from LC_ALL, LC_MESSAGES, then LANG, using the
+first nonempty locale. Unsupported locales use English. Version metadata is
+inherited from the Rust workspace; settings must not report an independent release.

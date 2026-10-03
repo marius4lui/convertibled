@@ -1,9 +1,9 @@
 [package]
 name = "convertibled-settings"
-version = "0.1.0-alpha.1"
-edition = "2024"
-rust-version = "1.85"
-license = "MIT"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
 
 [dependencies]
 serde_json = "1"

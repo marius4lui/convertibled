@@ -1,4 +1,7 @@
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 mod model;
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+mod strings;
 
 #[cfg(target_os = "linux")]
 mod ui;
