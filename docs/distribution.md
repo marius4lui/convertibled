@@ -18,3 +18,8 @@ key revokes it. Root replacement requires an explicit administrator trust action
 State writes fsync content and parent directory before proceeding. A nonblocking
 flock serializes mutations on Linux. The active symlink may point only to a direct
 child of the versions directory; directory/state symlinks are rejected.
+
+Bundles contain only regular files, a bounded schema-1 `manifest.json`, and the
+exact manifest file set. Extraction rejects links, traversal, duplicate names,
+unexpected roots, oversized expansion and digest/size mismatches. Required four
+executables prevent accepting an incomplete product bundle.
