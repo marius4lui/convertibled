@@ -1,7 +1,8 @@
 # Architecture
 
-Planned implementation: Rust daemon/CLI with independently selected native UI.
-Directory/module names are provisional until the workspace exists.
+Target: Rust daemon/session/CLI and GTK4/libadwaita settings, plus a TypeScript
+GNOME 50 extension compiled to GJS with St/Clutter/Mutter. Slow IO, downloads
+and privileged work stay outside the Shell main thread.
 
 ## Data flow
 
@@ -32,8 +33,9 @@ record key events. Release sensor claims when monitoring is unnecessary.
 
 Desktop: capability-based adapter for the chosen desktop. Native controllers
 should retain ownership where suitable. Avoid competing rotation/OSK policies.
-GNOME/KDE-specific APIs and extension requirements are feasibility decisions,
-not assumptions that a generic Wayland client can control the whole desktop.
+The GNOME extension owns Home, dock, overview and eligible window placement.
+GNOME retains login, locking, notifications and native OSK. External displays
+retain desktop behavior; generic Wayland clients do not control all windows.
 
 ## State and recovery
 

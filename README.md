@@ -6,9 +6,8 @@ convertibled is a planned open-source convertible mode manager: a hardware
 daemon, desktop integration, a settings application, a diagnostic CLI, and a
 project-owned installer and updater.
 
-**Status: planning and documentation. No daemon, application, installer, or
-release is implemented yet.** This README describes the intended product,
-not currently available functionality.
+**Status: active implementation; no public release or physical acceptance.**
+The complete product and recovery paths must pass acceptance before publication.
 
 ## Product goals
 
@@ -18,9 +17,8 @@ not currently available functionality.
 - Explain detected hardware, requested behavior, actual behavior, and failures.
 - Own installation, updates, recovery, and removal end to end.
 
-The first desktop and physical reference device still need confirmation.
-GNOME and KDE are candidates, not supported platforms. ThinkPad X1 Yoga Gen 8
-is a proposed reference device, not a tested compatibility claim.
+The selected first target is Fedora 44, GNOME 50 and Wayland on ThinkPad X1
+Yoga Gen 8 (x86_64). This is an acceptance target, not tested hardware support.
 
 ## Planned components
 
@@ -32,10 +30,9 @@ is a proposed reference device, not a tested compatibility claim.
 | `convertiblectl` | Status, manual modes, configuration validation, diagnostics |
 | Installer/updater | Versioned installation, verified updates, rollback, removal |
 
-Rust is the planned language for the daemon and CLI. The UI toolkit will be
-selected with the target desktop; GTK/libadwaita and Qt/Kirigami are candidate
-native stacks. This project does not promise one toolkit will look native on
-every desktop.
+Rust implements the daemon, session service, CLI and GTK4/libadwaita settings.
+A TypeScript/GJS GNOME Shell extension adds Home, dock, application search, live
+window overview, split view, local widgets and touchscreen navigation.
 
 ## Tablet experience
 
@@ -45,8 +42,9 @@ and a quick way back to automatic or laptop mode. Desktop changes require
 explicit backend capabilities. convertibled cannot make every third-party
 application touch-friendly.
 
-We will first integrate the existing desktop rather than build a replacement
-shell. Automatic scaling is opt-in and must preserve the previous settings.
+The tablet workspace is integrated directly into GNOME without an extra
+fullscreen app. GNOME retains OSK, login, locking, authentication and notifications.
+External displays retain desktop behavior. Automatic scaling stays disabled.
 
 ## Detection model
 
@@ -57,11 +55,12 @@ evidence. Screen orientation alone is not sufficient.
 
 ## Installation and updates
 
-There are no installation commands or downloadable binaries yet.
+There are no public release binaries yet.
 The intended distribution is a project-owned release bundle, installer, and
 updater. RPM, COPR, DEB, and distro repositories are not the planned delivery
 path. Updates will verify signatures, preserve configuration, and support
-recovery to a previous version. The daemon will not silently replace itself.
+recovery to a previous version. Updates automatically check and prepare by default, with an explained opt-out.
+Activation waits for affected graphical sessions to log out; locking is not logout.
 
 ## Documentation
 
