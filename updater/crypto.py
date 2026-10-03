@@ -1,0 +1,49 @@
+"""Ed25519 signatures use OpenSSL, with no shell interpolation."""
+import base64
+import subprocess
+import tempfile
+from pathlib import Path
+from .model import UpdateError, canonical, decode, timestamp
+
+
+def verify(public_pem, payload, signature):
+    try:
+        signature = base64.b64decode(signature, validate=True)
+        if len(signature) != 64 or "BEGIN PUBLIC KEY" not in public_pem:
+            raise ValueError()
+        with tempfile.TemporaryDirectory(prefix="convertibled-verify-") as directory:
+            directory = Path(directory)
+            (directory / "key.pem").write_text(public_pem, encoding="ascii")
+            (directory / "payload").write_bytes(payload)
+            (directory / "signature").write_bytes(signature)
+            result = subprocess.run(["openssl", "pkeyutl", "-verify", "-pubin", "-inkey", str(directory / "key.pem"), "-rawin", "-in", str(directory / "payload"), "-sigfile", str(directory / "signature")], capture_output=True, timeout=15, check=False)
+            if result.returncode:
+                raise UpdateError("Invalid Ed25519 signature")
+    except (ValueError, OSError, subprocess.TimeoutExpired) as exc:
+        raise UpdateError("Signature verification unavailable or malformed") from exc
+
+
+def envelope(raw, keys):
+    value = decode(raw)
+    if not isinstance(value, dict) or set(value) != {"key_id", "payload", "signature"}:
+        raise UpdateError("Invalid signed envelope")
+    if value["key_id"] not in keys:
+        raise UpdateError("Unknown or revoked signing key")
+    verify(keys[value["key_id"]], canonical(value["payload"]), value["signature"])
+    return value["payload"]
+
+
+def keyring(raw, roots, now, minimum=0):
+    value = envelope(raw, roots)
+    if not isinstance(value, dict) or set(value) != {"schema", "sequence", "issued", "expires", "keys"} or value["schema"] != 1:
+        raise UpdateError("Invalid root-signed keyring")
+    if type(value["sequence"]) is not int or value["sequence"] < minimum:
+        raise UpdateError("Keyring replay")
+    if not timestamp(value["issued"]) <= now < timestamp(value["expires"]):
+        raise UpdateError("Expired keyring")
+    if not isinstance(value["keys"], dict) or not 1 <= len(value["keys"]) <= 16:
+        raise UpdateError("Invalid release keyring")
+    for key_id, pem in value["keys"].items():
+        if not isinstance(key_id, str) or len(key_id) > 64 or not isinstance(pem, str) or len(pem) > 1024:
+            raise UpdateError("Invalid signing key")
+    return value

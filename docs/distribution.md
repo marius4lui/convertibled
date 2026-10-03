@@ -8,3 +8,9 @@ UTC issuance/expiry (at most 31 days), an exact platform contract, SHA256/size,
 configuration schema and bounded release notes. Stable rejects preview versions.
 No production trust key is committed. Without provisioned trust, updates fail
 closed. Physical installation and GNOME activation remain acceptance gates.
+
+Signed envelopes contain `key_id`, `payload`, `signature` (base64). Signatures
+cover canonical UTF-8 JSON (sorted keys, compact separators). The offline root
+signs a release-keyring with an independent monotonic sequence and UTC lifetime.
+Only keys in that authenticated keyring may sign channel metadata; removing a
+key revokes it. Root replacement requires an explicit administrator trust action.
