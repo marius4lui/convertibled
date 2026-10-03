@@ -58,3 +58,8 @@ Overview uses live Clutter clones of internal-output application windows,
 with accessible title labels, window activation and two-app split selection.
 It observes new windows, workspace switches, window removal and title changes.
 It does not activate GNOME's global overview on external displays.
+
+Local widgets show system-local clock/date, UPower display-battery state and
+quick actions. Ordered `widgets` GSettings controls visibility and order; unknown
+identifiers and duplicates are ignored. UPower uses asynchronous local D-Bus,
+with an explicit unavailable label. There are no accounts or network widgets.
