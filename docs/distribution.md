@@ -69,3 +69,9 @@ with a bounded oneshot, filesystem allowlist and no interactive authentication.
 The daemon's separate service-owned `health/shell-health.json` receipt is written
 only after D-Bus/logind caller validation. This authenticates the local session,
 not cryptographic attestation of GNOME extension code.
+
+Activation creates/verifies the fixed non-login `convertibled` service account
+and runs candidate `convertibled --check` before selecting it. Awaiting-shell
+transactions wait for the first observed graphical login; absence of a login
+alone does not roll back. Missing health after that session logs out triggers
+recovery, preserving normal GNOME while activation failure is investigated.

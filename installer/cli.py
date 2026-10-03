@@ -60,6 +60,7 @@ def execute(args, layout):
             transaction.rollback()
         elif args.command == "scheduled":
             if graphical_sessions():
+                transaction.observe_login()
                 if preferences(layout)["automatic_updates"]:
                     manager.prepare()
             else:

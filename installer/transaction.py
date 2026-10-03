@@ -1,5 +1,4 @@
 """Recoverable activation. Callers hold Layout.lock before every mutation."""
-import shutil
 from .storage import atomic, read
 from .configuration import backup, restore
 from .integration import install, remove
@@ -36,6 +35,9 @@ class Transaction:
         self.record(value, "prepared")
         self.require_logout()
         try:
+            from .identity import ensure
+            ensure(self.run)
+            self.run([str(self.layout.versions / candidate / "bin/convertibled"), "--check"])
             if previous:
                 self.run(["systemctl", "stop", "convertibled.service"])
             self.record(value, "switching")
@@ -86,4 +88,12 @@ class Transaction:
             if receipt.get("version") == value["candidate"] and receipt.get("healthy") is True:
                 self.record(value, "complete")
                 return value
+            if not value.get("first_session_seen"):
+                return value
         return self.rollback(value)
+
+    def observe_login(self):
+        value = read(self.journal, {})
+        if value.get("phase") == "awaiting_shell" and self.sessions():
+            value["first_session_seen"] = True
+            self.record(value, "awaiting_shell")
