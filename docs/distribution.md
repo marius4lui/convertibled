@@ -75,3 +75,9 @@ and runs candidate `convertibled --check` before selecting it. Awaiting-shell
 transactions wait for the first observed graphical login; absence of a login
 alone does not roll back. Missing health after that session logs out triggers
 recovery, preserving normal GNOME while activation failure is investigated.
+
+`uninstall` requires logout, validates every installed version against its owned
+manifest, stops/disables only project services, removes owned links and verified
+version files, and retains configuration/state by default. Added/modified files
+abort removal before service shutdown. No broad `/opt` or home-directory deletion
+is performed. The dedicated service account is retained for safe reinstall.

@@ -19,7 +19,7 @@ from updater.model import UpdateError
 
 def parser():
     result = argparse.ArgumentParser(description="convertibled installation and verified updates")
-    result.add_argument("command", choices=("status", "check", "prepare", "install", "activate", "recover", "rollback", "automatic", "channel", "scheduled"))
+    result.add_argument("command", choices=("status", "check", "prepare", "install", "activate", "recover", "rollback", "uninstall", "automatic", "channel", "scheduled"))
     result.add_argument("value", nargs="?", choices=("on", "off", "stable", "preview"))
     return result
 
@@ -58,6 +58,9 @@ def execute(args, layout):
             transaction.recover()
         elif args.command == "rollback":
             transaction.rollback()
+        elif args.command == "uninstall":
+            from installer.uninstall import uninstall
+            uninstall(layout)
         elif args.command == "scheduled":
             if graphical_sessions():
                 transaction.observe_login()
