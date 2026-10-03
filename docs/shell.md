@@ -37,3 +37,9 @@ The internal display is identified from Mutter DisplayConfig `is-builtin`
 metadata rather than assuming the primary monitor is internal. Mirrored outputs,
 missing identity or ambiguous internal outputs retain normal GNOME behavior.
 Display changes are observed asynchronously and stale replies are discarded.
+
+Normal main windows on the internal output are maximized on tablet entry.
+Dialogs, always-above, fullscreen, skipped-taskbar and external windows are
+excluded. Window geometry and maximize flags are restored only while their
+last applied state still matches. GNOME runtime must verify Wayland clients'
+asynchronous geometry acknowledgements before release acceptance.
