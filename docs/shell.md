@@ -53,3 +53,8 @@ The native dock includes visible labeled Home and Overview alternatives,
 favorites and running apps with an active indicator. Favorites and app-state
 signals keep it current. Horizontal scrolling prevents clipping on narrow
 portrait outputs and touch targets are at least 48 logical pixels.
+
+Overview uses live Clutter clones of internal-output application windows,
+with accessible title labels, window activation and two-app split selection.
+It observes new windows, workspace switches, window removal and title changes.
+It does not activate GNOME's global overview on external displays.
