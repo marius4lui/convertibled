@@ -13,6 +13,7 @@ import {Dock} from './dock.js';
 import {WindowOverview} from './overview.js';
 import {Widgets} from './widgets.js';
 import {WindowController} from './windows.js';
+import {SplitController} from './split-controller.js';
 export default class TabletExtension extends Extension {
     private cleanup?: Cleanup;
     private bridge?: SessionBridge;
@@ -28,8 +29,10 @@ export default class TabletExtension extends Extension {
     private settings: any;
     private animations: any;
     private reported = '';
+    private splitController?: SplitController;
     enable(): void {
         this.cleanup = new Cleanup(); this.settings = this.getSettings();
+        this.splitController = new SplitController(this.windows,this.settings);
         this.animations = new Gio.Settings({schema_id:'org.gnome.desktop.interface'});
         this.home = new Home(app => this.activateApp(app));
         this.dock = new Dock(surface => this.navigate(surface), app => this.activateApp(app));
@@ -72,7 +75,7 @@ export default class TabletExtension extends Extension {
             // Do not open Home or take focus from the application during folding.
             this.dock?.actor.show();
         } else if (!allowed && this.active) {
-            this.active = false; this.hideSurfaces(); this.dock?.actor.hide(); this.windows.restore();
+            this.active = false; this.splitController?.clear(); this.hideSurfaces(); this.dock?.actor.hide(); this.windows.restore();
         } else if (allowed) this.position();
         const report = {tablet_workspace:this.active,rotation_lock:false,
             status:this.active ? 'applied' : this.status?.desired.tablet_workspace ? 'unsupported' : 'applied',
@@ -90,6 +93,7 @@ export default class TabletExtension extends Extension {
             actor?.set_position(area.x,area.y); actor?.set_size(area.width,Math.max(100,area.height - 96));
         }
         this.home?.resize(area.width);
+        this.splitController?.resize(area,this.monitor.index);
     }
     private hideSurfaces(): void { this.home?.actor.hide(); this.overview?.actor.hide(); }
     private navigate(surface: 'home' | 'overview' | 'dock'): void {
@@ -108,12 +112,13 @@ export default class TabletExtension extends Extension {
         const window = app.get_windows().find((w: any) => w.get_monitor() === this.monitor?.index);
         this.hideSurfaces(); if (window) Main.activateWindow(window); else app.open_new_window(-1);
     }
-    private split(_first: any, _second: any): void {
-        // Implemented by the constrained split controller in the next batch.
-        Main.notify('convertibled','Split controls are not available in this build');
+    private split(first: any, second: any): void {
+        if (!this.monitor || !this.active) return;
+        if (this.splitController?.apply(first,second,Main.layoutManager.getWorkAreaForMonitor(this.monitor.index),this.monitor.index))
+            this.hideSurfaces();
     }
     disable(): void {
-        this.active = false; this.windows.restore();
+        this.active = false; this.splitController?.clear(); this.windows.restore();
         this.bridge?.destroy(); this.display?.destroy(); this.cleanup?.clear();
         this.widgets?.destroy(); this.home?.destroy(); this.dock?.destroy(); this.overview?.destroy();
         this.bridge = undefined; this.display = undefined; this.cleanup = undefined;

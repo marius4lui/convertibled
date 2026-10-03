@@ -69,5 +69,7 @@ management. Folding reveals navigation without opening Home or changing app
 focus. Lock/inactive shell modes, daemon loss and disable restore owned windows
 and hide surfaces. Home/Overview open only through explicit navigation; app
 activation closes them. Reduced-motion preferences disable 200 ms opacity easing.
-Split selection is visible but placement is added in the following controller
-batch; this intermediate build reports the unavailable action explicitly.
+Split selection places two compatible resizable windows and creates a visible
+divider to cycle ratios. Display changes recalculate the portrait-aware layout;
+window closure removes the divider. Incompatible minimums leave both windows
+untouched and produce a concise explanation.
