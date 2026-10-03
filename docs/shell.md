@@ -14,3 +14,7 @@ Split layout supports half, third and two-thirds, choosing a vertical arrangemen
 in portrait. A 48 logical-pixel divider is reserved before checking each app's
 minimum dimensions. Incompatible pairs produce an explanation without moving
 either window. Portable tests cover geometry partitioning and rejection.
+
+Restoration records the original and most recently applied value. Later user
+changes forfeit ownership, so leaving tablet mode does not overwrite them.
+Resource cleanup runs in reverse order, continues after errors and is idempotent.
