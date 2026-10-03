@@ -1,6 +1,9 @@
 # CI and releases
 
-There is no CI or release pipeline yet. This is the required design.
+The Product checks workflow builds/tests Linux services, GTK settings and the
+Shell extension, and validates documentation links. Checks use read-only token
+permissions and commit-pinned Actions. Passing Ubuntu compilation is not Fedora
+or physical-device acceptance. Public publishing remains separately gated.
 
 ## Version policy
 
