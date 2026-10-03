@@ -43,3 +43,8 @@ Dialogs, always-above, fullscreen, skipped-taskbar and external windows are
 excluded. Window geometry and maximize flags are restored only while their
 last applied state still matches. GNOME runtime must verify Wayland clients'
 asynchronous geometry acknowledgements before release acceptance.
+
+Home is a native St surface with editable app search, GNOME favorites and an
+adaptive installed-app grid. AppSystem/favorite changes refresh it live; GNOME
+application icons and keyboard-focusable buttons provide native app launching.
+Search uses GNOME's text widget so the native OSK follows editable focus.
