@@ -23,8 +23,8 @@ fn build_window(app: &adw::Application) {
         .search_enabled(true)
         .build();
     window.add(&crate::overview::page(&window, text));
+    window.add(&crate::profiles::page(&window, text));
     for (title, icon) in [
-        ("Profiles", "preferences-system-symbolic"),
         ("Hardware", "input-tablet-symbolic"),
         ("Tablet", "view-grid-symbolic"),
         ("Updates", "software-update-available-symbolic"),

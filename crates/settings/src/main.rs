@@ -9,6 +9,8 @@ mod ui;
 mod client;
 #[cfg(target_os = "linux")]
 mod overview;
+#[cfg(target_os = "linux")]
+mod profiles;
 
 #[cfg(target_os = "linux")]
 fn main() -> gtk::glib::ExitCode {
