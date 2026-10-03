@@ -48,3 +48,8 @@ Home is a native St surface with editable app search, GNOME favorites and an
 adaptive installed-app grid. AppSystem/favorite changes refresh it live; GNOME
 application icons and keyboard-focusable buttons provide native app launching.
 Search uses GNOME's text widget so the native OSK follows editable focus.
+
+The native dock includes visible labeled Home and Overview alternatives,
+favorites and running apps with an active indicator. Favorites and app-state
+signals keep it current. Horizontal scrolling prevents clipping on narrow
+portrait outputs and touch targets are at least 48 logical pixels.
