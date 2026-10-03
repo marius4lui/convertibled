@@ -15,3 +15,9 @@ The system observer rediscovers tablet-switch devices and queries EVIOCGSW every
 SensorProxy orientation is read without competing claims; GNOME retains rotation
 ownership. Linux cross compilation checks validate D-Bus and ioctl code, but do
 not establish hardware access or physical detection.
+
+The user session service enumerates logind sessions for its UID, requires exactly
+one active local Wayland seat, and denies mutations while locked or ambiguous.
+D-Bus caller credentials are checked against the service UID. Extension reports
+are bounded, validated, and never inferred from desired state. Manual choices
+are currently session-local and reset when the service restarts.
