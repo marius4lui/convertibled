@@ -18,3 +18,7 @@ either window. Portable tests cover geometry partitioning and rejection.
 Restoration records the original and most recently applied value. Later user
 changes forfeit ownership, so leaving tablet mode does not overwrite them.
 Resource cleanup runs in reverse order, continues after errors and is idempotent.
+
+App search uses installed application names, descriptions and keywords with
+accent-insensitive token matching. Dock order preserves GNOME favorites and
+adds running apps once. Grid columns adapt to the integrated display width.
