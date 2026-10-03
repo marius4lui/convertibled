@@ -32,3 +32,8 @@ The session bus bridge subscribes to `org.convertibled.Session1.Changed` and
 reads `GetStatus` asynchronously with a three-second timeout. Service loss or
 invalid versioned status exits tablet mode. Calls are canceled on disable.
 `ReportApplied` reports observed outcomes, never treats a request as success.
+
+The internal display is identified from Mutter DisplayConfig `is-builtin`
+metadata rather than assuming the primary monitor is internal. Mirrored outputs,
+missing identity or ambiguous internal outputs retain normal GNOME behavior.
+Display changes are observed asynchronously and stale replies are discarded.
