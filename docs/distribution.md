@@ -43,3 +43,10 @@ installing user's GNOME session. The helper never changes another user's setting
 opt-out and explicit stable/preview channel. Schema-1 configuration is backed up
 before activation; incompatible schemas are rejected. No arbitrary migration
 scripts run. Backups reject symlinks/special files and enforce 128 files/8 MiB.
+
+Activation journals backup/prepared/switching/selected/awaiting-shell phases,
+stops the daemon, selects the candidate, registers integration, restarts and
+checks service health. Failures roll back the binary reference and configuration.
+Interrupted nonterminal transactions recover conservatively at the next safe
+logout boundary. A first-login shell health receipt completes the transaction;
+missing/failed shell health causes a subsequent safe rollback.
