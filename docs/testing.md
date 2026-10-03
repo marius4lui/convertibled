@@ -1,0 +1,43 @@
+# Verification strategy
+
+Tests prove specific behavior. Local mocks do not establish desktop/device
+acceptance. Run checks appropriate to the batch; avoid repeated broad checks
+after unchanged passing results.
+
+## Automated layers
+
+- State engine: conflicting/unknown observations, debounce, manual overrides,
+  ordering, reconnect, and resume reconciliation.
+- Configuration: validation, precedence, atomic reload, migration compatibility.
+- Backends: idempotence, timeouts, failures, supported/unsupported actions,
+  desired versus applied status, restoration ownership.
+- IPC: input validation, API versions, denied mutations, session/seat changes.
+- Installer/updater: clean install, idempotence, unsafe archives, wrong signature,
+  corrupted artifact, replay, wrong architecture, low disk space, concurrent runs,
+  interrupted staging/activation, migration failure, rollback, and uninstall.
+
+Use disposable Linux environments for integration. Avoid live host mutation
+as a substitute for an isolated test. Rust host checks on Windows do not prove
+Linux device and desktop behavior.
+
+## Physical acceptance checklist
+
+- [ ] Laptop → folded → laptop; desired/applied state agrees
+- [ ] External keyboard/mouse remain usable
+- [ ] Built-in input recovery on stop, crash, restart, and sensor loss
+- [ ] Rotation lock, portrait/landscape, touch mapping, external displays
+- [ ] Text focus, OSK appearance and occlusion, no repeated toggling
+- [ ] Touch targets, screen reader, large text, keyboard navigation, reduced motion
+- [ ] Lock/unlock, logout/login, session switch, suspend/resume, docking
+- [ ] User changes preserved; owned changes restored
+- [ ] Clean installation, previous-version update, interruption, rollback, removal
+
+For each record: project commit/version, OS/kernel, desktop/version, device,
+procedure, actual result, and unresolved limitations. Never tick a checklist
+based only on intended behavior.
+
+## Documentation-only checks
+
+Resolve relative Markdown links, check mandatory reading targets, inspect UTF-8,
+run `git diff --check`, and review planned/current wording. Do not introduce
+application tests before implementation exists solely to mirror documentation.
