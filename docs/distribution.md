@@ -38,3 +38,8 @@ Host integration uses an explicit fixed destination map. Links resolve through
 Removal checks original link ownership and retains later user modifications.
 The extension is installed system-wide but must be explicitly enabled by the
 installing user's GNOME session. The helper never changes another user's settings.
+
+`updates.json` defaults to explained automatic checking/preparation with an
+opt-out and explicit stable/preview channel. Schema-1 configuration is backed up
+before activation; incompatible schemas are rejected. No arbitrary migration
+scripts run. Backups reject symlinks/special files and enforce 128 files/8 MiB.
