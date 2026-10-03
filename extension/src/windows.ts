@@ -20,28 +20,31 @@ export class WindowController {
     maximize(window: any, monitor: number): void {
         if (!this.eligible(window, monitor) || !window.can_maximize()) return;
         const before = this.snapshot(window);
-        window.maximize(Meta.MaximizeFlags.BOTH);
+        window.maximize();
         this.owned.remember(window, before, this.snapshot(window));
     }
     place(window: any, rect: Rect): void {
         const before = this.snapshot(window);
-        window.unmaximize(Meta.MaximizeFlags.BOTH);
+        window.unmaximize();
         window.move_resize_frame(false, rect.x, rect.y, rect.width, rect.height);
         this.owned.remember(window, before, this.snapshot(window));
     }
     minimum(window: any): {width: number; height: number} {
-        const size = window.get_min_size();
-        return {width: size[0], height: size[1]};
+        const [known,width,height] = window.get_min_size();
+        if (!known) return {width:0,height:0};
+        const frame = window.get_frame_rect(); const client = window.get_client_content_rect();
+        return {width:width + Math.max(0,frame.width - client.width),
+            height:height + Math.max(0,frame.height - client.height)};
     }
     restore(): void {
         for (const window of this.owned.keys()) {
             try {
                 const original = this.owned.restore(window, this.snapshot(window));
                 if (!original) continue;
-                window.unmaximize(Meta.MaximizeFlags.BOTH);
+                window.unmaximize();
                 const r = original.rect;
                 window.move_resize_frame(false, r.x, r.y, r.width, r.height);
-                if (original.maximized) window.maximize(original.maximized);
+                if (original.maximized) window.set_maximize_flags(original.maximized);
             } catch (error) { console.error(`convertibled restore: ${String(error)}`); }
         }
     }

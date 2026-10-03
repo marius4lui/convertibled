@@ -78,3 +78,8 @@ Touch navigation listens only to touchscreen events and coordinates on the
 identified internal output. Other input event types propagate immediately;
 no keystrokes are stored. Multitouch/cancel stops recognition. The
 `gesture-enabled` setting disables it while keeping visible Home/Overview.
+
+GNOME 50 method signatures were checked against its tagged Mutter header:
+`maximize()`/`unmaximize()` take no flags; partial restoration uses
+`set_maximize_flags()`. GJS minimum-size results contain a boolean followed by
+width/height, and frame decoration extents are added before split fit checks.
