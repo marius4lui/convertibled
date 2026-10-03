@@ -23,3 +23,7 @@ Bundles contain only regular files, a bounded schema-1 `manifest.json`, and the
 exact manifest file set. Extraction rejects links, traversal, duplicate names,
 unexpected roots, oversized expansion and digest/size mismatches. Required four
 executables prevent accepting an incomplete product bundle.
+
+Network reads require HTTPS to GitHub release/API/asset hosts, including every
+redirect. Metadata is capped at 256 KiB and payloads at the signed size (512 MiB
+maximum). Connection/read timeouts and streaming SHA256 enforce download bounds.
