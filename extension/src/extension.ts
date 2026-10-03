@@ -63,7 +63,10 @@ export default class TabletExtension extends Extension {
         });
         this.display = new DisplayObserver(() => Main.layoutManager.monitors,
             monitor => { this.monitor = monitor; this.reconcile(); });
-        this.bridge = new SessionBridge(status => { this.status = status; this.reconcile(); });
+        this.bridge = new SessionBridge(status => {
+            if (!this.status || !status) this.reported = '';
+            this.status = status; this.reconcile();
+        });
     }
     private internalWindows(): any[] {
         if (!this.monitor) return [];
@@ -87,7 +90,7 @@ export default class TabletExtension extends Extension {
             error:this.status?.desired.tablet_workspace && !this.active ? 'Internal display or unlocked GNOME session unavailable' : null,
             capabilities:{tablet_workspace:Boolean(this.monitor),rotation_lock:false,osk:true,split_view:true}};
         const json = JSON.stringify(report);
-        if (json !== this.reported) { this.reported = json; this.bridge?.report(report); }
+        if (this.status && this.bridge && json !== this.reported) { this.reported = json; this.bridge.report(report); }
     }
     private position(): void {
         if (!this.monitor) return;

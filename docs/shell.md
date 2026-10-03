@@ -83,3 +83,8 @@ GNOME 50 method signatures were checked against its tagged Mutter header:
 `maximize()`/`unmaximize()` take no flags; partial restoration uses
 `set_maximize_flags()`. GJS minimum-size results contain a boolean followed by
 width/height, and frame decoration extents are added before split fit checks.
+
+All mutation responses are finished even when no result callback is needed,
+so D-Bus failures are observed. Reconnecting a restarted session service sends
+fresh capabilities and applied state. Disable sends a bounded unavailable
+report independent of ordinary canceled operations.

@@ -35,12 +35,23 @@ export class SessionBridge {
         this.proxy.call(method, parameters, Gio.DBusCallFlags.NONE, 3000, this.cancel,
             (source: any, result: any) => {
                 if (this.cancel.is_cancelled()) return;
-                try { done?.(source.call_finish(result).deep_unpack()); }
+                try { const response = source.call_finish(result).deep_unpack(); done?.(response); }
                 catch (error) { console.error(`convertibled ${method}: ${String(error)}`); }
             });
     }
     profile(profile: string): void { this.call('SetProfile', new GLib.Variant('(s)', [profile])); }
     rotationLock(locked: boolean): void { this.call('SetRotationLock', new GLib.Variant('(b)', [locked])); }
     report(value: object): void { this.call('ReportApplied', new GLib.Variant('(s)', [JSON.stringify(value)])); }
-    destroy(): void { this.cancel.cancel(); this.cleanup.clear(); this.proxy = null; }
+    destroy(): void {
+        if (this.proxy?.get_name_owner()) {
+            const report = {tablet_workspace:false,rotation_lock:false,status:'unavailable',
+                error:'GNOME extension disabled',capabilities:{tablet_workspace:false}};
+            // This final bounded call must outlive cancellation of normal extension work.
+            this.proxy.call('ReportApplied',new GLib.Variant('(s)',[JSON.stringify(report)]),
+                Gio.DBusCallFlags.NONE,1000,null,(source: any,result: any) => {
+                    try { source.call_finish(result); } catch (error) { console.error(String(error)); }
+                });
+        }
+        this.cancel.cancel(); this.cleanup.clear(); this.proxy = null;
+    }
 }
