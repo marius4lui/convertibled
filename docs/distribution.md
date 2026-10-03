@@ -50,3 +50,9 @@ checks service health. Failures roll back the binary reference and configuration
 Interrupted nonterminal transactions recover conservatively at the next safe
 logout boundary. A first-login shell health receipt completes the transaction;
 missing/failed shell health causes a subsequent safe rollback.
+
+Preparation loads only root-provisioned `trust.json`, verifies offline root
+keyring then channel metadata, persists monotonic counters, downloads/hashes and
+extracts into root-owned staging, and renames a verified candidate into versions.
+Published version bytes are immutable: reuse with different metadata is rejected.
+Normal settings never supply URLs, keys, destination paths or executable hooks.
