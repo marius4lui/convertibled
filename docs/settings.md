@@ -14,3 +14,7 @@ require a GNOME session and remain unverified until recorded acceptance.
 German/English text is selected from LC_ALL, LC_MESSAGES, then LANG, using the
 first nonempty locale. Unsupported locales use English. Version metadata is
 inherited from the Rust workspace; settings must not report an independent release.
+
+The async session client uses `org.convertibled.Session1`, five-second call
+timeouts, typed replies, bounded JSON and explicit profile validation. It never
+blocks GTK on service IO or starts a missing daemon as a side effect of reading.

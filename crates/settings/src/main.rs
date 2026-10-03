@@ -5,6 +5,8 @@ mod strings;
 
 #[cfg(target_os = "linux")]
 mod ui;
+#[cfg(target_os = "linux")]
+mod client;
 
 #[cfg(target_os = "linux")]
 fn main() -> gtk::glib::ExitCode {
