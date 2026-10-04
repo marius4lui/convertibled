@@ -117,3 +117,25 @@ class LifecycleTests(unittest.TestCase):
         self.assertIsNone(self.layout.active())
         self.assertEqual(read(self.transaction.journal)["phase"], "prepared")
         self.assertFalse(any(args[0] == "systemctl" for args in self.calls))
+
+    @patch("installer.identity.ensure")
+    def test_login_after_stop_resumes_unchanged_previous_daemon(self, identity):
+        self.candidate("0.1.0")
+        self.transaction.activate("0.1.0")
+        atomic(self.layout.state / "health/shell-health.json", {"version": "0.1.0", "healthy": True})
+        self.transaction.recover()
+        self.candidate("0.2.0")
+        logged_in = [False]
+        self.calls.clear()
+        def run(args):
+            self.calls.append(args)
+            if args == ["systemctl", "stop", "convertibled.service"]:
+                logged_in[0] = True
+        self.transaction.run = run
+        self.transaction.sessions = lambda: [{"type": "wayland"}] if logged_in[0] else []
+        with self.assertRaises(UpdateError):
+            self.transaction.activate("0.2.0")
+        self.assertEqual(self.layout.active(), "0.1.0")
+        self.assertEqual(read(self.transaction.journal)["phase"], "rolled_back")
+        self.assertIn(["systemctl", "start", "convertibled.service"], self.calls)
+        self.assertNotIn(["systemctl", "daemon-reload"], self.calls)

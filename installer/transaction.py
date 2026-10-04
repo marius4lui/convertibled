@@ -59,9 +59,17 @@ class Transaction:
             raise
 
     def rollback(self, value=None):
-        self.require_logout()
         value = value or read(self.journal, {})
         previous = value.get("previous")
+        if value.get("phase") == "quiescing" and self.layout.active() == previous:
+            # Selection/config/integration are unchanged. Resuming the previous
+            # observer is safe even if login arrived while systemctl stopped it.
+            if previous:
+                self.run(["systemctl", "start", "convertibled.service"])
+                self.run(["systemctl", "is-active", "--quiet", "convertibled.service"])
+            self.record(value, "rolled_back")
+            return value
+        self.require_logout()
         if value.get("phase") in ("backup", "prepared"):
             self.record(value, "rolled_back")
             return value
@@ -90,6 +98,8 @@ class Transaction:
         phase = value.get("phase")
         if phase in (None, "complete", "rolled_back"):
             return value
+        if phase == "quiescing" and self.layout.active() == value.get("previous"):
+            return self.rollback(value)
         self.require_logout()
         if phase == "backup":
             self.record(value, "rolled_back")

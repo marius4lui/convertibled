@@ -220,3 +220,8 @@ Activation and rollback atomically replace the owned host policy-directory entry
 to trigger Polkit reload; changing the external `current` symlink alone would
 not update its watched actions directory. Signed manifest hashes cover the exact
 version-qualified policy bytes. Tests verify program identity and policy refresh.
+
+If login arrives after daemon stop while phase remains quiescing and `current`
+still selects the unchanged previous version, recovery directly resumes that
+daemon even with the session present. It does not select a version, restore
+configuration or edit integration. Recovery after selection still requires logout.
