@@ -87,3 +87,9 @@ assembles all four ELF binaries, compiled GNOME extension schemas, Python
 helpers, units/policies and desktop entry into a deterministic tar.gz with
 manifest hashes and normalized ownership/modes. Version comes from Cargo's
 canonical workspace version. Existing output files are never overwritten.
+
+`metadata.py` constructs validated unsigned channel metadata with an explicit
+monotonic sequence, release notes and a 14-day lifetime. `sign.py` signs canonical
+payloads with an external Ed25519 private key and rejects keys inside the repo.
+The same signer signs independent offline-root keyring payloads. Publication
+and key custody remain maintainer operations; these scripts never publish.
