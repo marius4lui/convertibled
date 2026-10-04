@@ -11,14 +11,15 @@ export class TouchNavigation {
     private timerPoint: {x: number; y: number} | null = null;
     private navigated: Navigation | null = null;
     constructor(private area: () => Monitor | null, private enabled: () => boolean,
-        private navigate: (surface: Navigation) => void) {}
+        private navigate: (surface: Navigation) => void,private approved: (device: any) => boolean) {}
     handle(event: any): any {
         const type = event.type();
         if (![Clutter.EventType.TOUCH_BEGIN,Clutter.EventType.TOUCH_UPDATE,
             Clutter.EventType.TOUCH_END,Clutter.EventType.TOUCH_CANCEL].includes(type)) return Clutter.EVENT_PROPAGATE;
         const sequence = event.get_event_sequence();
         if (!this.claimed.has(sequence) && (!this.enabled() ||
-            event.get_source_device()?.get_device_type() !== Clutter.InputDeviceType.TOUCHSCREEN_DEVICE)) return Clutter.EVENT_PROPAGATE;
+            event.get_source_device()?.get_device_type() !== Clutter.InputDeviceType.TOUCHSCREEN_DEVICE ||
+            !this.approved(event.get_source_device()))) return Clutter.EVENT_PROPAGATE;
         const [x,y] = event.get_coords(); const sample = {x,y,time:event.get_time()};
         if (type === Clutter.EventType.TOUCH_BEGIN) {
             if (this.claimed.size && event.get_source_device() === this.device) {

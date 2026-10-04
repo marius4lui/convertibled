@@ -226,11 +226,19 @@ or CANCEL, so underlying apps/buttons never receive a partial sequence. Canceled
 candidates remain consumed until their end. A stationary 500 ms hold beyond the
 swipe threshold opens Overview while the finger is still down; timers cancel on
 diagonal/multitouch/disable. Source filtering currently proves touchscreen type
-and internal-output coordinates, not physical built-in-device provenance: an
-externally connected touchscreen deliberately mapped there is not distinguished.
-This limitation requires device-assignment acceptance before claiming exclusivity.
+and internal-output coordinates. Physical provenance is not inferred from those
+properties: gesture support remains unavailable until explicit current-login
+approval binds a connected native Clutter device object.
 
 Bundle metadata reads `workspace.package.version` from canonical Cargo.toml
 during every build. Startup health therefore uses the installed product version,
 including future upgrades. Build cleanup removes only the resolved extension
 `dist` directory and prevents deleted source modules surviving in release bundles.
+
+`touchscreen-device-node` is an explicit current-login grant for the physically
+confirmed integrated touchscreen. Startup and device removal clear it; event
+number reuse cannot grant another device because checks compare the actual
+native device object. Wrong/absent nodes remain unsupported and visible
+navigation works throughout. Reference-device setup must physically confirm the
+chosen source, and reconnect/login requires fresh approval. No input device is
+disabled and no keystrokes or raw event streams are recorded.

@@ -19,6 +19,7 @@ import {TouchNavigation} from './touch.js';
 import {RotationLock} from './rotation.js';
 import {NativePreference} from './native-preference.js';
 import {beforeDock} from './work-area.js';
+import {TouchSource} from './touch-source.js';
 export default class TabletExtension extends Extension {
     private cleanup?: Cleanup;
     private bridge?: SessionBridge;
@@ -39,6 +40,7 @@ export default class TabletExtension extends Extension {
     private rotation?: RotationLock;
     private osk?: NativePreference;
     private windowLaters = new Set<number>();
+    private touchSource?: TouchSource;
     enable(): void {
         try { this.start(); }
         catch (error) {
@@ -53,9 +55,12 @@ export default class TabletExtension extends Extension {
         this.cleanup = new Cleanup(); this.settings = this.getSettings();
         this.splitController = new SplitController(this.windows,this.settings,
             active => this.dock?.setSplitAction(active ? () => this.splitController?.end(this.monitor!.index) : null));
+        this.touchSource = new TouchSource(global.backend?.get_default_seat(),this.settings, () => {
+            this.touch?.cancel(); this.reportApplied();
+        });
         this.touch = new TouchNavigation(() => this.monitor,
             () => this.active && Main.modalCount === 0 && !Main.overview.visible && this.settings.get_boolean('gesture-enabled'),
-            surface => this.navigate(surface));
+            surface => this.navigate(surface),device => this.touchSource?.allows(device) ?? false);
         this.cleanup.signal(global.stage,'captured-event', (_stage: any,event: any) => this.touch?.handle(event));
         this.animations = new Gio.Settings({schema_id:'org.gnome.desktop.interface'});
         this.rotation = new RotationLock(() => this.reportApplied());
@@ -162,7 +167,9 @@ export default class TabletExtension extends Extension {
             status:this.active ? 'applied' : this.status?.desired.tablet_workspace ? 'unsupported' : 'applied',
             error:this.status?.desired.tablet_workspace && !this.active ? 'Internal display or unlocked GNOME session unavailable' : null,
             capabilities:{tablet_workspace:Boolean(this.monitor),rotation_lock:this.rotation?.available ?? false,
-                osk:this.osk?.available ?? false,split_view:true},
+                osk:this.osk?.available ?? false,split_view:true,
+                touchscreen_gestures:Boolean(this.monitor && this.touchSource?.available),
+                gesture_reason:this.touchSource?.reason ?? 'No approved touchscreen'},
             action_outcomes:{rotation:{requested:rotationRequest,applied:rotationActual,
                 status:rotationError ? 'unsupported' : 'applied',error:rotationError},
             osk:{requested:oskRequest,applied:oskActual,status:oskError ? 'unsupported' : 'applied',error:oskError}}};
@@ -218,6 +225,7 @@ export default class TabletExtension extends Extension {
         this.active = false; this.touch?.cancel(); this.splitController?.clear(); this.windows.restore();
         this.rotation?.destroy(); this.rotation = undefined;
         this.osk?.destroy(); this.osk = undefined;
+        this.touchSource?.destroy(); this.touchSource = undefined;
         this.bridge?.destroy(); this.display?.destroy(); this.cleanup?.clear();
         this.widgets?.destroy(); this.home?.destroy(); this.dock?.destroy(); this.overview?.destroy();
         this.bridge = undefined; this.display = undefined; this.cleanup = undefined;
