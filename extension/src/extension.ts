@@ -4,7 +4,7 @@ import Gio from 'gi://Gio';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Cleanup} from './ownership.js';
-import {SessionBridge} from './bridge.js';
+import {SessionBridge, reportHealthOnce} from './bridge.js';
 import {DisplayObserver} from './display.js';
 import type {Monitor} from './monitors.js';
 import type {Status} from './status.js';
@@ -35,6 +35,16 @@ export default class TabletExtension extends Extension {
     private touch?: TouchNavigation;
     private rotation?: RotationLock;
     enable(): void {
+        try { this.start(); }
+        catch (error) {
+            const version = this.metadata['version-name'];
+            this.disable();
+            reportHealthOnce(version,false);
+            console.error(`convertibled startup failed: ${String(error)}`);
+            throw error;
+        }
+    }
+    private start(): void {
         this.cleanup = new Cleanup(); this.settings = this.getSettings();
         this.splitController = new SplitController(this.windows,this.settings);
         this.touch = new TouchNavigation(() => this.monitor,
@@ -82,6 +92,7 @@ export default class TabletExtension extends Extension {
             if (!this.status || !status) this.reported = '';
             this.status = status; this.reconcile();
         });
+        this.bridge.reportHealth(this.metadata['version-name'],true);
     }
     private internalWindows(): any[] {
         if (!this.monitor) return [];

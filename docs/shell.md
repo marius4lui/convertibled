@@ -118,3 +118,9 @@ Surface allocation observes the native keyboard box and reserves its occupied
 internal-output height. Navigation moves above the OSK and Home stays scrollable;
 the extension never opens/closes the keyboard directly. GNOME owns editable
 focus, authentication, keyboard lifetime and third-party app occlusion handling.
+
+The extension reports explicit startup health with its bundle `version-name`
+through `Session1.ReportShellHealth(version, healthy)`. A completed UI/resource
+setup is healthy even in laptop mode; a setup exception cleans resources and
+reports failure. This receipt is distinct from tablet applied state, allowing
+the update helper to evaluate the candidate at the next real login.

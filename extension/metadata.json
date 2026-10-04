@@ -4,5 +4,6 @@
   "description": "Native tablet workspace coordinated by convertibled-session",
   "shell-version": ["50"],
   "version": 1,
+  "version-name": "0.1.0",
   "settings-schema": "org.gnome.shell.extensions.convertibled"
 }
