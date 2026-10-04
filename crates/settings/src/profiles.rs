@@ -31,9 +31,12 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
         .build();
     let weak_window = window.downgrade();
     let result_copy = result.clone();
-    let selection_copy = selection.clone();
+    let selection_copy = selection.downgrade();
     apply.connect_clicked(move |button| {
-        let Some(profile) = PROFILES.get(selection_copy.selected() as usize) else {
+        let Some(selection) = selection_copy.upgrade() else {
+            return;
+        };
+        let Some(profile) = PROFILES.get(selection.selected() as usize) else {
             return;
         };
         let profile = *profile;
@@ -98,17 +101,16 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
     page.add(&rotation);
     // Initialize controls from service state without causing writes.
     glib::MainContext::default().spawn_local(async move {
-        if let Ok(client) = Client::connect().await {
-            if let Ok(status) = client.status().await {
-                let profile = status["manual_override"].as_str().unwrap_or("auto");
-                selection
-                    .set_selected(PROFILES.iter().position(|p| *p == profile).unwrap_or(0) as u32);
-                lock.set_active(
-                    status["desired"]["rotation_lock"]
-                        .as_bool()
-                        .unwrap_or(false),
-                );
-            }
+        if let Ok(client) = Client::connect().await
+            && let Ok(status) = client.status().await
+        {
+            let profile = status["manual_override"].as_str().unwrap_or("auto");
+            selection.set_selected(PROFILES.iter().position(|p| *p == profile).unwrap_or(0) as u32);
+            lock.set_active(
+                status["desired"]["rotation_lock"]
+                    .as_bool()
+                    .unwrap_or(false),
+            );
         }
     });
     page

@@ -54,10 +54,12 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
         (&prepare, "prepare"),
     ] {
         let rows = rows.clone();
-        let controls = buttons.clone();
+        let controls = buttons.downgrade();
         button.connect_clicked(move |_| {
             let rows = rows.clone();
-            let controls = controls.clone();
+            let Some(controls) = controls.upgrade() else {
+                return;
+            };
             controls.set_sensitive(false);
             glib::MainContext::default().spawn_local(async move {
                 match helper(command, None).await {

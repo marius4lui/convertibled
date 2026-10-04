@@ -24,10 +24,10 @@ pub fn parse_status(raw: &str) -> Result<Value, String> {
         return Err("Status must be an object".into());
     }
     for key in ["schema", "schema_version"] {
-        if let Some(schema) = value.get(key) {
-            if schema.as_u64() != Some(1) {
-                return Err("Unsupported service response version".into());
-            }
+        if let Some(schema) = value.get(key)
+            && schema.as_u64() != Some(1)
+        {
+            return Err("Unsupported service response version".into());
         }
     }
     Ok(value)

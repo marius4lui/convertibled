@@ -1,4 +1,3 @@
-use gio::prelude::*;
 use gtk::gio;
 use std::ffi::OsStr;
 
