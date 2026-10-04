@@ -48,7 +48,8 @@ export default class TabletExtension extends Extension {
     }
     private start(): void {
         this.cleanup = new Cleanup(); this.settings = this.getSettings();
-        this.splitController = new SplitController(this.windows,this.settings);
+        this.splitController = new SplitController(this.windows,this.settings,
+            active => this.dock?.setSplitAction(active ? () => this.splitController?.end(this.monitor!.index) : null));
         this.touch = new TouchNavigation(() => this.monitor,
             () => this.active && this.settings.get_boolean('gesture-enabled'), surface => this.navigate(surface));
         this.cleanup.signal(global.stage,'captured-event', (_stage: any,event: any) => this.touch?.handle(event));

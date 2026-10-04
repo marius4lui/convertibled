@@ -11,7 +11,7 @@ export class SplitController {
     private area?: Rect;
     private cleanup = new Cleanup();
     private divider: any;
-    constructor(private windows: WindowController, private settings: any) {}
+    constructor(private windows: WindowController, private settings: any,private activeChanged: (active: boolean) => void) {}
     apply(first: any, second: any, area: Rect, monitor: number): boolean {
         if (first === second || !this.windows.eligible(first,monitor) ||
             !this.windows.eligible(second,monitor) || !first.allows_resize() || !second.allows_resize()) {
@@ -23,10 +23,13 @@ export class SplitController {
         if ('error' in layout) { Main.notify('convertibled',_(layout.error)); return false; }
         this.clear(); this.first = first; this.second = second; this.area = area;
         this.windows.place(first,layout.first); this.windows.place(second,layout.second);
-        this.divider = button('Change split', () => {
+        this.divider = new St.Button({style_class:'button convertibled-button',can_focus:true,reactive:true,
+            accessible_name:_('Change split')});
+        this.divider.set_child(new St.Icon({icon_name:'view-dual-symbolic',icon_size:24}));
+        this.divider.connect('clicked', () => {
             this.settings.set_string('split-ratio',nextRatio(ratio));
-            this.apply(first,second,area,monitor);
-        },'view-dual-symbolic');
+            if (!this.apply(first,second,area,monitor)) this.settings.set_string('split-ratio',ratio);
+        });
         this.divider.set_position(layout.divider.x,layout.divider.y);
         this.divider.set_size(layout.divider.width,layout.divider.height);
         Main.layoutManager.addChrome(this.divider,{affectsStruts:false,trackFullscreen:false});
@@ -35,12 +38,20 @@ export class SplitController {
             this.cleanup.signal(window,'unmanaged', () => this.clear());
             this.cleanup.signal(window,'notify::fullscreen', () => this.clear());
         }
-        first.raise(); second.raise(); return true;
+        first.raise(); second.raise(); this.activeChanged(true); return true;
     }
     resize(area: Rect, monitor: number): void {
         if (!this.first || !this.second) return;
         if (this.area && ['x','y','width','height'].every(k => this.area![k as keyof Rect] === area[k as keyof Rect])) return;
-        this.apply(this.first,this.second,area,monitor);
+        if (!this.apply(this.first,this.second,area,monitor)) this.end(monitor);
     }
-    clear(): void { this.cleanup.clear(); this.first = null; this.second = null; this.area = undefined; }
+    end(monitor: number): void {
+        for (const window of [this.first,this.second]) {
+            if (window && this.windows.owns(window)) this.windows.maximize(window,monitor);
+        }
+        this.clear();
+    }
+    clear(): void {
+        this.cleanup.clear(); this.first = null; this.second = null; this.area = undefined; this.activeChanged(false);
+    }
 }

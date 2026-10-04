@@ -52,4 +52,5 @@ export class WindowController {
         }
     }
     forget(window: any): void { this.owned.forget(window); }
+    owns(window: any): boolean { return this.owned.matches(window,this.snapshot(window)); }
 }

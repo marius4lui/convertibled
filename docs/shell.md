@@ -177,3 +177,8 @@ Surfaces inherit GNOME popup theme colors instead of hard-coded backgrounds,
 including light/dark and text contrast. Split selections expose native checked
 button state, and the split action becomes focusable/reactive only after two
 windows are selected. Physical screen-reader and large-text review remains open.
+
+The divider uses an accessible icon so its allocation fits the reserved 48-pixel
+strip. A labeled dock action ends split and maximizes only windows whose split
+geometry is still owned. Rejected ratio changes retain the previous ratio;
+rotation into an incompatible layout ends split rather than keeping stale bounds.

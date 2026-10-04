@@ -9,6 +9,7 @@ export class Dock {
     private apps = new St.BoxLayout({style_class:'convertibled-grid'});
     private cleanup = new Cleanup();
     private strip: any;
+    private splitAction: any;
     constructor(navigate: (surface: 'home' | 'overview') => void, private activate: (app: any) => void) {
         this.actor.add_child(button('Home', () => navigate('home'), 'go-home-symbolic'));
         this.actor.add_child(button('Overview', () => navigate('overview'), 'view-grid-symbolic'));
@@ -19,6 +20,10 @@ export class Dock {
         this.refresh();
     }
     showApps(visible: boolean): void { this.strip.visible = visible; }
+    setSplitAction(action: (() => void) | null): void {
+        this.splitAction?.destroy(); this.splitAction = null;
+        if (action) { this.splitAction = button('End split',action,'view-restore-symbolic'); this.actor.add_child(this.splitAction); }
+    }
     refresh(): void {
         clear(this.apps);
         const system = Shell.AppSystem.get_default();
