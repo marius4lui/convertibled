@@ -10,6 +10,8 @@ LINKS = {
     "usr/share/gnome-shell/extensions/" + UUID: "share/gnome-shell/extensions/" + UUID,
     "usr/lib/systemd/system/convertibled.service": "data/systemd/convertibled.service",
     "usr/lib/systemd/user/convertibled-session.service": "data/systemd/convertibled-session.service",
+    "usr/lib/systemd/user/convertibled-admission.service": "data/systemd/convertibled-admission.service",
+    "usr/lib/systemd/user/org.gnome.Shell@user.service.d/convertibled-admission.conf": "data/systemd/org.gnome.Shell@user.service.d/convertibled-admission.conf",
     "usr/lib/systemd/user/graphical-session.target.wants/convertibled-session.service": "data/systemd/convertibled-session.service",
     "usr/share/dbus-1/system.d/org.convertibled.Daemon1.conf": "data/dbus/org.convertibled.Daemon1.conf",
     "usr/lib/systemd/system/convertibled-update.service": "data/systemd/convertibled-update.service",
@@ -22,6 +24,9 @@ LINKS = {
 
 
 def expected(layout, source):
+    from .admission_control import STABLE
+    if source in STABLE:
+        return layout.state / STABLE[source]
     # Absolute on the installed host, portable inside disposable test roots.
     return layout.current / source
 
@@ -37,22 +42,27 @@ def refresh_policy(layout, target, source):
     sync_directory(target.parent)
 
 
-def install(layout):
+def install(layout, admission_only=False, candidate=None):
+    from .admission_control import provision
+    from .admission_control import STABLE
+    links = {destination: source for destination, source in LINKS.items() if not admission_only or source in STABLE}
     owned = read(layout.state / "owned.json", {"schema": 1, "links": {}})
     if owned.get("schema") != 1:
         raise UpdateError("Unsupported ownership manifest")
-    for destination, source in LINKS.items():
+    for destination, source in links.items():
         target = layout.root / destination
         if target.exists() or target.is_symlink():
             if not target.is_symlink() or str(target.readlink()) != str(expected(layout, source)):
                 raise UpdateError("Refusing to overwrite unrelated integration: " + destination)
-        if not (layout.current / source).exists():
+    provision(layout, layout.versions / candidate if candidate else None)
+    for destination, source in links.items():
+        if not expected(layout, source).exists():
             raise UpdateError("Bundle lacks required integration: " + source)
     # Journal ownership intent before creating links, so a power loss between
     # link creation and journaling cannot leave an untracked project link.
-    owned["links"].update(LINKS)
+    owned["links"].update(links)
     atomic(layout.state / "owned.json", owned)
-    for destination, source in LINKS.items():
+    for destination, source in links.items():
         target = layout.root / destination
         target.parent.mkdir(parents=True, exist_ok=True)
         if destination == "usr/share/polkit-1/actions/org.convertibled.installer.policy":

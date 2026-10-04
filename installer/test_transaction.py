@@ -1,11 +1,13 @@
 import tempfile
 import unittest
+import os
 from unittest.mock import patch
 from .transaction import Transaction
 from .storage import Layout, atomic, read
 from updater.model import UpdateError
 
 
+@unittest.skipUnless(os.name == "posix", "POSIX admission boundary")
 class TransactionTests(unittest.TestCase):
     def test_no_activation_while_locked_session_exists(self):
         with tempfile.TemporaryDirectory() as root:

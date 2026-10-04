@@ -6,6 +6,7 @@ from .platform import command, graphical_sessions
 from .storage import read, atomic
 from updater.archive import manifest
 from updater.model import UpdateError, version
+from .admission_control import exclusive, reload_users
 
 
 def owned_version(path):
@@ -32,13 +33,23 @@ def owned_version(path):
 def uninstall(layout, run=command, sessions=graphical_sessions):
     if sessions():
         raise UpdateError("Log out graphical sessions before removal")
+    with exclusive(layout):
+        return _uninstall(layout, run, sessions)
+
+
+def _uninstall(layout, run, sessions):
+    if sessions():
+        raise UpdateError("Log out graphical sessions before removal")
     versions = []
     for path in layout.versions.iterdir():
         if not path.is_dir() or path.is_symlink():
             raise UpdateError("Unowned version entry retained")
         versions.append((path, owned_version(path)))
+    if sessions():
+        raise UpdateError("Graphical login appeared during removal preflight")
     run(["systemctl", "disable", "--now", "convertibled-update.timer", "convertibled.service"])
     remove(layout)
+    reload_users(run)
     layout.current.unlink(missing_ok=True)
     for path, names in versions:
         for name in sorted(names):

@@ -4,6 +4,7 @@ from .configuration import backup, restore
 from .integration import install, remove
 from .platform import command, graphical_sessions
 from updater.model import UpdateError, version
+from .admission_control import admitted, reload_users
 
 
 class Transaction:
@@ -19,6 +20,7 @@ class Transaction:
         if self.sessions():
             raise UpdateError("Waiting for graphical logout; locking does not count")
 
+    @admitted
     def activate(self, candidate):
         version(candidate)
         self.require_logout()
@@ -37,6 +39,8 @@ class Transaction:
         try:
             from .identity import ensure
             ensure(self.run)
+            install(self.layout, admission_only=True, candidate=candidate)
+            reload_users(self.run)
             self.run([str(self.layout.versions / candidate / "bin/convertibled"), "--check"])
             # Preflight may be slow. Recheck immediately before quiescing.
             self.require_logout()
@@ -50,6 +54,7 @@ class Transaction:
             self.record(value, "selected")
             install(self.layout)
             self.run(["systemctl", "daemon-reload"])
+            reload_users(self.run)
             self.run(["systemctl", "enable", "--now", "convertibled.service", "convertibled-update.timer"])
             self.run(["systemctl", "is-active", "--quiet", "convertibled.service"])
             self.record(value, "awaiting_shell")
@@ -58,6 +63,7 @@ class Transaction:
             self.rollback(value)
             raise
 
+    @admitted
     def rollback(self, value=None):
         value = value or read(self.journal, {})
         previous = value.get("previous")
@@ -84,15 +90,18 @@ class Transaction:
             restore(self.layout)
             install(self.layout)
             self.run(["systemctl", "daemon-reload"])
+            reload_users(self.run)
             self.run(["systemctl", "start", "convertibled.service"])
             self.run(["systemctl", "is-active", "--quiet", "convertibled.service"])
         else:
             remove(self.layout)
             self.layout.current.unlink(missing_ok=True)
             self.run(["systemctl", "daemon-reload"])
+            reload_users(self.run)
         self.record(value, "rolled_back")
         return value
 
+    @admitted
     def recover(self):
         value = read(self.journal, {})
         phase = value.get("phase")

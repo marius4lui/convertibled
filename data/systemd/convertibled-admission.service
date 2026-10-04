@@ -1,0 +1,14 @@
+[Unit]
+Description=convertibled GNOME session admission
+PartOf=gnome-session-initialized.target
+Before=org.gnome.Shell@user.service
+
+[Service]
+Type=notify
+NotifyAccess=main
+ExecStart=/usr/bin/python3 -I /var/lib/convertibled/admission.py
+TimeoutStartSec=infinity
+TimeoutStopSec=5
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes

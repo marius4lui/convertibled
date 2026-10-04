@@ -33,6 +33,10 @@ class LifecycleTests(unittest.TestCase):
             files.setdefault(source, (b"fixture", source.endswith(".py")))
         policy = "data/polkit/org.convertibled.installer.policy"
         files[policy] = ((Path(__file__).resolve().parent.parent / policy).read_bytes(), False)
+        files["installer/admission.py"] = (Path(__file__).with_name("admission.py").read_bytes(), False)
+        from .admission_control import STABLE
+        for source in STABLE:
+            files[source] = ((Path(__file__).resolve().parent.parent / source).read_bytes(), False)
         archive = Path(self.temporary.name) / (version + ".tar.gz")
         build(files, version, archive)
         path = self.layout.versions / version
