@@ -7,6 +7,15 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
         .title(text.text("Profiles", "Profile"))
         .icon_name("preferences-system-symbolic")
         .build();
+    crate::ui::introduction(
+        &page,
+        "preferences-system-symbolic",
+        text.text("Make it yours", "So, wie du arbeitest"),
+        text.text(
+            "Follow your device naturally, or choose how you want to work.",
+            "Folge deinem Gerät automatisch oder wähle, wie du arbeiten möchtest.",
+        ),
+    );
     let group = adw::PreferencesGroup::builder()
         .title(text.text("Choose behavior", "Verhalten wählen"))
         .description(text.text(
@@ -21,7 +30,7 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
         .build();
     let apply = gtk::Button::with_label(text.text("Apply profile", "Profil anwenden"));
     apply.set_height_request(44);
-    selection.add_suffix(&apply);
+    apply.add_css_class("suggested-action");
     let result = adw::ActionRow::builder()
         .title(text.text("Result", "Ergebnis"))
         .subtitle(text.text(
@@ -61,6 +70,7 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
     });
     group.add(&selection);
     group.add(&result);
+    group.add(&crate::ui::actions(&[&apply]));
     page.add(&group);
 
     let rotation = adw::PreferencesGroup::builder()
@@ -75,7 +85,6 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
         .build();
     let save = gtk::Button::with_label(text.text("Apply rotation lock", "Drehsperre anwenden"));
     save.set_height_request(44);
-    rotation.set_header_suffix(Some(&save));
     let lock_copy = lock.clone();
     let result_copy = result.clone();
     save.connect_clicked(move |button| {
@@ -98,6 +107,7 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
         });
     });
     rotation.add(&lock);
+    rotation.add(&crate::ui::actions(&[&save]));
     page.add(&rotation);
     // Initialize controls from service state without causing writes.
     selection.set_sensitive(false);

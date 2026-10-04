@@ -7,6 +7,15 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
         .title(text.text("Updates", "Updates"))
         .icon_name("software-update-available-symbolic")
         .build();
+    crate::ui::introduction(
+        &page,
+        "software-update-available-symbolic",
+        text.text("Ready when you are", "Bereit, wenn du es bist"),
+        text.text(
+            "Verified updates prepare quietly and activate after you log out.",
+            "Geprüfte Updates werden im Hintergrund vorbereitet und nach deiner Abmeldung aktiviert.",
+        ),
+    );
     let group = adw::PreferencesGroup::builder()
         .title(text.text("Verified updates", "Geprüfte Updates"))
         .description(text.text(
@@ -39,15 +48,12 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
         (key, row)
     })
     .collect();
-    let buttons = gtk::Box::new(gtk::Orientation::Horizontal, 6);
     let refresh = gtk::Button::with_label(text.text("Refresh", "Aktualisieren"));
     let check = gtk::Button::with_label(text.text("Check", "Prüfen"));
     let prepare = gtk::Button::with_label(text.text("Prepare", "Vorbereiten"));
-    for button in [&refresh, &check, &prepare] {
-        button.set_height_request(44);
-        buttons.append(button);
-    }
-    group.set_header_suffix(Some(&buttons));
+    prepare.add_css_class("suggested-action");
+    let buttons = crate::ui::actions(&[&refresh, &check, &prepare]);
+    group.add(&buttons);
     for (button, command) in [
         (&refresh, "status"),
         (&check, "check"),

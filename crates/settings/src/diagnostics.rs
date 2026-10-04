@@ -8,19 +8,25 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
         .title(text.text("Diagnostics", "Diagnose"))
         .icon_name("dialog-information-symbolic")
         .build();
+    crate::ui::introduction(
+        &page,
+        "dialog-information-symbolic",
+        text.text("A clearer picture", "Ein klareres Bild"),
+        text.text(
+            "Review a local report and share it only when you choose.",
+            "Prüfe einen lokalen Bericht und teile ihn erst, wenn du dich dafür entscheidest.",
+        ),
+    );
     let group = adw::PreferencesGroup::builder()
         .title(text.text("Local health report", "Lokaler Zustandsbericht"))
         .description(text.text("Reports contain project state, not keystrokes or private system logs. Nothing is uploaded.",
             "Berichte enthalten den Projektzustand, keine Tastatureingaben oder privaten Systemprotokolle. Es wird nichts hochgeladen.")).build();
-    let controls = gtk::Box::new(gtk::Orientation::Horizontal, 6);
     let check = gtk::Button::with_label(text.text("Run checks", "Prüfung starten"));
     let export = gtk::Button::with_label(text.text("Export…", "Exportieren…"));
-    for button in [&check, &export] {
-        button.set_height_request(44);
-        controls.append(button);
-    }
+    check.add_css_class("suggested-action");
+    let controls = crate::ui::actions(&[&check, &export]);
     export.set_sensitive(false);
-    group.set_header_suffix(Some(&controls));
+    group.add(&controls);
     let result = gtk::TextView::builder()
         .editable(false)
         .cursor_visible(false)
@@ -31,11 +37,16 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
         .left_margin(12)
         .right_margin(12)
         .build();
+    result.buffer().set_text(text.text(
+        "Run checks to collect your session's diagnostic report.",
+        "Starte die Prüfung, um den Diagnosebericht deiner Sitzung zu erstellen.",
+    ));
     let scroll = gtk::ScrolledWindow::builder()
         .child(&result)
         .min_content_height(320)
         .hscrollbar_policy(gtk::PolicyType::Never)
         .build();
+    scroll.add_css_class("card");
     group.add(&scroll);
     let notice = adw::ActionRow::builder()
         .title(text.text("Report status", "Berichtsstatus"))

@@ -25,6 +25,15 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
         .title(text.text("Tablet", "Tablet"))
         .icon_name("view-grid-symbolic")
         .build();
+    crate::ui::introduction(
+        &page,
+        "view-grid-symbolic",
+        text.text("A workspace for touch", "Deine Tablet-Arbeitsfläche"),
+        text.text(
+            "Shape your dock, gestures and the essentials on Home.",
+            "Gestalte dein Dock, die Gesten und das Wesentliche auf Start.",
+        ),
+    );
     let group = adw::PreferencesGroup::builder()
         .title(text.text("Workspace preferences", "Arbeitsfläche anpassen"))
         .description(text.text(
@@ -56,12 +65,22 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
         ),
     ] {
         let row = adw::SwitchRow::builder().title(title).build();
+        if key == "gesture-enabled" {
+            row.set_subtitle(text.text(
+                "Approve the built-in touchscreen using the setup target first.",
+                "Gib zuerst den eingebauten Touchscreen über das Einrichtungsfeld frei.",
+            ));
+        }
         settings.bind(key, &row, "active").build();
         group.add(&row);
     }
     let ratios = gtk::StringList::new(&["50 / 50", "1/3 – 2/3", "2/3 – 1/3"]);
     let split = adw::ComboRow::builder()
         .title(text.text("Split view", "Geteilte Ansicht"))
+        .subtitle(text.text(
+            "Side by side in landscape. Stacked in portrait.",
+            "Nebeneinander im Querformat. Untereinander im Hochformat.",
+        ))
         .model(&ratios)
         .build();
     let values = ["half", "third", "two-thirds"];

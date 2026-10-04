@@ -84,3 +84,9 @@ stops when the window is destroyed. Inactive windows do not poll the service.
 
 Rotation and native OSK requests expose separate outcome/error rows in Overview;
 a successfully shown workspace cannot conceal a failed native preference change.
+
+All six pages now use centered native introductions and wrapping action areas.
+Overview places the selected profile and confirmed workspace summary first,
+then groups device observations, workspace state and expandable rotation/OSK
+outcomes. Unavailable sessions hide stale detail groups and retain retry.
+Actions use native suggested-action styling and at least 44-pixel height.

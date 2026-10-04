@@ -7,6 +7,15 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
         .title(text.text("Hardware", "Hardware"))
         .icon_name("input-tablet-symbolic")
         .build();
+    crate::ui::introduction(
+        &page,
+        "input-tablet-symbolic",
+        text.text("Know your device", "Dein Gerät verstehen"),
+        text.text(
+            "See what your session supports and what still needs attention.",
+            "Sieh, was deine Sitzung unterstützt und was noch Aufmerksamkeit braucht.",
+        ),
+    );
     let group = adw::PreferencesGroup::builder()
         .title(text.text("Available capabilities", "Verfügbare Fähigkeiten"))
         .description(text.text(
@@ -48,8 +57,11 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
     .into_iter()
     .map(|(key, title)| {
         let row = adw::ActionRow::builder().title(title).subtitle("—").build();
+        let indicator = gtk::Image::from_icon_name("dialog-question-symbolic");
+        row.add_prefix(&indicator);
+        row.set_subtitle_selectable(true);
         group.add(&row);
-        (key, row)
+        (key, row, indicator)
     })
     .collect();
     refresh.connect_clicked(move |button| {
@@ -58,7 +70,7 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
         button.set_sensitive(false);
         glib::MainContext::default().spawn_local(async move {
             let result = async { Client::connect().await?.capabilities().await }.await;
-            for (key, row) in &rows {
+            for (key, row, indicator) in &rows {
                 match &result {
                     Ok(value) => {
                         let supported = value[*key]["supported"].as_bool().unwrap_or(false);
@@ -69,12 +81,20 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
                         };
                         let reason = value[*key]["reason"].as_str().unwrap_or("—");
                         row.set_subtitle(&format!("{state}: {reason}"));
+                        indicator.set_icon_name(Some(if supported {
+                            "emblem-ok-symbolic"
+                        } else {
+                            "action-unavailable-symbolic"
+                        }));
                     }
-                    Err(error) => row.set_subtitle(&format!(
-                        "{}: {}",
-                        text.text("Service unavailable", "Dienst nicht verfügbar"),
-                        text.error(error)
-                    )),
+                    Err(error) => {
+                        indicator.set_icon_name(Some("dialog-question-symbolic"));
+                        row.set_subtitle(&format!(
+                            "{}: {}",
+                            text.text("Service unavailable", "Dienst nicht verfügbar"),
+                            text.error(error)
+                        ));
+                    }
                 }
             }
             button.set_sensitive(true);

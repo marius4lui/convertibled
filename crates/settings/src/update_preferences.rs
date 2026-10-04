@@ -20,7 +20,7 @@ pub fn group(text: Strings) -> adw::PreferencesGroup {
     let save = gtk::Button::with_label(text.text("Save", "Speichern"));
     save.set_height_request(44);
     save.set_sensitive(false);
-    group.set_header_suffix(Some(&save));
+    save.add_css_class("suggested-action");
     let status = adw::ActionRow::builder()
         .title(text.text("Preferences status", "Einstellungsstatus"))
         .subtitle(text.text("Loading…", "Wird geladen…"))
@@ -28,6 +28,7 @@ pub fn group(text: Strings) -> adw::PreferencesGroup {
     group.add(&automatic);
     group.add(&channel);
     group.add(&status);
+    group.add(&crate::ui::actions(&[&save]));
     let automatic_copy = automatic.clone();
     let channel_copy = channel.clone();
     let status_copy = status.clone();
