@@ -13,8 +13,12 @@ export class SplitController {
     private divider: any;
     constructor(private windows: WindowController, private settings: any,private activeChanged: (active: boolean) => void) {}
     apply(first: any, second: any, area: Rect, monitor: number): boolean {
+        // Mutter disallows interactive resize while maximized. Tablet entry
+        // intentionally maximizes these windows; placement unmaximizes them.
+        const resizable = (window: any) => window.allows_resize() ||
+            (window.get_maximize_flags() !== 0 && window.can_maximize());
         if (first === second || !this.windows.eligible(first,monitor) ||
-            !this.windows.eligible(second,monitor) || !first.allows_resize() || !second.allows_resize()) {
+            !this.windows.eligible(second,monitor) || !resizable(first) || !resizable(second)) {
             Main.notify('convertibled',_('Choose two resizable main windows on the internal display')); return false;
         }
         const stored = this.settings.get_string('split-ratio') as Ratio;
