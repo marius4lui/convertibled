@@ -373,6 +373,7 @@ dependencies = [
 name = "convertibled-settings"
 version = "0.1.0"
 dependencies = [
+ "convertibled-core",
  "gtk4",
  "libadwaita",
  "serde_json",

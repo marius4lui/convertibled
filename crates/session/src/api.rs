@@ -1,4 +1,4 @@
-use convertibled_core::{Applied, Capabilities, Status};
+use convertibled_core::{Capabilities, Status};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use zbus::{Connection, message::Header, object_server::SignalEmitter};
@@ -92,16 +92,7 @@ impl Api {
             return Err(failed("Report exceeds 8192 bytes"));
         }
         let value: serde_json::Value = serde_json::from_str(report).map_err(failed)?;
-        let applied: Applied = serde_json::from_value(value.clone()).map_err(failed)?;
-        if !matches!(
-            applied.status.as_str(),
-            "applied" | "failed" | "unsupported" | "unavailable"
-        ) {
-            return Err(failed("Invalid applied status"));
-        }
-        if applied.error.as_ref().is_some_and(|text| text.len() > 2048) {
-            return Err(failed("Error exceeds 2048 bytes"));
-        }
+        let applied = convertibled_core::report::applied_report(report).map_err(failed)?;
         let mut state = self.state.write().await;
         if applied.tablet_workspace && (!state.active || state.locked) {
             return Err(failed(

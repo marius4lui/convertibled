@@ -71,3 +71,8 @@ GetConfig exposes the merged TOML; authorized SaveConfig validates up to 64 KiB,
 backs up the previous user file and writes atomically with private permissions.
 System debounce is retained during merge. Reset a profile to unchanged actions
 explicitly to override system defaults; failed saves leave state unchanged.
+
+Applied action_outcomes retain separate rotation and OSK request/result/status/error
+records. Bounded report parsing rejects unknown actions/status values and oversized
+errors. A supported workspace can coexist with a failed native preference action;
+diagnostics must show the per-action outcome rather than assuming all succeeded.

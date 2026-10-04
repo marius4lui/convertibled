@@ -63,11 +63,21 @@ pub struct Desired {
     pub osk: crate::config::Action,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ActionOutcome {
+    pub requested: crate::config::Action,
+    pub applied: crate::config::Action,
+    pub status: String,
+    pub error: Option<String>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Applied {
     pub tablet_workspace: bool,
     pub rotation_lock: bool,
     pub status: String,
     pub error: Option<String>,
+    #[serde(default)]
+    pub action_outcomes: std::collections::BTreeMap<String, ActionOutcome>,
 }
 impl Default for Applied {
     fn default() -> Self {
@@ -75,6 +85,7 @@ impl Default for Applied {
             tablet_workspace: false,
             rotation_lock: false,
             status: "unavailable".into(),
+            action_outcomes: Default::default(),
             error: Some("GNOME extension has not reported applied state".into()),
         }
     }
