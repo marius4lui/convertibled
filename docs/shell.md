@@ -298,3 +298,7 @@ Home now uses a centered canvas with 64-pixel app icons, explicit favorite
 editing, a bounded favorite strip and compact local widgets. Search hides
 nonmatching sections. Unknown battery state remains visible without a fake
 percentage. Light/dark palettes retain the same focus and touch geometry.
+
+Overview uses responsive window cards with a fixed-layout native viewport.
+Live clones fit the allocated viewport without double scaling. Split selection
+survives layout changes and still requires exactly two eligible windows.
