@@ -7,7 +7,7 @@ import {Cleanup} from './ownership.js';
 import {button, clear, scroll} from './ui.js';
 import {_} from './localized.js';
 export class Home {
-    readonly actor = new St.BoxLayout({vertical:true,style_class:'convertibled-surface',reactive:true});
+    readonly actor = new St.BoxLayout({vertical:true,style_class:'popup-menu-content convertibled-surface',reactive:true});
     private search = new St.Entry({hint_text:_('Search apps'),can_focus:true,accessible_name:_('Search apps')});
     private favorites = new St.BoxLayout({style_class:'convertibled-grid'});
     private grid = new St.BoxLayout({vertical:true,style_class:'convertibled-grid'});

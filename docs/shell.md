@@ -172,3 +172,8 @@ The headless smoke owns a second isolated D-Bus transport for system proxies;
 it never connects to the CI host's system bus. Fedora container startup required
 that transport for GNOME LoginManager/TimeLimits initialization. Absent actual
 logind/UPower services remain explicit container limitations.
+
+Surfaces inherit GNOME popup theme colors instead of hard-coded backgrounds,
+including light/dark and text contrast. Split selections expose native checked
+button state, and the split action becomes focusable/reactive only after two
+windows are selected. Physical screen-reader and large-text review remains open.
