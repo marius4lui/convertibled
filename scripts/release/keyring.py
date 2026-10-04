@@ -9,10 +9,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from updater.crypto import ed25519_public, keyring
 from updater.model import UpdateError, canonical, decode
-from scripts.release.sign import sign
+from scripts.release.sign import sign, ask_passphrase
 
 
-def create(keys, sequence, days, root_key, root_id, roots, now):
+def create(keys, sequence, days, root_key, root_id, roots, now, passphrase=None):
     if type(sequence) is not int or sequence < 1 or not 1 <= days <= 366:
         raise UpdateError("Use a positive new sequence and 1..366 validity days")
     if not isinstance(keys, dict) or not keys or root_id in keys:
@@ -28,7 +28,7 @@ def create(keys, sequence, days, root_key, root_id, roots, now):
             raise UpdateError("Offline root must never be a release key")
     payload = {"schema": 1, "sequence": sequence, "issued": now.isoformat(),
                "expires": (now + dt.timedelta(days=days)).isoformat(), "keys": keys}
-    signed = canonical(sign(payload, root_key, root_id))
+    signed = canonical(sign(payload, root_key, root_id, passphrase))
     keyring(signed, roots, now, sequence)
     return signed
 
@@ -42,9 +42,11 @@ def main():
     parser.add_argument("--sequence", type=int, required=True)
     parser.add_argument("--days", type=int, default=90)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--ask-passphrase", action="store_true")
     args = parser.parse_args()
     raw = create(decode(args.keys.read_bytes()), args.sequence, args.days, args.root_key,
-                 args.root_id, decode(args.roots.read_bytes()), dt.datetime.now(dt.timezone.utc))
+                 args.root_id, decode(args.roots.read_bytes()), dt.datetime.now(dt.timezone.utc),
+                 ask_passphrase() if args.ask_passphrase else None)
     with args.output.open("xb") as stream:
         stream.write(raw)
 
