@@ -194,3 +194,8 @@ bounded actionable errors rather than escaping the transaction/error-status path
 Bootstrap conflict checks recognize both authenticated `PKEXEC_UID` and sudo's
 `SUDO_UID`, so the TTY install also inspects the installing user's extensions.
 Low-space and competing-extension tests verify refusal preserves existing files.
+
+Authenticated offline-root keyring advancements are persisted before requesting
+channel metadata. A revoked/unavailable channel cannot undo a learned revocation
+or permit replay of a previously fresh older keyring. Root trust and per-channel
+availability are independent atomic state transitions.

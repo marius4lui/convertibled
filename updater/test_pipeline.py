@@ -2,12 +2,13 @@
 import datetime as dt
 import hashlib
 import shutil
+import subprocess
 import unittest
 from pathlib import Path
 from . import test_crypto
 from .manager import Manager
 from .offline import Offline
-from .model import canonical, UpdateError
+from .model import canonical, decode, UpdateError
 from installer.storage import Layout, atomic, read
 from scripts.release.bundle import build
 
@@ -36,6 +37,16 @@ class PipelineTests(unittest.TestCase):
 
     def write_metadata(self):
         (self.incoming / "channel.json").write_bytes(canonical(self.signed(self.metadata)))
+
+    def rotate_release_key(self):
+        next_key = self.directory / "next.pem"
+        subprocess.run(["openssl", "genpkey", "-algorithm", "ED25519", "-out", str(next_key)], check=True, capture_output=True)
+        public = subprocess.check_output(["openssl", "pkey", "-in", str(next_key), "-pubout"], text=True)
+        ring = decode((self.incoming / "keyring.json").read_bytes())["payload"]
+        ring["sequence"] += 1
+        ring["keys"] = {"next-release": public}
+        (self.incoming / "keyring.json").write_bytes(canonical(self.signed(ring, "root")))
+        return next_key
 
     def test_real_signed_bundle_prepare_and_idempotence(self):
         self.setup_release()
@@ -81,4 +92,16 @@ class PipelineTests(unittest.TestCase):
         self.manager.check()
         (self.incoming / "channel.json").write_bytes(old)
         with self.assertRaises(UpdateError):
+            self.manager.check()
+
+    def test_revocation_survives_failed_channel_and_root_replay(self):
+        self.setup_release()
+        self.manager.prepare()
+        old_ring = (self.incoming / "keyring.json").read_bytes()
+        self.rotate_release_key()
+        with self.assertRaisesRegex(UpdateError, "revoked"):
+            self.manager.check()
+        self.assertEqual(read(self.layout.state / "accepted.json")["root_sequence"], 2)
+        (self.incoming / "keyring.json").write_bytes(old_ring)
+        with self.assertRaisesRegex(UpdateError, "Keyring replay"):
             self.manager.check()

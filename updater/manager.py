@@ -39,9 +39,17 @@ class Manager:
         trusted = trust(self.layout)
         accepted = read(self.layout.state / "accepted.json", {"schema": 1, "root_sequence": 0, "channels": {}})
         now = dt.datetime.now(dt.timezone.utc)
-        ring = keyring(self.network(trusted["keyring_url"]), trusted["roots"], now, accepted["root_sequence"])
+        signed_ring = self.network(trusted["keyring_url"])
+        ring = keyring(signed_ring, trusted["roots"], now, accepted["root_sequence"])
         if ring["sequence"] == accepted["root_sequence"] and accepted.get("keyring") not in (None, ring):
             raise UpdateError("Immutable keyring sequence changed")
+        # Root trust advances independently of channel availability/signatures.
+        # Once learned, a revocation must survive a failed downstream request.
+        from .model import decode
+        accepted["root_sequence"] = ring["sequence"]
+        accepted["keyring"] = ring
+        accepted["keyring_envelope"] = decode(signed_ring)
+        atomic(self.layout.state / "accepted.json", accepted)
         signed = self.network(trusted["channels"][channel])
         metadata = envelope(signed, ring["keys"])
         # Re-checking the same authenticated version is idempotent, while older
@@ -56,8 +64,6 @@ class Manager:
         for old in (prior, installed):
             if old.get("version") and version_order(metadata["version"]) < version_order(old["version"]):
                 raise UpdateError("Signed version downgrade requires explicit local rollback")
-        accepted["root_sequence"] = ring["sequence"]
-        accepted["keyring"] = ring
         accepted["channels"][channel] = metadata
         atomic(self.layout.state / "accepted.json", accepted)
         atomic(self.layout.state / "available.json", metadata)
