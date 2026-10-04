@@ -41,6 +41,9 @@ test('explicit Home navigation honors reduced motion and OSK allocation', () => 
     main.layoutManager.keyboardBox.visible=true;main.layoutManager.keyboardBox.set_position(0,350);
     main.layoutManager.keyboardBox.set_size(800,250);extension.position();
     assert.equal(extension.home.actor.height,254);assert.equal(extension.dock.actor.y,262);
+    // Native GNOME anchors the box at the bottom; only its child moves up.
+    main.layoutManager.keyboardBox.set_position(0,600);extension.position();
+    assert.equal(extension.home.actor.height,254);assert.equal(extension.dock.actor.y,262);
     extension.disable();main.layoutManager.keyboardBox.visible=false;
 });
 test('explicit laptop native actions apply only in the active unlocked session', () => {

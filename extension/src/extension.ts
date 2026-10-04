@@ -188,9 +188,14 @@ export default class TabletExtension extends Extension {
         const dock = this.dock!.actor;
         const area = beforeDock(workArea,{x:dock.x,y:dock.y,width:dock.width,height:dock.height},dock.visible,this.monitor);
         const keyboard = Main.layoutManager.keyboardBox;
-        const [kx,ky] = keyboard.get_transformed_position();
+        const [kx,boxY] = keyboard.get_transformed_position();
+        // GNOME 50 anchors keyboardBox at the monitor bottom and translates its
+        // child upwards. Reserve its final height as soon as it becomes visible.
+        const monitorBottom = this.monitor.y + this.monitor.height;
+        const ky = Math.min(boxY,monitorBottom - keyboard.height);
         const keyboardHere = keyboard.visible && keyboard.height > 0 &&
-            kx < area.x + area.width && kx + keyboard.width > area.x && ky >= area.y;
+            kx < area.x + area.width && kx + keyboard.width > area.x &&
+            boxY >= this.monitor.y && boxY <= monitorBottom && ky >= area.y;
         const usableHeight = keyboardHere ? Math.min(area.height,Math.max(0,ky - area.y)) : area.height;
         this.dock?.actor.set_position(area.x,area.y + Math.max(0,usableHeight - 88));
         this.dock?.actor.set_size(area.width,88);

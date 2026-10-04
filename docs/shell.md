@@ -7,6 +7,9 @@ including every rectangle emitted by portrait and landscape split layout.
 Split eligibility accounts for Mutter disabling interactive resize on maximized
 windows: tablet-maximized, maximizable windows remain eligible for placement,
 which already unmaximizes them. Fixed-size ordinary windows remain excluded.
+OSK allocation also handles GNOME 50's bottom-anchored keyboard container: its
+child animates upwards, so the workspace reserves the visible keyboard's final
+height instead of treating the container's unshifted origin as its top edge.
 
 The extension targets GNOME Shell 50 and is compiled from TypeScript to GJS
 ES modules. `cd extension && npm ci && npm test` builds a distributable `dist`
