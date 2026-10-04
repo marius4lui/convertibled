@@ -342,3 +342,10 @@ contextual actions form distinct groups in a dock sized to its content; running
 indicators remain separate from pressed and selected states.
 Dock action widths and reserved height adapt to native text scaling so localized
 labels stay on one line without spilling below the monitor edge.
+
+Dock autohide retains favorites and contextual actions on the uncovered Home
+desktop. Focus-loss notifications caused by Home's own window minimization do
+not collapse that strip, including notifications delivered after navigation.
+The strip follows autohide again when a non-minimized application gains focus.
+Native-boundary tests cover both focus-notification timings and preference changes;
+physical touch and compositor acceptance remain separate.

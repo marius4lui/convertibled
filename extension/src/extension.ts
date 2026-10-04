@@ -72,7 +72,9 @@ export default class TabletExtension extends Extension {
         this.osk = new NativePreference('org.gnome.desktop.a11y.applications','screen-keyboard-enabled', () => this.reportApplied());
         this.home = new Home(app => this.activateApp(app));
         this.dock = new Dock(surface => this.navigate(surface), app => this.activateApp(app));
-        this.cleanup.signal(this.settings,'changed::dock-autohide', () => this.dock?.showApps(!this.settings.get_boolean('dock-autohide')));
+        this.cleanup.signal(this.settings,'changed::dock-autohide', () => {
+            this.dock?.showApps(!this.settings.get_boolean('dock-autohide')); this.showDesktop();
+        });
         this.dock.showApps(!this.settings.get_boolean('dock-autohide'));
         this.overview = new WindowOverview(() => this.internalWindows(), window => this.activate(window),
             (a,b) => this.split(a,b), () => this.navigate('dock'));
@@ -151,8 +153,14 @@ export default class TabletExtension extends Extension {
         });
         this.cleanup.signal(global.display,'notify::focus-window', () => {
             if (this.active) {
-                this.overview?.actor.hide(); this.showDesktop();
-                this.dock?.showApps(!this.settings.get_boolean('dock-autohide'));
+                this.overview?.actor.hide();
+                // Home minimization also changes focus (often to null). Only a
+                // real application focus should collapse the revealed strip.
+                const focused = global.display.focus_window;
+                if (focused && !focused.minimized)
+                    this.dock?.showApps(!this.settings.get_boolean('dock-autohide'));
+                // Focus on another output must not collapse the internal Home.
+                this.showDesktop();
             }
         });
         this.cleanup.signal(global.workspace_manager,'active-workspace-changed', () => {
@@ -203,6 +211,7 @@ export default class TabletExtension extends Extension {
         this.home?.actor.show();
         const desktopVisible = this.desktopWindows().every(window => window.minimized);
         this.dock?.select(desktopVisible ? 'home' : null);
+        if (desktopVisible) this.dock?.showApps(true);
         this.splitController?.setVisible(!desktopVisible && !this.overview?.actor.visible);
     }
     private reconcile(): void {
