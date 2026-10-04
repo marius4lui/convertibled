@@ -44,6 +44,7 @@ export const system=Object.assign(new Emitter(),{get_installed:()=>[],get_runnin
 export const favorites=Object.assign(new Emitter(),{getFavorites:()=>[],isFavorite:()=>false});
 globalThis.focusChanges=0;
 globalThis.global={display:new Emitter(),stage:new Emitter(),window_group:new Actor(),
+    compositor:{get_laters:()=>({remove(){}})},
     workspace_manager:Object.assign(new Emitter(),{get_active_workspace:()=>({})}),get_window_actors:()=>[]};
 globalThis.__native={
     St:{Button:Actor,BoxLayout:Actor,Label:Actor,Entry:Actor,ScrollView:Actor,Icon:Actor},

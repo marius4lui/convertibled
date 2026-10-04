@@ -1,6 +1,7 @@
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
+import Meta from 'gi://Meta';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Cleanup} from './ownership.js';
@@ -36,6 +37,7 @@ export default class TabletExtension extends Extension {
     private touch?: TouchNavigation;
     private rotation?: RotationLock;
     private osk?: NativePreference;
+    private windowLaters = new Set<number>();
     enable(): void {
         try { this.start(); }
         catch (error) {
@@ -83,7 +85,21 @@ export default class TabletExtension extends Extension {
         this.cleanup.signal(Main.layoutManager.keyboardBox,'notify::height', () => { if (this.active) this.position(); });
         this.cleanup.signal(Main.layoutManager.keyboardBox,'notify::visible', () => { if (this.active) this.position(); });
         this.cleanup.signal(global.display,'window-created', (_d: any,window: any) => {
-            if (this.active && this.monitor) this.windows.maximize(window,this.monitor.index);
+            if (!this.active || !this.monitor) return;
+            const laters = global.compositor.get_laters();
+            const id = laters.add(Meta.LaterType.BEFORE_REDRAW, () => {
+                this.windowLaters.delete(id);
+                if (this.active && this.monitor && window.get_compositor_private()) {
+                    try { this.windows.maximize(window,this.monitor.index); }
+                    catch (error) { console.error(`convertibled new window: ${String(error)}`); }
+                }
+                return false;
+            });
+            this.windowLaters.add(id);
+        });
+        this.cleanup.add(() => {
+            const laters = global.compositor.get_laters();
+            for (const id of this.windowLaters) laters.remove(id); this.windowLaters.clear();
         });
         this.cleanup.signal(global.display,'notify::focus-window', () => {
             if (this.active && global.display.focus_window) {

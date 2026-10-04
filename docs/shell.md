@@ -182,3 +182,8 @@ The divider uses an accessible icon so its allocation fits the reserved 48-pixel
 strip. A labeled dock action ends split and maximizes only windows whose split
 geometry is still owned. Rejected ratio changes retain the previous ratio;
 rotation into an incompatible layout ends split rather than keeping stale bounds.
+
+New application windows are handled once before redraw, after their compositor
+actor exists, rather than maximizing during early `window-created` setup.
+Pending compositor callbacks are canceled on disable and per-window errors stay
+bounded. Input focus and application text are never sampled for diagnostics.
