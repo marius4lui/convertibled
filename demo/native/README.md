@@ -9,7 +9,7 @@ Mutter Devkit with software rendering. No product services are installed.
 Build `extension/dist` with `npm --prefix extension run build`, then run:
 
 ```powershell
-wsl -d Convertibled-Demo -u demo -- bash /mnt/c/Users/Marius/Projekte/Dev/convertibled/demo/native/run.sh
+wsl -d Convertibled-Demo -u demo -- bash /mnt/c/src/convertibled/demo/native/run.sh
 ```
 
 `extension.js` is only a development entrypoint: it imports the byte-identical

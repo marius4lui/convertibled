@@ -1,23 +1,49 @@
-# Windows scenario demo
+# Windows preview of the actual GNOME UI
 
-Run `powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File demo/start.ps1`
-from the repository root. This opens an interactive WPF window using built-in
-Windows components, without a browser, server, installation or administrator rights.
+Double-click `start.cmd`, or run:
 
-This is an illustrative simulator, not the GTK application or GNOME extension.
-It approximates layout and demonstrates selected product journeys. It does not
-validate native GNOME appearance, live previews, gestures, hardware, accessibility,
-performance or update acceptance. No system settings, devices or services change.
-All displayed sensor, battery, clock, application and update data are fixtures.
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File demo/start.ps1
+```
 
-Choose one of thirteen scenarios. Open Home, search demo apps, switch apps,
-change split ratios, rotate the display, toggle light/dark appearance, type in
-the sample note, or simulate update/logout/recovery. Notes remain in memory until
-the window closes. The keyboard drawing is illustrative and does not send keys.
-The desktop preview scales to the window; target sizes in the preview are not
-physical touch measurements. Simulated update actions are illustrative controls,
-not the production transaction engine or a substitute for its state validation.
+The **Mutter Development Kit** window displays the actual GNOME Shell extension.
+The separate **convertibled — Demo-Steuerung** window switches scenarios and
+opens the real GTK/libadwaita settings application. The previous WPF imitation
+has been removed. Production UI changes are rebuilt on each fresh launch.
+If the demo is already running, close its Devkit window before rebuilding.
 
-For local rendering verification, use `-SnapshotDirectory .tools/demo-smoke`.
-This opens a temporary demo window, renders each fixture, checks sample actions,
-then closes. Generated images belong outside version control.
+Home, dock, app search, live overview, split view and widgets are rendered by
+the same product modules and stylesheet, inside GNOME 50 on Fedora 44. The
+controller and two editable sample applications are fixtures; sensor state
+and Session1 service are simulated. The preview uses WSLg to appear on Windows,
+with no browser or web renderer. See [native runtime details](native/README.md).
+
+Choose Laptop, Tablet, Home, Übersicht, Geteilte Ansicht, Hochformat, Querformat,
+Tastatur, Hell/Dunkel or Fehler simulieren. Home/Tablet recover after failure.
+The split divider changes ratios. Close the Devkit window to stop the session.
+Real update installation, privileged profile configuration and diagnostics are
+unavailable here; their native UI reports the missing backend.
+
+For initial setup on Windows 11 with WSL2/WSLg and Node/npm installed, run
+`powershell.exe -NoProfile -ExecutionPolicy Bypass -File demo/setup.ps1`.
+It creates only the named demo distribution and installs its Linux prerequisites.
+It needs downloads and several GB of disk space. Settings can use a locally
+built Linux executable or a source-verified internal CI bundle; see setup help.
+Pass `-LinuxSettingsBinary <path>` for your own current Linux build, or
+`-CandidateDirectory <directory>` containing `candidate.json` and its bundle.
+The latter checks SHA-256 and Git source equality. Fresh starts reject a cached
+candidate when Rust sources diverge; explicitly provided binaries are the
+developer's responsibility to rebuild after Rust changes.
+The runtime is stored in `%LOCALAPPDATA%/convertibled-demo`. The Windows default
+distribution and existing Linux desktops are not used as the product session.
+
+`demo/start.ps1 -Check` checks the running UI. The native smoke command is:
+
+```powershell
+wsl -d Convertibled-Demo -u demo -- python3 /mnt/c/src/convertibled/demo/native/smoke.py
+```
+
+Adjust the repository path if needed. The smoke exercises real virtual window
+geometry and captures native screenshots. Hardware, touch, physical rotation,
+display scaling, fonts and driver-dependent rendering still need target-device
+acceptance. This preview demonstrates the implemented UI, not a release claim.
