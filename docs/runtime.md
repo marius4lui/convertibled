@@ -36,3 +36,9 @@ applied status must still be inspected. Linux connection/backend errors exit 3.
 Rotation lock has an explicit requested flag. An absent configuration property
 leaves GNOME's existing lock unchanged; explicit true/false requests distinguish
 locking from unlocking. Reported actual native lock remains applied state.
+
+Services use a static convertibled identity with read-only input group access;
+no devices are disabled. Only the service owns the system bus name. User services
+follow graphical-session.target; installer links units into their target wants.
+Hardening preserves AF_UNIX D-Bus and read-only evdev access. Receipt writes are
+confined to StateDirectory=convertibled/health. Units require Linux verification.
