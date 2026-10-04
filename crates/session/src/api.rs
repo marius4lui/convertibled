@@ -101,18 +101,25 @@ impl Api {
         }
         let changed = state.applied != applied;
         state.applied = applied;
-        if let Some(workspace) = value
-            .pointer("/capabilities/tablet_workspace")
-            .and_then(|v| v.as_bool())
-        {
+        if let Some(report) = value.get("capabilities").and_then(|v| v.as_object()) {
             let mut caps = self.capabilities.write().await;
-            caps.tablet_workspace.supported = workspace;
-            caps.tablet_workspace.reason = if workspace {
-                "GNOME extension connected"
-            } else {
-                "GNOME extension unavailable"
+            let caps = &mut *caps;
+            for (key, target) in [
+                ("tablet_workspace", &mut caps.tablet_workspace),
+                ("rotation_lock", &mut caps.rotation_lock),
+                ("osk", &mut caps.osk),
+                ("split_view", &mut caps.split_view),
+            ] {
+                if let Some(supported) = report.get(key).and_then(|v| v.as_bool()) {
+                    target.supported = supported;
+                    target.reason = if supported {
+                        "GNOME extension reports native support"
+                    } else {
+                        "GNOME capability unavailable"
+                    }
+                    .into();
+                }
             }
-            .into();
         }
         if changed {
             state.revision = state.revision.saturating_add(1);

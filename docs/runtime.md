@@ -86,3 +86,7 @@ A private-bus integration test exercises the actual Session1 wire contract,
 inactive/locked denials, invalid profile/config rejection and bounded reports.
 Run dbus-run-session -- cargo test -p convertibled-session -- --ignored on Linux;
 Windows cross checks compile this test but cannot execute its D-Bus assertions.
+
+Capabilities separately expose native rotation lock, focus-owned OSK preference
+and split view. Validated extension reports update each capability independently;
+sensor support is not mistaken for a supported display action.

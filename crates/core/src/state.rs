@@ -156,6 +156,9 @@ pub struct Capabilities {
     pub schema_version: u32,
     pub tablet_workspace: Capability,
     pub rotation: Capability,
+    pub rotation_lock: Capability,
+    pub osk: Capability,
+    pub split_view: Capability,
     pub internal_input_suppression: Capability,
     pub scaling: Capability,
 }
@@ -169,6 +172,9 @@ impl Default for Capabilities {
             schema_version: 1,
             tablet_workspace: unavailable("GNOME extension not connected"),
             rotation: unavailable("GNOME owns display rotation"),
+            rotation_lock: unavailable("GNOME extension not connected"),
+            osk: unavailable("GNOME extension not connected"),
+            split_view: unavailable("GNOME extension not connected"),
             internal_input_suppression: unavailable(
                 "Requires physical assignment and crash recovery proof",
             ),
