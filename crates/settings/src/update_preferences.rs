@@ -61,7 +61,7 @@ pub fn group(text: Strings) -> adw::PreferencesGroup {
                 Ok(()) => text
                     .text("Preferences saved.", "Einstellungen gespeichert.")
                     .into(),
-                Err(error) => error,
+                Err(error) => text.error(&error),
             });
             // Re-read after partial failure as one preference may have succeeded.
             if let Ok(current) = helper("status", None).await {
@@ -93,7 +93,7 @@ pub fn group(text: Strings) -> adw::PreferencesGroup {
                 "Install the product before changing update preferences.",
                 "Installiere das Produkt, bevor du Update-Einstellungen änderst.",
             )),
-            Err(error) => status.set_subtitle(&error),
+            Err(error) => status.set_subtitle(&text.error(&error)),
         }
     });
     group

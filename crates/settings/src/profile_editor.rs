@@ -83,7 +83,7 @@ pub fn group(text: Strings) -> adw::PreferencesGroup {
                     result.set_subtitle(text.text("Loaded", "Geladen"));
                     controls.set_sensitive(true);
                 }
-                Err(error) => result.set_subtitle(&error),
+                Err(error) => result.set_subtitle(&text.error(&error)),
             }
         });
     });
@@ -126,7 +126,7 @@ pub fn group(text: Strings) -> adw::PreferencesGroup {
                             "Profil gespeichert. Angewendete Ergebnisse stehen in der Übersicht.",
                         )
                         .into(),
-                    Err(error) => error,
+                    Err(error) => text.error(&error),
                 });
                 profile.set_sensitive(true);
                 controls.set_sensitive(true);

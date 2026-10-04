@@ -78,7 +78,7 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
                 Err(error) => {
                     report.borrow_mut().clear();
                     result.buffer().set_text("");
-                    notice.set_subtitle(&error);
+                    notice.set_subtitle(&text.error(&error));
                 }
             }
             button.set_sensitive(true);

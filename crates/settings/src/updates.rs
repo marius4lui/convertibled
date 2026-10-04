@@ -73,7 +73,7 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
                             row.set_subtitle("—");
                         }
                         if let Some((_, row)) = rows.last() {
-                            row.set_subtitle(&error);
+                            row.set_subtitle(&text.error(&error));
                         }
                     }
                 }

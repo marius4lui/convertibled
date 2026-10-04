@@ -35,7 +35,7 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
             group.add(
                 &adw::ActionRow::builder()
                     .title(text.text("Extension unavailable", "Erweiterung nicht verfügbar"))
-                    .subtitle(&error)
+                    .subtitle(text.error(&error))
                     .build(),
             );
             return page;

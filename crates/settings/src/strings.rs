@@ -61,6 +61,33 @@ impl Strings {
         };
         translated.to_owned()
     }
+
+    pub fn error(self, detail: &str) -> String {
+        let lower = detail.to_lowercase();
+        if lower.contains("without an owner")
+            || lower.contains("serviceunknown")
+            || lower.contains("do_not_auto_start")
+            || lower.contains("namehasnoowner")
+        {
+            return self.text("The session service is unavailable. Sign in again after installation.",
+                "Der Sitzungsdienst ist nicht erreichbar. Melde dich nach der Installation erneut an.").into();
+        }
+        if lower.contains("failed to execute child process")
+            || lower.contains("extension schema unavailable")
+        {
+            return self.text("This component is not installed. Complete installation and reopen settings.",
+                "Diese Komponente ist nicht installiert. Schließe die Installation ab und öffne die Einstellungen erneut.").into();
+        }
+        if lower.contains("accessdenied") {
+            return self
+                .text(
+                    "This action requires your active, unlocked local session.",
+                    "Diese Aktion benötigt deine aktive, entsperrte lokale Sitzung.",
+                )
+                .into();
+        }
+        detail.into()
+    }
 }
 
 #[cfg(test)]
@@ -83,5 +110,17 @@ mod tests {
         assert_eq!(de.value("failed"), "Fehlgeschlagen");
         assert_eq!(de.value("true"), "Ja");
         assert_eq!(de.value("specific device error"), "specific device error");
+    }
+
+    #[test]
+    fn explains_service_failures_without_internal_proxy_flags() {
+        let de = Strings::for_locale("de");
+        let message = de.error("proxy without an owner: G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START");
+        assert!(message.contains("Sitzungsdienst"));
+        assert!(!message.contains("G_DBUS"));
+        assert_eq!(
+            de.error("Specific recovery failure"),
+            "Specific recovery failure"
+        );
     }
 }

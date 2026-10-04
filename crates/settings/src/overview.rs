@@ -115,7 +115,7 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
                         row.set_subtitle("—");
                     }
                     health.set_subtitle(&format!(
-                        "{}: {error}",
+                        "{}: {}",
                         text.text("Service unavailable", "Dienst nicht verfügbar")
                     ));
                 }

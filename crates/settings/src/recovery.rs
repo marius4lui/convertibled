@@ -50,7 +50,7 @@ pub fn group(window: &adw::PreferencesWindow, text: Strings) -> adw::Preferences
                 button.set_sensitive(false);
                 match helper(command, None).await {
                     Ok(value) => result.set_subtitle(&crate::model::field(&value, &["phase"])),
-                    Err(error) => result.set_subtitle(&error),
+                    Err(error) => result.set_subtitle(&text.error(&error)),
                 }
                 button.set_sensitive(true);
             });

@@ -54,7 +54,7 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
                     "Profile requested. Check Overview for the applied result.",
                     "Profil angefordert. Das angewendete Ergebnis steht in der Übersicht.",
                 )),
-                Err(error) => result.set_subtitle(&error),
+                Err(error) => result.set_subtitle(&text.error(&error)),
             }
             button.set_sensitive(true);
         });
@@ -92,7 +92,7 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
                         "Drehsperre angefordert; Ergebnis siehe Übersicht.",
                     )
                     .to_owned(),
-                Err(error) => error,
+                Err(error) => text.error(&error),
             });
             button.set_sensitive(true);
         });
