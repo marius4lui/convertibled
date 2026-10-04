@@ -5,7 +5,7 @@ import shutil
 from pathlib import Path
 from .archive import extract
 from .crypto import ed25519_public, envelope, keyring
-from .model import UpdateError, release
+from .model import UpdateError, release, version_order
 from .transport import fetch, url
 from installer.configuration import preferences
 from installer.platform import preflight
@@ -36,21 +36,26 @@ class Manager:
     def check(self):
         channel = preferences(self.layout)["channel"]
         trusted = trust(self.layout)
-        counters = read(self.layout.state / "counters.json", {"root": 0, "stable": 0, "preview": 0})
+        accepted = read(self.layout.state / "accepted.json", {"schema": 1, "root_sequence": 0, "channels": {}})
         now = dt.datetime.now(dt.timezone.utc)
-        ring = keyring(self.network(trusted["keyring_url"]), trusted["roots"], now, counters["root"])
+        ring = keyring(self.network(trusted["keyring_url"]), trusted["roots"], now, accepted["root_sequence"])
         signed = self.network(trusted["channels"][channel])
         metadata = envelope(signed, ring["keys"])
         # Re-checking the same authenticated version is idempotent, while older
         # sequences are rejected. Accepted metadata bytes are retained for audit.
-        prior = read(self.layout.state / "available.json", {})
-        sequence = counters[channel]
+        prior = accepted["channels"].get(channel, {})
+        sequence = prior.get("sequence", 0)
         if metadata == prior and metadata.get("sequence") == sequence:
             sequence -= 1
         metadata = release(metadata, channel, now, sequence)
-        counters["root"] = ring["sequence"]
-        counters[channel] = metadata["sequence"]
-        atomic(self.layout.state / "counters.json", counters)
+        active = self.layout.active()
+        installed = read(self.layout.versions / active / "release.json", {}) if active else {}
+        for old in (prior, installed):
+            if old.get("version") and version_order(metadata["version"]) < version_order(old["version"]):
+                raise UpdateError("Signed version downgrade requires explicit local rollback")
+        accepted["root_sequence"] = ring["sequence"]
+        accepted["channels"][channel] = metadata
+        atomic(self.layout.state / "accepted.json", accepted)
         atomic(self.layout.state / "available.json", metadata)
         return metadata
 
@@ -60,8 +65,10 @@ class Manager:
         self.platform_check(self.layout, artifact["size"] * 3 + 1024 * 1024 * 1024)
         installed = self.layout.versions / metadata["version"]
         if installed.exists():
-            if read(installed / "release.json") != metadata:
+            old = read(installed / "release.json", {})
+            if old.get("version") != metadata["version"] or old.get("artifact", {}).get("sha256") != artifact["sha256"] or old.get("artifact", {}).get("size") != artifact["size"]:
                 raise UpdateError("Immutable installed version disagrees with release")
+            atomic(self.layout.state / "prepared.json", {"schema": 1, "version": metadata["version"], "channel": metadata["channel"]})
             return metadata
         staging = self.layout.state / "staging"
         if staging.is_symlink():

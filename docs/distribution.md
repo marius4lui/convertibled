@@ -121,3 +121,9 @@ Configuration/state directories are root-owned and traversable (0755); private
 atomic trust/state files are 0600 and backups 0700. The daemon/session can read
 an administrator's public `config.toml` or obtain defaults when absent. Native
 desktop entry, scalable icon and AppStream metadata are manifest-owned links.
+
+Accepted root sequence and per-channel release metadata share one atomic state
+record, avoiding a crash between advancing a counter and saving its release.
+SemVer also rejects newly signed downgrades; explicit local rollback is separate.
+Fresh metadata may extend a version's validity only when artifact bytes retain
+the identical hash/size; immutable published bundle content never changes.

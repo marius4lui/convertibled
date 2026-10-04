@@ -1,6 +1,6 @@
 import datetime as dt
 import unittest
-from .model import UpdateError, canonical, decode, release, timestamp, version
+from .model import UpdateError, canonical, decode, release, timestamp, version, version_order
 
 
 class MetadataTests(unittest.TestCase):
@@ -23,6 +23,10 @@ class MetadataTests(unittest.TestCase):
     def test_invalid_contract(self):
         with self.assertRaises(UpdateError):
             release({}, "stable", dt.datetime.now(dt.timezone.utc))
+
+    def test_semver_order(self):
+        versions = ["0.1.0-alpha.1", "0.1.0-alpha.2", "0.1.0-beta.1", "0.1.0", "0.2.0"]
+        self.assertEqual(sorted(versions, key=version_order), versions)
 
 
 if __name__ == "__main__":

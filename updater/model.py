@@ -18,6 +18,11 @@ def version(value):
     return value
 
 
+def version_order(value):
+    match = VERSION.fullmatch(version(value))
+    return tuple(int(match[i]) for i in (1, 2, 3)) + ((2 if match[4] is None else 0 if match[4] == "alpha" else 1), int(match[5] or 0))
+
+
 def canonical(value):
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 
