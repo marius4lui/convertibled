@@ -5,6 +5,7 @@ use zbus::{Connection, message::Header, object_server::SignalEmitter};
 
 pub struct Api {
     pub state: Arc<RwLock<Status>>,
+    pub system: Connection,
     pub capabilities: Arc<RwLock<Capabilities>>,
     pub config: Arc<RwLock<convertibled_core::config::Config>>,
     pub report_owner: Arc<RwLock<Option<String>>>,
@@ -21,6 +22,20 @@ async fn authorize(connection: &Connection, header: &Header<'_>) -> zbus::fdo::R
     if uid != unsafe { libc::geteuid() } {
         return Err(zbus::fdo::Error::AccessDenied(
             "Caller does not own this user session".into(),
+        ));
+    }
+    Ok(())
+}
+async fn authorize_mutation(system: &Connection) -> zbus::fdo::Result<()> {
+    let state = tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        crate::service::session_state(system),
+    )
+    .await
+    .unwrap_or((false, true));
+    if state != (true, false) {
+        return Err(zbus::fdo::Error::AccessDenied(
+            "No unlocked active local session owns this request".into(),
         ));
     }
     Ok(())
@@ -44,6 +59,7 @@ impl Api {
         #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
     ) -> zbus::fdo::Result<()> {
         authorize(connection, &header).await?;
+        authorize_mutation(&self.system).await?;
         let mut state = self.state.write().await;
         if !state.active || state.locked {
             return Err(zbus::fdo::Error::AccessDenied(
@@ -66,6 +82,7 @@ impl Api {
         #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
     ) -> zbus::fdo::Result<()> {
         authorize(connection, &header).await?;
+        authorize_mutation(&self.system).await?;
         let mut state = self.state.write().await;
         if !state.active || state.locked {
             return Err(zbus::fdo::Error::AccessDenied(
@@ -174,6 +191,7 @@ impl Api {
         #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
     ) -> zbus::fdo::Result<()> {
         authorize(connection, &header).await?;
+        authorize_mutation(&self.system).await?;
         if input.len() > 65536 {
             return Err(failed("Configuration exceeds 64 KiB"));
         }
@@ -206,6 +224,7 @@ impl Api {
         #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
     ) -> zbus::fdo::Result<()> {
         authorize(connection, &header).await?;
+        authorize_mutation(&self.system).await?;
         let candidate = crate::config::load().map_err(failed)?;
         let mut state = self.state.write().await;
         if !state.active || state.locked {

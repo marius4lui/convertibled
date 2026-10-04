@@ -123,3 +123,8 @@ service may already have received the request. Loss never creates valid orientat
 Switch sampling pauses throughout PrepareForSleep(true)..false; stale folded state
 cannot return during suspend preparation. A closed logind stream fails for systemd
 restart rather than spinning. Successful sensor release clears local claim state.
+
+Profile/rotation/config mutations now re-query authoritative logind ownership with
+a two-second deadline in addition to sender UID and cached-state checks. A session
+locked or deactivated since the last poll cannot mutate. Private-bus tests use a
+separate fake logind state to prove cached active/lock values cannot authorize.

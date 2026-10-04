@@ -93,6 +93,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             "/org/convertibled/Session1",
             Api {
                 state: state.clone(),
+                system: system.clone(),
                 capabilities: capabilities.clone(),
                 report_owner: report_owner.clone(),
                 config: config.clone(),

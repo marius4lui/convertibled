@@ -4,11 +4,63 @@ mod tests {
     use convertibled_core::{Capabilities, Status};
     use std::sync::Arc;
     use tokio::sync::RwLock;
+    struct Manager;
+    #[zbus::interface(name = "org.freedesktop.login1.Manager")]
+    impl Manager {
+        fn list_sessions(
+            &self,
+        ) -> Vec<(String, u32, String, String, zbus::zvariant::OwnedObjectPath)> {
+            // SAFETY: geteuid has no arguments or side effects.
+            vec![(
+                "test".into(),
+                unsafe { libc::geteuid() },
+                "test".into(),
+                "seat0".into(),
+                zbus::zvariant::OwnedObjectPath::try_from("/org/freedesktop/login1/session/test")
+                    .unwrap(),
+            )]
+        }
+    }
+    struct Session(Arc<RwLock<Status>>);
+    #[zbus::interface(name = "org.freedesktop.login1.Session")]
+    impl Session {
+        #[zbus(property)]
+        async fn active(&self) -> bool {
+            self.0.read().await.active
+        }
+        #[zbus(property)]
+        async fn locked_hint(&self) -> bool {
+            self.0.read().await.locked
+        }
+        #[zbus(property)]
+        fn remote(&self) -> bool {
+            false
+        }
+        #[zbus(property, name = "Type")]
+        fn kind(&self) -> String {
+            "wayland".into()
+        }
+    }
     #[tokio::test]
     #[ignore = "requires dbus-run-session; exercised by Linux integration CI"]
     async fn session_contract_rejects_invalid_and_inactive_mutations() {
         tokio::time::timeout(std::time::Duration::from_secs(15), async {
             let state = Arc::new(RwLock::new(Status::default()));
+            let authoritative = Arc::new(RwLock::new(Status::default()));
+            let system = zbus::connection::Builder::session()
+                .unwrap()
+                .name("org.freedesktop.login1")
+                .unwrap()
+                .serve_at("/org/freedesktop/login1", Manager)
+                .unwrap()
+                .serve_at(
+                    "/org/freedesktop/login1/session/test",
+                    Session(authoritative.clone()),
+                )
+                .unwrap()
+                .build()
+                .await
+                .unwrap();
             let name = format!("org.convertibled.Test{}", std::process::id());
             let service = zbus::connection::Builder::session()
                 .unwrap()
@@ -18,6 +70,7 @@ mod tests {
                     "/org/convertibled/Session1",
                     Api {
                         state: state.clone(),
+                        system: system.clone(),
                         capabilities: Arc::new(RwLock::new(Capabilities::default())),
                         config: Arc::new(RwLock::new(Default::default())),
                         report_owner: Arc::new(RwLock::new(None)),
@@ -43,6 +96,13 @@ mod tests {
             assert!(denied.is_err());
             assert!(!state.read().await.desired.tablet_workspace);
             state.write().await.active = true;
+            assert!(
+                proxy
+                    .call::<_, _, ()>("SetProfile", &("tablet",))
+                    .await
+                    .is_err()
+            );
+            authoritative.write().await.active = true;
             assert!(
                 proxy
                     .call::<_, _, ()>("SetProfile", &("invalid",))
@@ -71,7 +131,7 @@ mod tests {
                 state.read().await.profile,
                 convertibled_core::Profile::Tablet
             );
-            state.write().await.locked = true;
+            authoritative.write().await.locked = true;
             assert!(
                 proxy
                     .call::<_, _, ()>("SetRotationLock", &(true,))
