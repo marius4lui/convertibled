@@ -146,3 +146,9 @@ A later native user preference edit relinquishes ownership and blocks repeated
 reconciliation of the same request. Changing the requested action or leaving
 the mode resets that block. Adapter tests verify that D-Bus feedback cannot
 silently reapply a preference after a user has deliberately changed it.
+
+Applied reports include independent `rotation` and `osk` action outcomes:
+requested action, actual native preference, status and error. Missing native
+preferences never turn successful workspace activation into an action success.
+Optional action fields are validated before any desktop preference is touched.
+Delayed notifications matching the owned write retain ownership.

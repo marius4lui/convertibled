@@ -8,5 +8,11 @@ export function parseStatus(json: string): Status {
     if (status.schema_version !== 1 || !['laptop','tablet','stand','tent'].includes(status.profile) ||
         typeof status.desired?.tablet_workspace !== 'boolean' ||
         typeof status.desired?.rotation_lock !== 'boolean') throw new Error('Unsupported session status');
+    if (status.desired.rotation_lock_requested !== undefined && typeof status.desired.rotation_lock_requested !== 'boolean')
+        throw new Error('Invalid rotation lock request');
+    for (const action of [status.desired.rotation,status.desired.osk]) {
+        if (action !== undefined && !['enabled','disabled','unchanged'].includes(action))
+            throw new Error('Invalid native action request');
+    }
     return status;
 }

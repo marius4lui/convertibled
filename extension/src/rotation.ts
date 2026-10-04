@@ -13,7 +13,7 @@ export class RotationLock {
         if (!schema?.has_key('orientation-lock')) { this.error = 'Native rotation lock unavailable'; return; }
         this.settings = new Gio.Settings({settings_schema:schema});
         this.cleanup.signal(this.settings,'changed::orientation-lock', () => {
-            if (!this.writing && this.target !== null) { this.userChanged = true; this.owned.forget('lock'); }
+            if (!this.writing && this.target !== null && this.locked !== this.target) { this.userChanged = true; this.owned.forget('lock'); }
             changed();
         });
     }

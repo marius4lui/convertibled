@@ -14,7 +14,9 @@ export class NativePreference {
         if (!schema?.has_key(key)) { this.error = 'Native preference unavailable'; return; }
         this.settings = new Gio.Settings({settings_schema:schema});
         this.cleanup.signal(this.settings,`changed::${key}`, () => {
-            if (!this.writing && this.target !== 'unchanged') { this.userChanged = true; this.owned.forget(this.key); }
+            if (!this.writing && this.target !== 'unchanged' && this.value !== (this.target === 'enabled')) {
+                this.userChanged = true; this.owned.forget(this.key);
+            }
             changed();
         });
     }

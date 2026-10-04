@@ -128,9 +128,14 @@ export default class TabletExtension extends Extension {
     private reportApplied(): void {
         const report = {tablet_workspace:this.active,rotation_lock:this.rotation?.locked ?? false,
             status:this.active ? 'applied' : this.status?.desired.tablet_workspace ? 'unsupported' : 'applied',
-            error:this.rotation?.error ?? (this.status?.desired.tablet_workspace && !this.active ? 'Internal display or unlocked GNOME session unavailable' : null),
-            capabilities:{tablet_workspace:Boolean(this.monitor),rotation_lock:this.rotation?.available ?? false,osk:true,split_view:true}};
-        if (this.rotation?.error && this.status?.desired.rotation_lock_requested) report.status = 'unsupported';
+            error:this.status?.desired.tablet_workspace && !this.active ? 'Internal display or unlocked GNOME session unavailable' : null,
+            capabilities:{tablet_workspace:Boolean(this.monitor),rotation_lock:this.rotation?.available ?? false,
+                osk:this.osk?.available ?? false,split_view:true},
+            action_outcomes:{rotation:{requested:this.status?.desired.rotation ?? 'unchanged',
+                applied:this.rotation?.locked ? 'disabled' : 'enabled',
+                status:this.rotation?.error ? 'unsupported' : 'applied',error:this.rotation?.error ?? null},
+            osk:{requested:this.status?.desired.osk ?? 'unchanged',applied:this.osk?.value ? 'enabled' : 'disabled',
+                status:this.osk?.error ? 'unsupported' : 'applied',error:this.osk?.error ?? null}}};
         const json = JSON.stringify(report);
         if (this.status && this.bridge && json !== this.reported) { this.reported = json; this.bridge.report(report); }
     }

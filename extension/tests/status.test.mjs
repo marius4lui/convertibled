@@ -7,4 +7,6 @@ test('session status fails closed on incompatible or malformed data', () => {
     assert.throws(() => parseStatus(JSON.stringify({...status,schema_version:2})));
     assert.throws(() => parseStatus(JSON.stringify({...status,desired:{tablet_workspace:'yes'}})));
     assert.throws(() => parseStatus(' '.repeat(65537)));
+    assert.throws(() => parseStatus(JSON.stringify({...status,desired:{...status.desired,osk:'surprise'}})));
+    assert.throws(() => parseStatus(JSON.stringify({...status,desired:{...status.desired,rotation_lock_requested:'yes'}})));
 });
