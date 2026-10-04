@@ -375,6 +375,12 @@ and use `runuser` with a fixed, cleared environment and that UID's runtime D-Bus
 socket. No user shell runs, including for the greeter's non-login account. A
 failed reload is ignored only after systemd confirms that manager is stopped or
 failed; errors from a still-active or ambiguous manager remain failures.
+The root updater uses `ProtectHome=tmpfs` with only `/run/user` bound read-only
+back into its filesystem namespace. This keeps `/home` and `/root` hidden while
+allowing connections to existing user-manager sockets; `ProtectHome=yes` would
+hide those sockets too. The runtime binding permits socket communication, not
+filesystem writes. Private state keeps umask `0077`, and the remaining updater
+sandbox restrictions remain in force.
 
 Logind snapshots restart at most three times when the exact C-locale error proves
 a listed session vanished before property lookup. Every retry re-enumerates the
