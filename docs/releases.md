@@ -4,6 +4,9 @@ The Product checks workflow builds/tests Linux services, GTK settings and the
 Shell extension, and validates documentation links. Checks use read-only token
 permissions and commit-pinned Actions. Passing Ubuntu compilation is not Fedora
 or physical-device acceptance. Public publishing remains separately gated.
+Distribution CI exercises signature failures, archive rejection, installation
+transactions and recovery in isolated temporary directories. Pull requests run
+once per update; branch pushes do not duplicate the same checks.
 
 ## Version policy
 
