@@ -5,7 +5,7 @@ registerHooks({
         return next(specifier,context);
     },
     load(url, context, next) {
-        if (url === 'mock:Meta') return {format:'module',source:'export default {WindowType:{NORMAL:0},MaximizeFlags:{BOTH:3}};',shortCircuit:true};
+        if (url === 'mock:Meta') return {format:'module',source:'export default {WindowType:{NORMAL:0,DIALOG:1},MaximizeFlags:{BOTH:3}};',shortCircuit:true};
         return next(url,context);
     },
 });

@@ -8,6 +8,7 @@ from .integration import LINKS
 from .storage import Layout, atomic, read
 from .transaction import Transaction
 from .uninstall import uninstall
+from .desktop_cache import TOOL, THEME
 from updater.archive import extract
 from updater.model import UpdateError
 from scripts.release.bundle import build
@@ -43,17 +44,157 @@ class LifecycleTests(unittest.TestCase):
         extract(archive, path, version)
         atomic(path / "release.json", {"version": version})
 
+    def test_prepared_only_and_repeated_removal_skip_absent_services(self):
+        self.candidate("0.1.0")
+        def run(args):
+            self.calls.append(args)
+            if args[:2] == ["systemctl", "show"]:
+                return "LoadState=not-found\nActiveState=inactive\nFragmentPath="
+        for _ in range(2):
+            self.assertTrue(uninstall(self.layout, run=run, sessions=lambda: [])["removed"])
+        self.assertEqual(list(self.layout.versions.iterdir()), [])
+        self.assertFalse(any(args[:2] == ["systemctl", "stop"] for args in self.calls))
+
+    def test_stop_failure_preserves_prepared_version_for_recovery(self):
+        self.candidate("0.1.0")
+        def run(args):
+            if args[:2] == ["systemctl", "show"]:
+                return "LoadState=loaded\nActiveState=active\nFragmentPath=/usr/lib/systemd/system/" + args[2]
+            if args[:2] == ["systemctl", "stop"]:
+                raise UpdateError("stop failed")
+        with self.assertRaisesRegex(UpdateError, "stop failed"):
+            uninstall(self.layout, run=run, sessions=lambda: [])
+        self.assertTrue((self.layout.versions / "0.1.0/manifest.json").exists())
+        self.assertEqual(read(self.transaction.journal)["phase"], "removing")
+
+    @patch("installer.identity.ensure")
+    def test_upgrade_migrates_manifest_verified_version_pinned_aliases(self, identity):
+        from .system_units import WANTS
+        self.candidate("0.1.0")
+        self.transaction.activate("0.1.0")
+        atomic(self.layout.state / "health/shell-health.json", {"version": "0.1.0", "healthy": True})
+        self.transaction.recover()
+        for relative, unit in WANTS.items():
+            source = self.layout.versions / "0.1.0/data/systemd" / Path(unit).name
+            for target in (self.layout.root / relative, self.layout.root / "etc/systemd/system" / Path(unit).name):
+                target.unlink(missing_ok=True)
+                target.symlink_to(source)
+        self.candidate("0.2.0")
+        self.calls.clear()
+        self.transaction.activate("0.2.0")
+        for relative, unit in WANTS.items():
+            self.assertEqual((self.layout.root / relative).readlink(), self.layout.root / unit)
+            self.assertIn("0.2.0", str((self.layout.root / unit).resolve()))
+            self.assertFalse((self.layout.root / "etc/systemd/system" / Path(unit).name).is_symlink())
+        self.assertFalse(any("enable" in args for args in self.calls))
+        reload_at = self.calls.index(["systemctl", "reload", "dbus.service"])
+        start_at = self.calls.index(["systemctl", "start", "convertibled.service", "convertibled-update.timer"])
+        self.assertLess(reload_at, start_at)
+
+    @patch("installer.identity.ensure")
+    def test_foreign_unit_alias_blocks_before_daemon_stop(self, identity):
+        self.candidate("0.1.0")
+        self.transaction.activate("0.1.0")
+        atomic(self.layout.state / "health/shell-health.json", {"version": "0.1.0", "healthy": True})
+        self.transaction.recover()
+        alias = self.layout.root / "etc/systemd/system/convertibled.service"
+        alias.symlink_to("/user/changed.service")
+        self.candidate("0.2.0")
+        self.calls.clear()
+        with self.assertRaisesRegex(UpdateError, "Foreign"):
+            self.transaction.activate("0.2.0")
+        self.assertEqual(alias.readlink(), Path("/user/changed.service"))
+        self.assertEqual(self.layout.active(), "0.1.0")
+        self.assertFalse(any(args[:2] == ["systemctl", "stop"] for args in self.calls))
+
+    @patch("installer.identity.ensure")
+    def test_failed_bus_policy_reload_never_starts_new_daemon(self, identity):
+        self.candidate("0.1.0")
+        reloaded = [False]
+        def run(args):
+            self.calls.append(args)
+            if args == ["systemctl", "reload", "dbus.service"] and not reloaded[0]:
+                reloaded[0] = True
+                raise UpdateError("policy reload failed")
+        self.transaction.run = run
+        with self.assertRaisesRegex(UpdateError, "policy reload failed"):
+            self.transaction.activate("0.1.0")
+        self.assertIsNone(self.layout.active())
+        self.assertEqual(read(self.transaction.journal)["phase"], "rolled_back")
+        self.assertEqual(self.calls.count([TOOL, "--force", str(self.layout.root / THEME)]), 2)
+        self.assertFalse(any(args[:2] == ["systemctl", "start"] for args in self.calls))
+
+    @patch("installer.identity.ensure")
+    def test_modified_legacy_unit_is_retained_before_migration(self, identity):
+        self.candidate("0.1.0")
+        self.transaction.activate("0.1.0")
+        atomic(self.layout.state / "health/shell-health.json", {"version": "0.1.0", "healthy": True})
+        self.transaction.recover()
+        source = self.layout.versions / "0.1.0/data/systemd/convertibled.service"
+        alias = self.layout.root / "etc/systemd/system/convertibled.service"
+        alias.symlink_to(source)
+        source.write_text("user modification")
+        self.candidate("0.2.0")
+        self.calls.clear()
+        with self.assertRaisesRegex(UpdateError, "Modified legacy"):
+            self.transaction.activate("0.2.0")
+        self.assertEqual(source.read_text(), "user modification")
+        self.assertTrue(alias.is_symlink())
+        self.assertFalse(any(args[:2] == ["systemctl", "stop"] for args in self.calls))
+
     @patch("installer.identity.ensure")
     def test_clean_install_health_and_uninstall(self, identity):
         self.candidate("0.1.0")
         self.assertEqual(self.transaction.activate("0.1.0")["phase"], "awaiting_shell")
+        cache_command = [TOOL, "--force", str(self.layout.root / THEME)]
+        self.assertEqual(self.calls.count(cache_command), 1)
+        self.assertLess(self.calls.index(cache_command), self.calls.index(["systemctl", "start", "convertibled.service", "convertibled-update.timer"]))
+        self.assertLess(self.calls.index(["systemctl", "reload", "dbus.service"]), self.calls.index(["systemctl", "start", "convertibled.service", "convertibled-update.timer"]))
         self.assertEqual(self.layout.active(), "0.1.0")
         atomic(self.layout.state / "health/shell-health.json", {"version": "0.1.0", "healthy": True})
         self.assertEqual(self.transaction.recover()["phase"], "complete")
+        atomic(self.layout.state / "pending-action.json", {"schema": 1, "action": "uninstall", "version": "0.1.0", "state": "running"})
         uninstall(self.layout, run=lambda args: self.calls.append(args), sessions=lambda: [])
+        self.assertEqual(self.calls.count(cache_command), 2)
+        self.assertFalse((self.layout.state / "pending-action.json").exists())
         self.assertIsNone(self.layout.active())
         self.assertEqual(list(self.layout.versions.iterdir()), [])
         self.assertTrue(self.layout.config.exists())
+
+    @patch("installer.identity.ensure")
+    def test_retained_state_reinstall_after_completed_removal(self, identity):
+        self.candidate("0.1.0")
+        self.transaction.activate("0.1.0")
+        atomic(self.layout.state / "health/shell-health.json", {"version": "0.1.0", "healthy": True})
+        self.transaction.recover()
+        config = self.layout.config / "config.toml"
+        config.write_text("# retained user configuration\n")
+        uninstall(self.layout, run=self.calls.append, sessions=lambda: [])
+        self.assertEqual(read(self.transaction.journal)["phase"], "removed")
+        self.assertIsNone(self.layout.active())
+        self.candidate("0.2.0")
+        result = self.transaction.activate("0.2.0")
+        self.assertEqual(result["phase"], "awaiting_shell")
+        self.assertIsNone(result["previous"])
+        self.assertEqual(self.layout.active(), "0.2.0")
+        self.assertEqual(config.read_text(), "# retained user configuration\n")
+        for destination in LINKS:
+            self.assertTrue((self.layout.root / destination).exists(), destination)
+        atomic(self.layout.state / "health/shell-health.json", {"version": "0.2.0", "healthy": True})
+        self.assertEqual(self.transaction.recover()["phase"], "complete")
+
+    def test_removed_journal_with_active_version_refuses_even_same_candidate(self):
+        self.candidate("0.1.0")
+        self.candidate("0.2.0")
+        self.layout.select("0.1.0")
+        journal = {"schema": 1, "phase": "removed"}
+        atomic(self.transaction.journal, journal)
+        for candidate in ("0.1.0", "0.2.0"):
+            with self.subTest(candidate=candidate), self.assertRaisesRegex(UpdateError, "still has a selected version"):
+                self.transaction.activate(candidate)
+            self.assertEqual(self.layout.active(), "0.1.0")
+            self.assertEqual(read(self.transaction.journal), journal)
+        self.assertEqual(self.calls, [])
 
     @patch("installer.identity.ensure")
     def test_failed_new_service_restores_previous(self, identity):
@@ -74,6 +215,7 @@ class LifecycleTests(unittest.TestCase):
             self.transaction.activate("0.2.0")
         self.assertEqual(self.layout.active(), "0.1.0")
         self.assertEqual(read(self.transaction.journal)["phase"], "rolled_back")
+        self.assertEqual(self.calls.count([TOOL, "--force", str(self.layout.root / THEME)]), 3)
 
     @patch("installer.identity.ensure")
     def test_modified_user_file_blocks_uninstall_before_services(self, identity):

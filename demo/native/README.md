@@ -38,3 +38,13 @@ window geometry, not physical input, gestures, performance or release acceptance
 Closing Mutter Devkit stops the demo session. Logs and temporary screenshots
 remain under `~/.local/state/convertibled-native-demo`; no private desktop profile
 or live host system bus is used. Demo code is outside release bundle inputs.
+
+The native smoke also checks both appearances, 125-percent text, reduced motion
+and keyboard occlusion. Inspect exposes only the demo surface allocations and
+preferences needed for these assertions. The controller changes these settings
+only in its private session; system accessibility preferences are untouched.
+
+Additional scenarios exercise the persistent desktop, native GNOME window/app
+overviews, manual app minimization, 480x720 and 640x480 viewports. Native Overview
+assertions require tablet chrome to be hidden; laptop assertions require the
+owned dock strut to be removed. Home is never counted as an application window.

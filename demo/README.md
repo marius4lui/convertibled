@@ -19,7 +19,8 @@ and Session1 service are simulated. The preview uses WSLg to appear on Windows,
 with no browser or web renderer. See [native runtime details](native/README.md).
 
 Choose Laptop, Tablet, Home, Übersicht, Geteilte Ansicht, Hochformat, Querformat,
-Tastatur, Hell/Dunkel or Fehler simulieren. Home/Tablet recover after failure.
+Tastatur, Hell/Dunkel, Große/Normale Schrift, Weniger Bewegung/Animationen or
+Fehler simulieren. Home/Tablet recover after failure.
 The split divider changes ratios. Close the Devkit window to stop the session.
 Real update installation, privileged profile configuration and diagnostics are
 unavailable here; their native UI reports the missing backend.

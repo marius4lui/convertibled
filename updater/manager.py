@@ -1,13 +1,12 @@
 """Root-controlled trust, channel state and verified preparation."""
 import datetime as dt
 import os
-import shutil
 import tarfile
-from pathlib import Path
 from .archive import extract
 from .crypto import ed25519_public, envelope, keyring
 from .model import UpdateError, canonical, decode, release, version_order
 from .transport import fetch, url
+from .preparation import Workspace, cleanup
 from installer.configuration import preferences
 from installer.platform import preflight
 from installer.storage import atomic, read, sync_directory
@@ -70,10 +69,19 @@ class Manager:
         return metadata
 
     def prepare(self):
+        if self.layout.versions.is_symlink() or not self.layout.versions.is_dir():
+            raise UpdateError("Version storage must be a real directory")
+        if os.name == "posix" and (self.layout.versions.stat().st_uid != os.geteuid() or self.layout.versions.stat().st_mode & 0o022):
+            raise UpdateError("Version storage must be owned by the updater and not publicly writable")
+        # Reclaim only journal-owned leftovers before network/freshness or disk
+        # checks, which may be unavailable precisely because staging was left.
+        cleanup(self.layout)
         metadata = self.check()
         artifact = metadata["artifact"]
         self.platform_check(self.layout, artifact["size"] * 3 + 1024 * 1024 * 1024)
         installed = self.layout.versions / metadata["version"]
+        if self.layout.versions.is_symlink() or not self.layout.versions.is_dir() or installed.is_symlink():
+            raise UpdateError("Version storage must be a real directory without symlink candidates")
         if installed.exists():
             old = read(installed / "release.json", {})
             if old.get("version") != metadata["version"] or old.get("artifact", {}).get("sha256") != artifact["sha256"] or old.get("artifact", {}).get("size") != artifact["size"]:
@@ -84,11 +92,13 @@ class Manager:
         if staging.is_symlink():
             raise UpdateError("Staging path is a symlink")
         staging.mkdir(exist_ok=True, mode=0o700)
-        archive = staging / "artifact.tar.gz"
-        candidate = staging / "candidate"
-        if candidate.exists():
-            shutil.rmtree(candidate)
-        try:
+        if os.name == "posix" and (staging.stat().st_uid != os.geteuid() or staging.stat().st_mode & 0o022):
+            raise UpdateError("Staging storage must be owned by the updater and not publicly writable")
+        # /var and /opt can be separate mounts or btrfs subvolumes. The final
+        # directory rename must originate directly beneath the versions mount.
+        # Exclusive temporary names never reuse/delete a foreign stale entry.
+        with Workspace(self.layout, metadata) as workspace:
+            archive, candidate = workspace.archive, workspace.candidate
             with archive.open("wb") as stream:
                 self.network(artifact["url"], maximum=artifact["size"], target=stream, expected_hash=artifact["sha256"], expected_size=artifact["size"])
                 stream.flush()
@@ -97,16 +107,13 @@ class Manager:
                 extract(archive, candidate, metadata["version"])
             except (tarfile.TarError, EOFError) as exc:
                 raise UpdateError("Release bundle archive is corrupt") from exc
-            atomic(candidate / "release.json", metadata)
+            workspace.write_release()
+            if installed.exists() or installed.is_symlink():
+                raise UpdateError("Candidate destination appeared during preparation")
             os.replace(candidate, installed)
             sync_directory(self.layout.versions)
             atomic(self.layout.state / "prepared.json", {"schema": 1, "version": metadata["version"], "channel": metadata["channel"]})
             return metadata
-        finally:
-            archive.unlink(missing_ok=True)
-            if candidate.exists():
-                shutil.rmtree(candidate)
-
     def activation_ready(self):
         prepared = read(self.layout.state / "prepared.json", {})
         channel = preferences(self.layout)["channel"]

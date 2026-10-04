@@ -7,6 +7,10 @@ from pathlib import Path
 from updater.model import UpdateError, decode
 
 
+class BusyError(UpdateError):
+    """Another process owns the transaction; no status write is authorized."""
+
+
 def sync_directory(path):
     if os.name == "posix":
         fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY)
@@ -67,7 +71,7 @@ class Layout:
             try:
                 fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError as exc:
-                raise UpdateError("Another installation transaction is running") from exc
+                raise BusyError("Another installation transaction is running") from exc
             yield
 
     def active(self):

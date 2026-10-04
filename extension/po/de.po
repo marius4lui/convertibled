@@ -93,3 +93,45 @@ msgstr "Die Fensterteilung ist fehlgeschlagen. Die vorherigen Fensterpositionen 
 
 msgid "Split view failed. Some window positions could not be restored."
 msgstr "Die Fensterteilung ist fehlgeschlagen. Einige Fensterpositionen konnten nicht wiederhergestellt werden."
+
+msgid "Enable gestures"
+msgstr "Gesten aktivieren"
+
+msgid "All apps"
+msgstr "Alle Apps"
+
+msgid "Favorites"
+msgstr "Favoriten"
+
+msgid "Edit favorites"
+msgstr "Favoriten bearbeiten"
+
+msgid "Search results"
+msgstr "Suchergebnisse"
+
+msgid "No apps available"
+msgstr "Keine Apps verfügbar"
+
+msgid "Try another search"
+msgstr "Versuche einen anderen Suchbegriff"
+
+msgid "Quick actions"
+msgstr "Schnellzugriff"
+
+msgid "Open windows"
+msgstr "Offene Fenster"
+
+msgid "Tap a window to continue. Select two for split."
+msgstr "Fenster öffnen oder zwei für die Teilung auswählen."
+
+msgid "Choose a second window"
+msgstr "Wähle ein zweites Fenster"
+
+msgid "Ready to split"
+msgstr "Bereit zum Teilen"
+
+msgid "Open an app from Home to get started."
+msgstr "Öffne eine App auf der Startseite."
+
+msgid "Your workspace is clear"
+msgstr "Alles aufgeräumt"

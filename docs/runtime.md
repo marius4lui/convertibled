@@ -56,6 +56,9 @@ The matching versioned interfaces and signals are in `../data/dbus/`.
 
 Session coordination requires exactly one active local Wayland seat for the user
 service UID. Locked, remote, absent and ambiguous sessions are conservative fallbacks.
+Both session policy and daemon receipt authorization require logind `Class=user`.
+Greeter, manager, background, missing and other classes cannot own the workspace
+or supply acceptance intent/health, even when active, local and unlocked.
 Hardware/logind polling runs concurrently with two-second deadlines; timeout replaces
 cached observation with unknown or cached authorization with inactive/locked.
 Profile, rotation and configuration mutations validate the actual bus sender UID
@@ -65,8 +68,31 @@ GetStatus/GetCapabilities/GetConfig expose snapshots. SetProfile, SetRotationLoc
 SaveConfig and Reload are authorized mutations; ReportApplied supplies actual outcomes.
 ReportShellHealth separately relays explicit matching-version extension startup health
 to the daemon. The daemon revalidates active local ownership and atomically writes
-`/var/lib/convertibled/health/shell-health.json` for update recovery. This authenticates
+`/var/lib/convertibled/health/shell-health.json` and `shell-health-UID.json` for
+update recovery and the consenting user's first-login acceptance. This authenticates
 session ownership and matching version, not cryptographic shell-code attestation.
+
+The session service independently observes native `org.gnome.shell` settings
+(`enabled-extensions`, `disabled-extensions`, `disable-user-extensions`) on a
+dedicated GLib thread. It reports user intent using the separate daemon method
+`ReportShellExpectation(version, known, enabled)`, with bounded asynchronous
+retries. Missing settings or an oversized list report unknown, never disabled.
+The daemon validates the same active, unlocked local session credentials, derives
+the UID and unique logind session ID, and records the kernel boot ID. Intent is
+written to `shell-intent-UID.json`; health and intent are separate receipts.
+Both now carry version, UID, session and boot identity. This producer contract
+does not by itself turn disabled intent into a successful Shell health receipt.
+
+Update acceptance retires prior-boot observations, so another user's old login
+cannot indefinitely block a later boot. Prior-boot positive health never counts
+as current evidence. An explicit matching failed trial remains a failure across
+reboot until that user supplies fresh intent; recovery still waits for logout.
+For current-boot logins, the consumer snapshots existing intent identity when it
+first observes each session. A mismatched receipt already present then cannot
+satisfy that login. A subsequently replaced authenticated identity may establish
+a short later login missed between timer ticks, while other users' unresolved
+observations continue to block completion. Missing prior-boot health cannot prove
+a failure: fresh evidence is required rather than inferring success or rollback.
 
 ## Configuration and CLI
 
@@ -87,10 +113,17 @@ rotation-lock, profiles, config validate/show/save, reload and update controls.
 Diagnostic commands support JSON. Doctor collects services independently and uses
 a typed export allowlist, omitting identifiers/source strings/arbitrary backend
 errors. Export is explicit. Update check/prepare/status/activate/recover/rollback,
-automatic on/off and channel stable/preview use fixed arguments to the isolated
+uninstall/cancel-pending, automatic on/off and channel stable/preview use fixed arguments to the isolated
 installed helper; mutations request pkexec authorization. Exit codes: 0 completed
 request, 2 usage/configuration error, 3 unavailable runtime, 4 denied authorization,
 5 updater failure. Request completion never proves desktop action success.
+
+The CLI's activate, recover, rollback and uninstall commands queue fixed `request-*` verbs
+for graphical logout. Those explicit aliases are accepted too. `cancel-pending`
+cancels waiting or failed activation and maintenance. Explicit activation binds
+the authenticated prepared version and works without enabling automatic updates.
+The installed Python helper retains immediate activate/recover/rollback/uninstall
+verbs for an administrator's offline TTY.
 
 `convertibled --check` validates Linux x86_64, the input subsystem and system config
 without claiming a bus name, modifying hardware or creating health receipts.

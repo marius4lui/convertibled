@@ -38,6 +38,11 @@ pub(crate) async fn session_state(connection: &Connection) -> (bool, bool) {
             continue;
         };
         candidates.push(SessionCandidate {
+            user: session
+                .get_property::<String>("Class")
+                .await
+                .unwrap_or_default()
+                == "user",
             active: session
                 .get_property::<bool>("Active")
                 .await
@@ -83,6 +88,7 @@ async fn observation(connection: &Connection) -> Observation {
 }
 pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let system = Connection::system().await?;
+    tokio::spawn(crate::expectation::report(system.clone()));
     let config = crate::config::load()?;
     let mut initial = Status::default();
     initial.desired.rotation_lock = config.rotation_lock.unwrap_or(false);

@@ -33,9 +33,30 @@ export default class DemoExtension extends TabletExtension {
     Scenario(name) {
         this.lastScenario = name;
         const allowed = ['laptop','tablet','home','overview','split','portrait','landscape',
-            'keyboard','dark','light','failure'];
+            'keyboard','dark','light','failure','large-text','normal-text','reduced-motion','normal-motion',
+            'gnome-overview','gnome-apps','leave-overview','compact','small','app','minimize-apps','settings-small'];
         if (!allowed.includes(name)) throw new Error('Unknown demo scenario');
+        if (name === 'gnome-overview') { Main.overview.show(); return this.Inspect(); }
+        if (name === 'gnome-apps') { Main.overview.showApps(); return this.Inspect(); }
+        if (name === 'leave-overview') { Main.overview.hide(); return this.Inspect(); }
+        if (name === 'settings-small') {
+            for (const actor of global.get_window_actors()) {
+                const window = actor.meta_window;
+                if (window.get_gtk_application_id() === 'org.convertibled.Settings')
+                    window.move_resize_frame(false,40,70,360,540);
+            }
+            return this.Inspect();
+        }
         this.failed = name === 'failure';
+        const appearance = new Gio.Settings({schema_id:'org.gnome.desktop.interface'});
+        if (name === 'large-text' || name === 'normal-text') {
+            appearance.set_double('text-scaling-factor', name === 'large-text' ? 1.25 : 1);
+            return this.Inspect();
+        }
+        if (name === 'reduced-motion' || name === 'normal-motion') {
+            appearance.set_boolean('enable-animations', name === 'normal-motion');
+            return this.Inspect();
+        }
         if (name === 'dark' || name === 'light') {
             new Gio.Settings({schema_id:'org.gnome.desktop.interface'})
                 .set_string('color-scheme', name === 'dark' ? 'prefer-dark' : 'prefer-light');
@@ -51,6 +72,12 @@ export default class DemoExtension extends TabletExtension {
                     this.demoTimer = 0;
                     if (name === 'home' || name === 'overview') this.navigate(name);
                     if (name === 'tablet') this.navigate('dock');
+                    if (name === 'app') {
+                        const window = this.internalWindows()[0]; if (window) this.activate(window);
+                    }
+                    if (name === 'minimize-apps') {
+                        for (const window of this.desktopWindows()) window.minimize();
+                    }
                     if (name === 'split') {
                         const windows = this.internalWindows().filter(w =>
                             !w.get_title().includes('Demo-Steuerung'));
@@ -62,6 +89,7 @@ export default class DemoExtension extends TabletExtension {
                         accessibility.set_boolean('screen-keyboard-enabled',
                             !accessibility.get_boolean('screen-keyboard-enabled'));
                         this.navigate('home');
+                        this.home.focusSearch();
                     }
                     return GLib.SOURCE_REMOVE;
                 });
@@ -69,7 +97,7 @@ export default class DemoExtension extends TabletExtension {
         });
         // Monitor dimensions are controlled by the nested compositor window,
         // never faked in the product's geometry calculations.
-        if (name === 'portrait' || name === 'landscape') {
+        if (['portrait','landscape','compact','small'].includes(name)) {
             const process = Gio.Subprocess.new(['python3', GLib.getenv('CONVERTIBLED_DEMO_RESIZE'), name],
                 Gio.SubprocessFlags.NONE);
             process.wait_check_async(null, (source, result) => {
@@ -88,14 +116,37 @@ export default class DemoExtension extends TabletExtension {
             });
     }
     Inspect() {
+        const appearance = new Gio.Settings({schema_id:'org.gnome.desktop.interface'});
+        const keyboard = Main.layoutManager.keyboardBox;
         return JSON.stringify({active:this.active, monitor:this.monitor,
             home:this.home?.actor.visible, overview:this.overview?.actor.visible,
-            dock:this.dock?.actor.visible, windows:this.internalWindows().length,
+            dock:this.dock?.actor.visible && !this.dock?.suspended, windows:this.internalWindows().length,
+            homeIsDesktop:this.home?.actor.get_parent() === global.window_group,
+            desktopExposed:this.home?.actor.visible && this.desktopWindows().every(window => window.minimized),
+            divider:this.splitController?.divider?.visible ?? false,
+            workArea:Main.layoutManager.getWorkAreaForMonitor(this.monitor.index).height,
             failure:this.failed, nativeOverview:Main.overview.visible,
+            appearance:appearance.get_string('color-scheme'),
+            textScale:appearance.get_double('text-scaling-factor'),
+            animations:appearance.get_boolean('enable-animations'),
+            keyboard:{visible:keyboard.visible,height:keyboard.height},
+            layout:{homeBottom:this.home.actor.y + this.home.actor.height,
+                dockTop:this.dock.actor.y,dockBottom:this.dock.actor.y + this.dock.actor.height,
+                compact:this.home.compact},
             scenario:this.lastScenario, splitCandidates:this.splitCandidates,
+            settingsWindows:global.get_window_actors().map(actor => actor.meta_window)
+                .filter(window => window.get_gtk_application_id() === 'org.convertibled.Settings')
+                .slice(0, 8).map(window => ({
+                    type:window.get_window_type(), minimized:window.minimized,
+                    monitor:window.get_monitor(), workspace:window.get_workspace()?.index(),
+                    currentWorkspace:global.workspace_manager.get_active_workspace().index(),
+                    transient:!!window.get_transient_for(), skipTaskbar:window.is_skip_taskbar(),
+                    overrideRedirect:window.is_override_redirect(), above:window.is_above(),
+                    canMinimize:window.can_minimize(), eligible:this.desktopWindows().includes(window),
+                })),
             frames:this.internalWindows().map(w => {
                 const r = w.get_frame_rect();
-                return {title:w.get_title(),x:r.x,y:r.y,width:r.width,height:r.height,
+                return {title:w.get_title(),minimized:w.minimized,x:r.x,y:r.y,width:r.width,height:r.height,
                     minimum:this.windows.minimum(w)};
             })});
     }

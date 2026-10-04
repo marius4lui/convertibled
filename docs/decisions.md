@@ -29,6 +29,18 @@ within its Shell; a separate replacement desktop is outside this decision.
 
 ## Technical consequences
 
+The clarified October 4 mandate is a custom desktop in tablet mode, not a Home
+overlay. Home remains in GNOME's window scene above wallpaper and below native
+application windows. Explicit Home minimizes only eligible windows on the
+internal current workspace; leaving tablet mode restores only owned changes.
+Native Overview and workspace transitions retain GNOME application identity.
+The tablet scene and its reserved navigation space disappear in laptop mode.
+
+The October 4 design refinement permits a project-owned Shell palette and
+surface styling while retaining native St/Clutter and GTK/libadwaita controls.
+The goal is consistent visual and interaction quality across the real product
+and its Windows-hosted native demo, without a second UI implementation.
+
 The Windows preview runs the actual GNOME Shell extension in an isolated Fedora
 44 / GNOME 50 WSLg session. A demo-only wrapper supplies a virtual internal
 monitor and scenario controls; production UI modules and stylesheet are reused
@@ -47,6 +59,15 @@ or transform transitions and respect reduced motion. On the reference device,
 at least 95 percent of measured 60 Hz frames must meet the frame budget.
 
 ## Remaining release decisions and evidence
+
+The product-delivery refinement starts installation from the user's existing
+desktop with one administrator authorization. Preparation authenticates the
+candidate before a fixed, root-owned scheduler can activate it after ordinary
+graphical logout. It never forces logout or weakens the admission interlock.
+First-login onboarding is scoped to the explicitly consenting installing user;
+other users keep control of their own extension enablement. Public root trust
+is supplied with the independently authenticated installer, never created from
+an unauthenticated downloaded key. Offline root custody stays separate from CI.
 
 No physical reference-device result, production trust key, protected release
 environment, or published supported version is provided by this repository.

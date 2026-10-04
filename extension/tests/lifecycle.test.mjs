@@ -1,4 +1,4 @@
-import {main,timers,seat,settings} from './native-env.mjs';
+import {main,timers,seat,settings,Emitter} from './native-env.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 const {default:Extension}=await import('../dist/extension.js');
@@ -25,7 +25,8 @@ test('startup, fold, lock and disable preserve focus and release resources', () 
     extension.status={schema_version:1,profile:'tablet',desired:{tablet_workspace:true,rotation_lock:false}};
     extension.reconcile();
     assert.equal(globalThis.focusChanges,0);assert.equal(extension.dock.actor.visible,true);
-    assert.equal(extension.home.actor.visible,false);
+    assert.equal(extension.home.actor.visible,true);
+    assert.equal(extension.home.actor.get_parent(),global.window_group);
     main.sessionMode.isLocked=true;extension.reconcile();
     assert.ok(main.layoutManager.chrome.every(a=>!a.visible));
     extension.disable();extension.disable();
@@ -36,14 +37,14 @@ test('startup, fold, lock and disable preserve focus and release resources', () 
 test('explicit Home navigation honors reduced motion and OSK allocation', () => {
     const extension=new Extension();extension.enable();extension.monitor=main.layoutManager.monitors[0];
     extension.status={schema_version:1,profile:'tablet',desired:{tablet_workspace:true,rotation_lock:false}};
-    extension.reconcile();extension.animations.values['enable-animations']=false;extension.navigate('home');
-    assert.equal(extension.home.actor.duration,0);
+    extension.reconcile();extension.animations.values['enable-animations']=false;extension.navigate('overview');
+    assert.equal(extension.overview.actor.duration,0);extension.navigate('home');
     main.layoutManager.keyboardBox.visible=true;main.layoutManager.keyboardBox.set_position(0,350);
     main.layoutManager.keyboardBox.set_size(800,250);extension.position();
-    assert.equal(extension.home.actor.height,254);assert.equal(extension.dock.actor.y,262);
+    assert.equal(extension.home.actor.height,262);assert.equal(extension.dock.actor.y,262);
     // Native GNOME anchors the box at the bottom; only its child moves up.
     main.layoutManager.keyboardBox.set_position(0,600);extension.position();
-    assert.equal(extension.home.actor.height,254);assert.equal(extension.dock.actor.y,262);
+    assert.equal(extension.home.actor.height,262);assert.equal(extension.dock.actor.y,262);
     extension.disable();main.layoutManager.keyboardBox.visible=false;
 });
 test('explicit laptop native actions apply only in the active unlocked session', () => {
@@ -55,4 +56,86 @@ test('explicit laptop native actions apply only in the active unlocked session',
     extension.status.active=false;extension.reconcile();
     assert.equal(extension.rotation.locked,false);assert.equal(extension.osk.value,false);
     extension.disable();
+});
+
+test('appearance and navigation selection follow actual native state', () => {
+    const extension=new Extension();extension.enable();extension.monitor=main.layoutManager.monitors[0];
+    extension.status={schema_version:1,profile:'tablet',desired:{tablet_workspace:true,rotation_lock:false}};
+    extension.reconcile();extension.navigate('overview');
+    assert.equal(extension.dock.navigation.get('overview').checked,true);
+    assert.equal(extension.dock.navigation.get('home').checked,false);
+    extension.animations.set_string('color-scheme','prefer-light');
+    for(const actor of [extension.home.actor,extension.overview.actor,extension.dock.actor])
+        assert.match(actor.style_class,/convertibled-light/);
+    extension.animations.set_string('color-scheme','prefer-dark');
+    assert.doesNotMatch(extension.home.actor.style_class,/convertibled-light/);
+    extension.hideSurfaces();assert.equal(extension.dock.navigation.get('overview').checked,false);
+    extension.disable();
+});
+
+test('tablet desktop stays in the window scene and yields chrome to native Overview', () => {
+    const extension=new Extension();extension.enable();extension.monitor=main.layoutManager.monitors[0];
+    extension.status={schema_version:1,profile:'tablet',desired:{tablet_workspace:true,rotation_lock:false}};
+    extension.reconcile();assert.equal(extension.home.actor.get_parent(),global.window_group);
+    assert.equal(extension.home.actor.visible,true);assert.equal(extension.dockStrut,true);
+    main.overview.visible=true;main.overview.emit('showing');
+    assert.equal(extension.home.actor.visible,false);assert.equal(extension.overview.actor.visible,false);
+    assert.equal(extension.dock.suspended,true);assert.equal(extension.dock.actor.opacity,0);
+    assert.equal(extension.dockStrut,true);
+    main.overview.visible=false;main.overview.emit('hidden');
+    assert.equal(extension.home.actor.visible,true);assert.equal(extension.dock.suspended,false);
+    extension.status.desired.tablet_workspace=false;extension.reconcile();
+    assert.equal(extension.dockStrut,false);assert.equal(extension.home.actor.visible,false);
+    extension.disable();assert.equal(main.overview.signals.size,0);
+});
+
+test('autohide keeps Home favorites through synchronous and delayed focus loss until app focus returns', () => {
+    const extension=new Extension();extension.enable();extension.monitor=main.layoutManager.monitors[0];
+    const workspace=global.workspace_manager.get_active_workspace();
+    const applications=[];
+    const makeApp=()=>Object.assign(new Emitter(),{
+        minimized:false,get_monitor:()=>0,get_window_type:()=>0,get_transient_for:()=>null,
+        is_override_redirect:()=>false,is_skip_taskbar:()=>false,is_above:()=>false,
+        get_workspace:()=>workspace,can_minimize:()=>true,
+        minimize(){this.minimized=true;this.emit('notify::minimized');
+            global.display.focus_window=applications.find(window=>!window.minimized)??null;
+            global.display.emit('notify::focus-window');},
+        unminimize(){this.minimized=false;this.emit('notify::minimized');},
+    });
+    const app=makeApp(),second=makeApp();applications.push(app,second);
+    extension.desktopWindows=()=>applications;
+    // Keep workspace identity stable for the real DesktopController boundary.
+    const previousWorkspace=global.workspace_manager.get_active_workspace;
+    global.workspace_manager.get_active_workspace=()=>workspace;
+    try {
+        global.display.focus_window=app;
+        settings.set_boolean('dock-autohide',true);
+        extension.status={schema_version:1,profile:'tablet',desired:{tablet_workspace:true,rotation_lock:false}};
+        extension.reconcile();assert.equal(extension.dock.strip.visible,false);
+        extension.navigate('home');
+        assert.equal(app.minimized,true);assert.equal(second.minimized,true);
+        assert.equal(extension.dock.strip.visible,true);
+        // Mutter may notify after navigation returns as well as during minimize.
+        global.display.emit('notify::focus-window');
+        assert.equal(extension.dock.strip.visible,true);
+        settings.set_boolean('dock-autohide',false);settings.set_boolean('dock-autohide',true);
+        assert.equal(extension.dock.strip.visible,true);
+        // A stale reference to the now-minimized app is not new app focus.
+        global.display.focus_window=app;global.display.emit('notify::focus-window');
+        assert.equal(extension.dock.strip.visible,true);
+        global.display.focus_window={minimized:false,get_monitor:()=>1};
+        global.display.emit('notify::focus-window');
+        assert.equal(extension.dock.strip.visible,true);
+        assert.equal(extension.dock.navigation.get('home').checked,true);
+        global.display.focus_window=app;
+        app.unminimize();global.display.emit('notify::focus-window');
+        assert.equal(extension.dock.strip.visible,false);
+        assert.equal(extension.dock.navigation.get('home').checked,false);
+        settings.set_boolean('dock-autohide',false);
+        global.display.emit('notify::focus-window');
+        assert.equal(extension.dock.strip.visible,true);
+    } finally {
+        extension.disable();global.workspace_manager.get_active_workspace=previousWorkspace;
+        global.display.focus_window=null;settings.set_boolean('dock-autohide',false);
+    }
 });

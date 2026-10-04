@@ -19,6 +19,8 @@ Agents must follow the complete mandatory list in `../AGENTS.md`.
 
 ## Documents
 
+- [Getting started](getting-started.md): installation, first login, updates and removal
+- [Troubleshooting](troubleshooting.md): common workspace, hardware and update problems
 - [Product](product.md): scope and user outcomes
 - [Architecture](architecture.md): processes, ownership, trust boundaries
 - [Tablet UX](tablet-ux.md): interaction and acceptance requirements

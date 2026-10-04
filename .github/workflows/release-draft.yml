@@ -18,6 +18,9 @@ on:
 permissions:
   contents: read
   actions: read
+concurrency:
+  group: release-delivery
+  cancel-in-progress: false
 jobs:
   draft:
     if: github.ref == 'refs/heads/main'
@@ -69,6 +72,12 @@ jobs:
           version=$(jq -r .version candidate/candidate.json)
           python3 scripts/release/metadata.py --artifact candidate/convertibled-fedora44-x86_64.tar.gz --url "https://github.com/$GITHUB_REPOSITORY/releases/download/v$version/convertibled-fedora44-x86_64.tar.gz" --version "$version" --sequence "$SEQUENCE" --channel "$CHANNEL" --notes CHANGELOG.md --output "$RUNNER_TEMP/unsigned-channel.json"
           python3 scripts/release/sign.py --input "$RUNNER_TEMP/unsigned-channel.json" --key "$key" --key-id "$RELEASE_KEY_ID" --output "candidate/$CHANNEL.json"
+          cp release/keyring.json candidate/keyring.json
+          jq .roots release/trust.json > "$RUNNER_TEMP/roots.json"
+          python3 scripts/release/verify.py --directory candidate --roots "$RUNNER_TEMP/roots.json" --channel "$CHANNEL" --repository "$GITHUB_REPOSITORY"
+          source=$(jq -r .commit candidate/candidate.json)
+          python3 scripts/release/bootstrap.py --commit "$source" --trust release/trust.json --output candidate/convertibled-installer.tar.gz
+          (cd candidate && sha256sum convertibled-installer.tar.gz >> SHA256SUMS)
       - name: Create immutable draft for final maintainer review
         shell: bash
         run: |

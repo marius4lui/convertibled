@@ -2,10 +2,31 @@
 
 ## Design direction
 
+The October 4 refinement uses a quiet, carefully proportioned workspace: a
+centered Home canvas, spacious app icons, compact information cards, and a
+floating navigation shelf. Content has a clear title/detail/action hierarchy;
+secondary controls do not compete with application launch targets. Window
+previews preserve aspect ratio and split selection remains explicit.
+Light and dark palettes share geometry, with restrained accent color, visible
+focus and readable muted text. Native toolkit behavior and accessible targets
+remain requirements. This supersedes the initial unstyled popup presentation.
+Review covers Home, overview, settings, failures, portrait and keyboard
+occlusion in the actual shared native demo; physical acceptance remains separate.
+
+Home prioritizes application launch at every viewport size. A bounded search
+field, evenly spaced application icons, and a quiet editing action
+keep navigation ahead of secondary information. Favorites live in the dock,
+with editing in Home's app grid instead of a duplicate launcher section.
+Optional local widgets follow the apps. The dock groups navigation, apps and contextual
+actions without stretching a short app list across an oversized shelf.
+
 Use GNOME typography, symbolic icons, system colors, dialogs and dark mode.
 Settings use GTK4/libadwaita; the tablet workspace uses native Shell actors.
-Home sits behind applications and is opened through navigation; folding must
-keep the active app focused. Eligible main windows maximize; dialogs do not.
+Home is the persistent desktop behind applications in tablet mode. Navigation
+returns to it by minimizing eligible windows on the internal current workspace.
+It is never raised as an application-like overlay. Folding keeps the active app
+focused. Eligible main windows maximize; dialogs do not. Native Overview hides
+tablet chrome during its zoom transition and never lists Home as an app.
 
 ## Planned surfaces
 

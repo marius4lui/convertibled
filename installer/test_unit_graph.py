@@ -4,7 +4,30 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+import configparser
 from pathlib import Path
+
+
+class SandboxTests(unittest.TestCase):
+    def test_update_exposes_runtime_buses_without_exposing_homes(self):
+        parser = configparser.ConfigParser(interpolation=None)
+        parser.read(Path(__file__).resolve().parent.parent / "data/systemd/convertibled-update.service")
+        service = parser["Service"]
+        self.assertEqual(service["ProtectHome"], "tmpfs")
+        self.assertEqual(service["BindReadOnlyPaths"].split(), ["/run/user"])
+        self.assertNotIn("BindPaths", service)
+        self.assertEqual(service["ProtectSystem"], "strict")
+        self.assertEqual(service["NoNewPrivileges"], "yes")
+        self.assertEqual(service["UMask"], "0077")
+
+    def test_update_namespace_covers_every_owned_integration_destination(self):
+        from .integration import LINKS
+        parser = configparser.ConfigParser(interpolation=None)
+        parser.read(Path(__file__).resolve().parent.parent / "data/systemd/convertibled-update.service")
+        writable = parser["Service"]["ReadWritePaths"].split()
+        for destination in LINKS:
+            path = "/" + destination
+            self.assertTrue(any(path == root or path.startswith(root + "/") for root in writable), path)
 
 
 @unittest.skipUnless(os.name == "posix" and shutil.which("systemd-analyze"), "Linux systemd unit analyzer")

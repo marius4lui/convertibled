@@ -25,6 +25,15 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
         .title(text.text("Tablet", "Tablet"))
         .icon_name("view-grid-symbolic")
         .build();
+    crate::ui::introduction(
+        &page,
+        "view-grid-symbolic",
+        text.text("Tablet workspace", "Tablet-Arbeitsfläche"),
+        text.text(
+            "Set up the dock, touchscreen gestures and Home widgets.",
+            "Dock, Touchscreen-Gesten und Widgets auf Start einstellen.",
+        ),
+    );
     let group = adw::PreferencesGroup::builder()
         .title(text.text("Workspace preferences", "Arbeitsfläche anpassen"))
         .description(text.text(
@@ -56,12 +65,22 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
         ),
     ] {
         let row = adw::SwitchRow::builder().title(title).build();
+        if key == "gesture-enabled" {
+            row.set_subtitle(text.text(
+                "Approve the built-in touchscreen using the setup target first.",
+                "Gib zuerst den eingebauten Touchscreen über das Einrichtungsfeld frei.",
+            ));
+        }
         settings.bind(key, &row, "active").build();
         group.add(&row);
     }
     let ratios = gtk::StringList::new(&["50 / 50", "1/3 – 2/3", "2/3 – 1/3"]);
     let split = adw::ComboRow::builder()
         .title(text.text("Split view", "Geteilte Ansicht"))
+        .subtitle(text.text(
+            "Side by side in landscape. Stacked in portrait.",
+            "Nebeneinander im Querformat. Untereinander im Hochformat.",
+        ))
         .model(&ratios)
         .build();
     let values = ["half", "third", "two-thirds"];
@@ -108,7 +127,6 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
             "{title}: {}",
             text.text("move first", "nach vorne")
         )));
-        row.add_suffix(&first);
         row.add_suffix(&enabled);
         row.set_activatable_widget(Some(&enabled));
         let prefs = settings.clone();
@@ -144,6 +162,7 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
             let _ = prefs.set_strv("widgets", current.as_slice());
         });
         widgets.add(&row);
+        widgets.add(&crate::ui::actions(&[&first]));
     }
     let message_copy = message.clone();
     settings.connect_changed(Some("widgets"), move |prefs, _| {

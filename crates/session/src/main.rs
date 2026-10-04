@@ -1,6 +1,8 @@
 #[cfg(target_os = "linux")]
 mod api;
 #[cfg(target_os = "linux")]
+mod expectation;
+#[cfg(target_os = "linux")]
 mod service;
 #[cfg(target_os = "linux")]
 #[tokio::main]

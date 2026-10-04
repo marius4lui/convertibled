@@ -35,16 +35,13 @@ pub fn group(text: Strings) -> adw::PreferencesGroup {
         .build();
     let save = gtk::Button::with_label(text.text("Save profile", "Profil speichern"));
     let reset = gtk::Button::with_label(text.text("Reset profile", "Profil zurücksetzen"));
-    let controls = gtk::Box::new(gtk::Orientation::Horizontal, 6);
-    for button in [&save, &reset] {
-        button.set_height_request(44);
-        controls.append(button);
-    }
-    group.set_header_suffix(Some(&controls));
+    save.add_css_class("suggested-action");
+    let controls = crate::ui::actions(&[&save, &reset]);
     for row in [&profile, &rotation, &osk] {
         group.add(row);
     }
     group.add(&result);
+    group.add(&controls);
 
     let rotation_copy = rotation.clone();
     let osk_copy = osk.clone();

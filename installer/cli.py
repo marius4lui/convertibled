@@ -12,7 +12,7 @@ sys.dont_write_bytecode = True
 from installer.configuration import preferences, set_preferences
 from installer.platform import graphical_sessions
 from installer.status import public, publish
-from installer.storage import Layout, read
+from installer.storage import BusyError, Layout, read
 from installer.transaction import Transaction
 from updater.manager import Manager
 from updater.model import UpdateError
@@ -20,7 +20,7 @@ from updater.model import UpdateError
 
 def parser():
     result = argparse.ArgumentParser(description="convertibled installation and verified updates")
-    result.add_argument("command", choices=("status", "check", "prepare", "offline-prepare", "install", "activate", "recover", "rollback", "uninstall", "automatic", "channel", "scheduled"))
+    result.add_argument("command", choices=("status", "check", "prepare", "offline-prepare", "install", "activate", "recover", "rollback", "uninstall", "request-uninstall", "request-rollback", "request-recover", "request-activate", "cancel-pending", "automatic", "channel", "scheduled"))
     result.add_argument("value", nargs="?", choices=("on", "off", "stable", "preview"))
     return result
 
@@ -35,7 +35,13 @@ def execute(args, layout):
     with layout.lock():
         manager = Manager(layout)
         transaction = Transaction(layout)
-        if args.command == "automatic":
+        if args.command.startswith("request-"):
+            from installer.pending import request
+            request(layout, args.command.removeprefix("request-"))
+        elif args.command == "cancel-pending":
+            from installer.pending import cancel
+            cancel(layout)
+        elif args.command == "automatic":
             if args.value not in ("on", "off"):
                 raise UpdateError("Automatic updates accept on/off")
             set_preferences(layout, automatic=args.value == "on")
@@ -63,6 +69,9 @@ def execute(args, layout):
             from installer.uninstall import uninstall
             uninstall(layout)
         elif args.command == "scheduled":
+            from installer.pending import process
+            if process(layout):
+                return publish(layout)
             from updater.schedule import due, quarantined
             if (layout.state / "admission.pending").exists():
                 # GDM may already register a graphical session while its Shell
@@ -92,10 +101,18 @@ def main():
     try:
         print(json.dumps(execute(args, layout), sort_keys=True))
         return 0
+    except BusyError as exc:
+        if args.command == "scheduled":
+            # The owning transaction publishes its own result. The timer will
+            # retry normally; competing with that status would invent a failure.
+            return 0
+        print(json.dumps({"error": str(exc)[:512]}), file=sys.stderr)
+        return 1
     except (UpdateError, OSError, ValueError) as exc:
         if os.name == "posix" and os.geteuid() == 0:
             try:
-                publish(layout, exc)
+                with layout.lock():
+                    publish(layout, exc)
             except (UpdateError, OSError):
                 pass
         print(json.dumps({"error": str(exc)[:512]}), file=sys.stderr)

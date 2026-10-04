@@ -6,6 +6,36 @@ pub async fn record(
     version: &str,
     healthy: bool,
 ) -> zbus::fdo::Result<()> {
+    let (uid, session, boot_id) = authorize(connection, header, version).await?;
+    let receipt = serde_json::json!({"schema":1,"version":version,"healthy":healthy,"uid":uid,"session":session,"boot_id":boot_id});
+    let directory = std::path::Path::new("/var/lib/convertibled/health");
+    write_receipt(directory, &format!("shell-health-{uid}.json"), &receipt).map_err(failed)?;
+    write_receipt(directory, "shell-health.json", &receipt).map_err(failed)
+}
+
+pub async fn expectation(
+    connection: &Connection,
+    header: &Header<'_>,
+    version: &str,
+    known: bool,
+    enabled: bool,
+) -> zbus::fdo::Result<()> {
+    let (uid, session, boot_id) = authorize(connection, header, version).await?;
+    let expected = known.then_some(enabled);
+    let receipt = serde_json::json!({"schema":1,"version":version,"expected":expected,"uid":uid,"session":session,"boot_id":boot_id});
+    write_receipt(
+        std::path::Path::new("/var/lib/convertibled/health"),
+        &format!("shell-intent-{uid}.json"),
+        &receipt,
+    )
+    .map_err(failed)
+}
+
+async fn authorize(
+    connection: &Connection,
+    header: &Header<'_>,
+    version: &str,
+) -> zbus::fdo::Result<(u32, String, String)> {
     if version != env!("CARGO_PKG_VERSION") {
         return Err(zbus::fdo::Error::InvalidArgs(
             "Shell version differs from running daemon".into(),
@@ -31,8 +61,11 @@ pub async fn record(
     .map_err(failed)?;
     type Sessions = Vec<(String, u32, String, String, zbus::zvariant::OwnedObjectPath)>;
     let sessions: Sessions = manager.call("ListSessions", &()).await.map_err(failed)?;
-    let mut eligible = 0;
-    for (_, owner, _, seat, path) in sessions {
+    if sessions.len() > 512 {
+        return Err(failed("Session inventory exceeds supported size"));
+    }
+    let mut eligible = Vec::new();
+    for (id, owner, _, seat, path) in sessions {
         if owner != uid || seat.is_empty() {
             continue;
         }
@@ -54,11 +87,18 @@ pub async fn record(
             .get_property::<String>("Type")
             .await
             .unwrap_or_default();
-        if active && !remote && !locked && kind == "wayland" {
-            eligible += 1;
+        let class = proxy
+            .get_property::<String>("Class")
+            .await
+            .unwrap_or_default();
+        if class == "user" && active && !remote && !locked && kind == "wayland" {
+            if id.is_empty() || id.len() > 32 || !id.bytes().all(|c| c.is_ascii_alphanumeric()) {
+                return Err(failed("Invalid session identifier"));
+            }
+            eligible.push(id);
         }
     }
-    if eligible != 1 {
+    if eligible.len() != 1 {
         return Err(zbus::fdo::Error::AccessDenied(
             "Requires one unlocked active local session".into(),
         ));
@@ -69,27 +109,68 @@ pub async fn record(
             "Invalid caller process".into(),
         ));
     }
-    let receipt = serde_json::json!({"schema":1,"version":version,"healthy":healthy});
-    let directory = std::path::Path::new("/var/lib/convertibled/health");
-    let temporary = directory.join(format!(".shell-health-{}.tmp", std::process::id()));
+    let boot_id = fs::read_to_string("/proc/sys/kernel/random/boot_id").map_err(failed)?;
+    let boot_id = boot_id.trim();
+    if !valid_boot_id(boot_id) {
+        return Err(failed("Invalid kernel boot identity"));
+    }
+    Ok((uid, eligible.remove(0), boot_id.to_owned()))
+}
+fn valid_boot_id(value: &str) -> bool {
+    value.len() == 36
+        && value.bytes().enumerate().all(|(index, c)| {
+            if [8, 13, 18, 23].contains(&index) {
+                c == b'-'
+            } else {
+                c.is_ascii_hexdigit()
+            }
+        })
+}
+fn write_receipt(
+    directory: &std::path::Path,
+    name: &str,
+    receipt: &serde_json::Value,
+) -> std::io::Result<()> {
+    let temporary = directory.join(format!(".{name}-{}.tmp", std::process::id()));
     let mut file = fs::OpenOptions::new()
         .write(true)
         .create_new(true)
         .mode(0o600)
-        .open(&temporary)
-        .map_err(failed)?;
+        .open(&temporary)?;
     let result = (|| -> std::io::Result<()> {
         file.write_all(receipt.to_string().as_bytes())?;
         file.sync_all()?;
-        fs::rename(&temporary, directory.join("shell-health.json"))?;
+        fs::rename(&temporary, directory.join(name))?;
         fs::File::open(directory)?.sync_all()?;
         Ok(())
     })();
     if result.is_err() {
         let _ = fs::remove_file(&temporary);
     }
-    result.map_err(failed)
+    result
 }
 fn failed(error: impl ToString) -> zbus::fdo::Error {
     zbus::fdo::Error::Failed(error.to_string())
+}
+
+#[cfg(test)]
+#[path = "health_integration.rs"]
+mod integration;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn boot_identity_must_be_a_kernel_uuid() {
+        assert!(valid_boot_id("2d2a6a12-c8ae-4f66-8132-f0aa50031c0e"));
+        for value in [
+            "",
+            "../other",
+            "2d2a6a12_c8ae-4f66-8132-f0aa50031c0e",
+            "2d2a6a12-c8ae-4f66-8132-f0aa50031c0g",
+        ] {
+            assert!(!valid_boot_id(value));
+        }
+    }
 }

@@ -55,7 +55,7 @@ excluded. Window geometry and maximize flags are restored only while their
 last applied state still matches. GNOME runtime must verify Wayland clients'
 asynchronous geometry acknowledgements before release acceptance.
 
-Home is a native St surface with editable app search, GNOME favorites and an
+Home is a native St surface with editable app search, favorite editing and an
 adaptive installed-app grid. AppSystem/favorite changes refresh it live; GNOME
 application icons and keyboard-focusable buttons provide native app launching.
 Search uses GNOME's text widget so the native OSK follows editable focus.
@@ -76,10 +76,13 @@ identifiers and duplicates are ignored. UPower uses asynchronous local D-Bus,
 with an explicit unavailable label. There are no accounts or network widgets.
 
 The extension entrypoint wires surfaces, service/display observers and window
-management. Folding reveals navigation without opening Home or changing app
-focus. Lock/inactive shell modes, daemon loss and disable restore owned windows
-and hide surfaces. Home/Overview open only through explicit navigation; app
-activation closes them. Reduced-motion preferences disable 200 ms opacity easing.
+management. Folding enables the persistent Home desktop behind application
+windows without changing app focus. Explicit Home minimizes eligible windows
+on the internal current workspace, including standalone preferences dialogs.
+Native reopening, workspace changes and monitor moves relinquish minimization
+ownership. Lock/inactive modes, daemon loss and disable restore only still-owned
+changes. The window picker opens explicitly; app activation closes it. Reduced
+motion disables the picker's 200 ms opacity easing.
 Split selection places two compatible resizable windows and creates a visible
 divider to cycle ratios. Display changes recalculate the portrait-aware layout;
 window closure removes the divider. Incompatible minimums leave both windows
@@ -113,9 +116,12 @@ user changes retain ownership. Actual lock and read-only/absent failures are
 reported separately from requests. GNOME remains the rotation/touch mapper.
 
 Hidden surfaces opt out of LayoutManager's automatic fullscreen visibility
-tracking, which otherwise overrides an actor's hidden state. Home rests below
-the application group and is raised only on explicit navigation. Fullscreen
-entry hides navigation; leaving fullscreen restores it only in active tablet mode.
+tracking, which otherwise overrides an actor's hidden state. Home lives inside
+GNOME's window group, above its wallpaper group and below application windows;
+it has no native application/window identity. Native Overview suppresses tablet
+surfaces, the split divider and shelf while preserving navigation geometry.
+Fullscreen entry hides navigation. Leaving tablet mode untracks the dock's
+strut explicitly: GNOME struts do not disappear merely by hiding an actor.
 
 Installed-app tiles provide explicit touch-sized add/remove favorite controls.
 These use GNOME's existing AppFavorites owner so Home, the tablet dock and the
@@ -175,7 +181,7 @@ adapter test covers that distinction with realistic nonempty app metadata.
 Smoke checks use the versioned extension D-Bus numeric state (ACTIVE=1,
 INACTIVE=2), avoiding translated CLI labels and renamed GNOME 50 states.
 
-Home keeps search outside one scrollable body containing favorites, widgets and
+Home keeps search outside one scrollable body containing widgets and
 the app grid. Narrow displays, large fonts and the OSK therefore cannot make
 the bottom widgets unreachable through fixed-height content accumulation.
 
@@ -184,8 +190,8 @@ it never connects to the CI host's system bus. Fedora container startup required
 that transport for GNOME LoginManager/TimeLimits initialization. Absent actual
 logind/UPower services remain explicit container limitations.
 
-Surfaces inherit GNOME popup theme colors instead of hard-coded backgrounds,
-including light/dark and text contrast. Split selections expose native checked
+Surfaces use the project light/dark palette selected by the native appearance
+preference, with matched geometry and explicit focus contrast. Split selections expose native checked
 button state, and the split action becomes focusable/reactive only after two
 windows are selected. Physical screen-reader and large-text review remains open.
 
@@ -293,3 +299,53 @@ After compositor/bus shutdown, cleanup retries deletion up to 20 times with a
 quarter-second drain between attempts, covering short-lived cache writers.
 The original failing test status is retained; persistent cleanup failure also
 fails an otherwise successful test. Cleanup refuses unexpected root names.
+
+Home now uses a centered canvas with 64-pixel app icons, explicit favorite
+editing and compact local widgets. Favorites live in the shared dock. Search hides
+nonmatching sections. Unknown battery state remains visible without a fake
+percentage. Light/dark palettes retain the same focus and touch geometry.
+
+Overview uses responsive window cards with a fixed-layout native viewport.
+Live clones fit the allocated viewport without double scaling. Split selection
+survives layout changes and still requires exactly two eligible windows.
+
+Navigation now sits in a centered shelf while retaining the full-width owned
+work-area reservation. Home/Overview selection reflects the visible surface;
+apps and secondary actions remain horizontally scrollable. System color-scheme
+changes update all three surfaces without rebuilding product state.
+
+Short allocations (including the native OSK) hide Home's ancillary cards
+while keeping search and app results reachable. Opening a navigation
+surface does not request text entry; search focus explicitly opens the native
+keyboard. Escape dismisses Overview and returns focus to the desktop. Wide headers use a single row.
+
+App columns adapt to the native text scale. Repeated status/geometry updates
+with unchanged layout retain existing app actors and their keyboard focus.
+Split-selection accessible names include the window title and track renames.
+
+Narrow layouts reduce side padding, stack section controls and wrap bounded
+app captions. Widget rows adapt between three columns, two-plus-one and a single
+column. The window picker scrolls its header together with its cards, so short
+viewports do not leave unreachable actions. Actual allocations size previews.
+
+Native Overview retains its own rounded Meta.BackgroundContent and application
+previews. Only internal-output workspace backgrounds temporarily receive the
+Home gradient. The GNOME 50 adapter restores only backgrounds still owned and
+leaves wallpaper preferences and external displays untouched.
+
+Application launch sections precede local widgets at every viewport size.
+Search has a bounded desktop width; a single app grid avoids duplicate launchers.
+A touch-sized edit icon replaces the oversized editing action. Wider app cells
+leave room for localized captions without compressing the icon grid. The widget
+preference order is preserved within its section. Navigation, running apps and
+contextual actions form distinct groups in a dock sized to its content; running
+indicators remain separate from pressed and selected states.
+Dock action widths and reserved height adapt to native text scaling so localized
+labels stay on one line without spilling below the monitor edge.
+
+Dock autohide retains favorites and contextual actions on the uncovered Home
+desktop. Focus-loss notifications caused by Home's own window minimization do
+not collapse that strip, including notifications delivered after navigation.
+The strip follows autohide again when a non-minimized application gains focus.
+Native-boundary tests cover both focus-notification timings and preference changes;
+physical touch and compositor acceptance remain separate.

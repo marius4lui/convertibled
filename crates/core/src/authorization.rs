@@ -5,11 +5,16 @@ pub struct SessionCandidate {
     pub locked: bool,
     pub remote: bool,
     pub wayland: bool,
+    pub user: bool,
     pub seat: String,
 }
 pub fn select_session(candidates: &[SessionCandidate]) -> (bool, bool) {
     let mut local = candidates.iter().filter(|session| {
-        session.active && !session.remote && session.wayland && !session.seat.is_empty()
+        session.user
+            && session.active
+            && !session.remote
+            && session.wayland
+            && !session.seat.is_empty()
     });
     match (local.next(), local.next()) {
         (Some(session), None) => (true, session.locked),
@@ -25,6 +30,7 @@ mod tests {
             locked: false,
             remote: false,
             wayland: true,
+            user: true,
             seat: "seat0".into(),
         }
     }
@@ -36,6 +42,9 @@ mod tests {
     }
     #[test]
     fn remote_or_x11_sessions_do_not_own_workspace() {
+        let mut greeter = candidate();
+        greeter.user = false;
+        assert_eq!(select_session(&[greeter]), (false, true));
         let mut remote = candidate();
         remote.remote = true;
         assert_eq!(select_session(&[remote]), (false, true));
