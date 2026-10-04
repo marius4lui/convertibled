@@ -32,6 +32,9 @@ pub async fn run(args: &Args) -> Result<String, String> {
     if let Command::Update { action } = &args.command {
         return update(action).await;
     }
+    if let Command::Doctor { export } = &args.command {
+        return doctor(export.as_deref(), args.json).await;
+    }
     let user = Connection::session()
         .await
         .map_err(|e| format!("Session bus unavailable: {e}"))?;
@@ -97,35 +100,6 @@ pub async fn run(args: &Args) -> Result<String, String> {
             }
             Ok(String::new())
         }
-        Command::Doctor { export } => {
-            let raw: String = proxy
-                .call("GetStatus", &())
-                .await
-                .map_err(|e| e.to_string())?;
-            let mut value: serde_json::Value =
-                serde_json::from_str(&raw).map_err(|e| e.to_string())?;
-            // Keep known status fields only, excluding arbitrary backend diagnostics.
-            if let Some(object) = value.as_object_mut() {
-                object.retain(|key, _| {
-                    [
-                        "schema_version",
-                        "revision",
-                        "profile",
-                        "manual_override",
-                        "active",
-                        "locked",
-                        "desired",
-                        "observation",
-                    ]
-                    .contains(&key.as_str())
-                });
-            }
-            let report=serde_json::json!({"schema_version":1,"version":env!("CARGO_PKG_VERSION"),"physical_acceptance":false,"status":value,"checks":{"session_bus":"available","input_suppression":"disabled","scaling":"disabled"}}).to_string();
-            if let Some(path) = export {
-                std::fs::write(path, &report).map_err(|e| e.to_string())?;
-            }
-            render(report, args.json)
-        }
         Command::Reload => {
             proxy
                 .call::<_, _, ()>("Reload", &())
@@ -161,4 +135,49 @@ async fn update(action: &str) -> Result<String, String> {
             status.code().unwrap_or(3)
         ))
     }
+}
+
+async fn doctor(export: Option<&std::path::Path>, json: bool) -> Result<String, String> {
+    let mut status = None;
+    let mut capabilities = None;
+    let mut device_count = None;
+    if let Ok(connection) = Connection::session().await
+        && let Ok(proxy) = session(&connection).await
+    {
+        if let Ok(raw) = proxy.call::<_, _, String>("GetStatus", &()).await {
+            status = serde_json::from_str::<convertibled_core::Status>(&raw).ok();
+        }
+        if let Ok(raw) = proxy.call::<_, _, String>("GetCapabilities", &()).await {
+            capabilities = serde_json::from_str::<convertibled_core::Capabilities>(&raw).ok();
+        }
+    }
+    if let Ok(connection) = Connection::system().await
+        && let Ok(proxy) = daemon(&connection).await
+        && let Ok(raw) = proxy.call::<_, _, String>("GetDevices", &()).await
+    {
+        device_count = serde_json::from_str::<Vec<serde_json::Value>>(&raw)
+            .ok()
+            .map(|v| v.len());
+    }
+    let report = convertibled_core::diagnostics::report(
+        status.as_ref(),
+        capabilities.as_ref(),
+        device_count,
+    )
+    .to_string();
+    if let Some(path) = export {
+        use std::io::Write;
+        use std::os::unix::fs::OpenOptionsExt;
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .mode(0o600)
+            .open(path)
+            .map_err(|e| e.to_string())?;
+        file.write_all(report.as_bytes())
+            .and_then(|_| file.sync_all())
+            .map_err(|e| e.to_string())?;
+    }
+    render(report, json)
 }

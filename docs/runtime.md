@@ -95,3 +95,8 @@ The session records the unique D-Bus sender of applied reports and checks that
 owner's lifetime. Disconnect resets applied state and capabilities to unavailable,
 then emits a new status; an old successful report cannot survive a dead reporter.
 Extension disable separately submits an explicit unavailable cleanup report.
+
+Doctor now collects services independently so missing session/hardware services
+still produce a versioned report. Export uses a typed allowlist, omitting device
+identifiers, source strings and arbitrary backend errors while retaining action
+status and supported booleans. File export is explicit and created privately.

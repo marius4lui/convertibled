@@ -4,4 +4,5 @@ pub use state::*;
 pub mod authorization;
 pub mod config;
 pub mod debounce;
+pub mod diagnostics;
 pub mod report;
