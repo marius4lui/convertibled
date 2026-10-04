@@ -44,6 +44,8 @@ export default class TabletExtension extends Extension {
         this.rotation = new RotationLock(() => this.reportApplied());
         this.home = new Home(app => this.activateApp(app));
         this.dock = new Dock(surface => this.navigate(surface), app => this.activateApp(app));
+        this.cleanup.signal(this.settings,'changed::dock-autohide', () => this.dock?.showApps(!this.settings.get_boolean('dock-autohide')));
+        this.dock.showApps(!this.settings.get_boolean('dock-autohide'));
         this.overview = new WindowOverview(() => this.internalWindows(), window => this.activate(window),
             (a,b) => this.split(a,b), () => this.navigate('dock'));
         this.widgets = new Widgets(this.settings, {
@@ -68,7 +70,9 @@ export default class TabletExtension extends Extension {
             if (this.active && this.monitor) this.windows.maximize(window,this.monitor.index);
         });
         this.cleanup.signal(global.display,'notify::focus-window', () => {
-            if (this.active && global.display.focus_window) this.hideSurfaces();
+            if (this.active && global.display.focus_window) {
+                this.hideSurfaces(); this.dock?.showApps(!this.settings.get_boolean('dock-autohide'));
+            }
         });
         this.display = new DisplayObserver(() => Main.layoutManager.monitors,
             monitor => { this.monitor = monitor; this.reconcile(); });
@@ -125,6 +129,7 @@ export default class TabletExtension extends Extension {
     private navigate(surface: 'home' | 'overview' | 'dock'): void {
         if (!this.active) return;
         this.hideSurfaces(); this.dock?.actor.show();
+        this.dock?.showApps(true);
         const actor = surface === 'home' ? this.home?.actor : surface === 'overview' ? this.overview?.actor : null;
         if (!actor) return;
         if (surface === 'home') Main.uiGroup.set_child_above_sibling(actor,global.window_group);

@@ -109,3 +109,7 @@ entry hides navigation; leaving fullscreen restores it only in active tablet mod
 Installed-app tiles provide explicit touch-sized add/remove favorite controls.
 These use GNOME's existing AppFavorites owner so Home, the tablet dock and the
 desktop favorites share one preference instead of maintaining divergent lists.
+
+Optional `dock-autohide` hides the application strip when app focus returns,
+while leaving labeled Home/Overview navigation visible. Bottom-edge navigation
+reveals the full app strip, and changing the preference updates it immediately.

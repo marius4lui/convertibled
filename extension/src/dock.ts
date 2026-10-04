@@ -8,15 +8,17 @@ export class Dock {
     readonly actor = new St.BoxLayout({style_class:'convertibled-surface',reactive:true});
     private apps = new St.BoxLayout({style_class:'convertibled-grid'});
     private cleanup = new Cleanup();
+    private strip: any;
     constructor(navigate: (surface: 'home' | 'overview') => void, private activate: (app: any) => void) {
         this.actor.add_child(button('Home', () => navigate('home'), 'go-home-symbolic'));
         this.actor.add_child(button('Overview', () => navigate('overview'), 'view-grid-symbolic'));
-        const scroll = new St.ScrollView({x_expand:true,overlay_scrollbars:true});
-        scroll.set_child(this.apps); this.actor.add_child(scroll);
+        this.strip = new St.ScrollView({x_expand:true,overlay_scrollbars:true});
+        this.strip.set_child(this.apps); this.actor.add_child(this.strip);
         this.cleanup.signal(Favorites.getAppFavorites(), 'changed', () => this.refresh());
         this.cleanup.signal(Shell.AppSystem.get_default(), 'app-state-changed', () => this.refresh());
         this.refresh();
     }
+    showApps(visible: boolean): void { this.strip.visible = visible; }
     refresh(): void {
         clear(this.apps);
         const system = Shell.AppSystem.get_default();
