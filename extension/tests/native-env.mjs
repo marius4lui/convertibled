@@ -54,6 +54,7 @@ globalThis.__native={
     Shell:{AppSystem:{get_default:()=>system},AppState:{RUNNING:1}},
     Meta:{WindowType:{NORMAL:0},MaximizeFlags:{BOTH:3}},
     GLib:{get_language_names:()=>['en_US'],PRIORITY_DEFAULT:0,SOURCE_CONTINUE:true,timeout_add_seconds(_p,_s,callback){timers.set(++timerId,callback);return timerId;},
+        SOURCE_REMOVE:false,timeout_add(_p,_ms,callback){timers.set(++timerId,callback);return timerId;},
         Source:{remove:id=>timers.delete(id)},DateTime:{new_now_local:()=>({format:()=> 'Sunday 12:00'})},
         Variant:class {constructor(type,values){this.type=type;this.values=values;}}},
     Gio:{Settings,SettingsSchemaSource:{get_default:()=>({lookup:()=>({has_key:()=>true})})},

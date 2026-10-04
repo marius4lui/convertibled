@@ -5,7 +5,7 @@ import {dockApps} from './apps.js';
 import {Cleanup} from './ownership.js';
 import {button, clear} from './ui.js';
 export class Dock {
-    readonly actor = new St.BoxLayout({style_class:'popup-menu-content convertibled-surface',reactive:true});
+    readonly actor = new St.BoxLayout({style_class:'popup-menu-content convertibled-surface convertibled-dock',reactive:true});
     private apps = new St.BoxLayout({style_class:'convertibled-grid'});
     private cleanup = new Cleanup();
     private strip: any;

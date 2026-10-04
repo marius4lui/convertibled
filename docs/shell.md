@@ -220,3 +220,12 @@ at most 40 app tiles per query. An explicit Show more action keeps every match
 reachable without building hundreds of actors on each edit. Live window clones
 update scale when source geometry changes; hidden overview ignores unrelated
 new-window/workspace refreshes. Frame-budget acceptance still requires hardware.
+
+The bottom 24-pixel strip owns candidate touch sequences from BEGIN through END
+or CANCEL, so underlying apps/buttons never receive a partial sequence. Canceled
+candidates remain consumed until their end. A stationary 500 ms hold beyond the
+swipe threshold opens Overview while the finger is still down; timers cancel on
+diagonal/multitouch/disable. Source filtering currently proves touchscreen type
+and internal-output coordinates, not physical built-in-device provenance: an
+externally connected touchscreen deliberately mapped there is not distinguished.
+This limitation requires device-assignment acceptance before claiming exclusivity.

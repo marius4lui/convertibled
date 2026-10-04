@@ -1,7 +1,8 @@
 .convertibled-surface { border-radius: 20px; padding: 16px; spacing: 12px; }
-.convertibled-button { min-width: 48px; min-height: 48px; padding: 8px 12px; border-radius: 12px; }
+.convertibled-button { min-width: 28px; min-height: 28px; padding: 8px; border: 2px solid transparent; border-radius: 12px; }
 .convertibled-button:focus { border: 2px solid -st-accent-color; }
 .convertibled-app { min-width: 88px; min-height: 88px; padding: 8px; border-radius: 12px; }
 .convertibled-grid { spacing: 12px; }
 .convertibled-widget { padding: 12px; border-radius: 12px; min-height: 48px; }
 .convertibled-button:checked { background-color: -st-accent-color; color: -st-accent-fg-color; }
+.convertibled-dock { padding-bottom: 24px; }

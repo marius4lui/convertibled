@@ -3,10 +3,12 @@ import assert from 'node:assert/strict';
 import {EdgeGesture} from '../dist/gesture.js';
 const area = {x:100,y:0,width:600,height:900};
 test('edge gestures expose dock, home and hold overview', () => {
-    for (const [y,time,expected] of [[850,200,'dock'],[700,200,'home'],[850,600,'overview']]) {
+    for (const [y,time,expected] of [[850,200,'dock'],[700,200,'home']]) {
         const gesture = new EdgeGesture(); gesture.begin({x:200,y:890,time:0},area);
         assert.equal(gesture.end({x:200,y,time}),expected);
     }
+    const hold=new EdgeGesture();hold.begin({x:200,y:890,time:0},area);hold.update({x:200,y:850,time:200});
+    assert.equal(hold.hold(),'overview');assert.equal(hold.end({x:200,y:850,time:800}),null);
 });
 test('outside integrated screen, diagonal and canceled gestures do nothing', () => {
     const gesture = new EdgeGesture();
