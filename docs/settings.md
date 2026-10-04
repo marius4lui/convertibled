@@ -21,8 +21,9 @@ timeouts, typed replies, bounded JSON and explicit profile validation. It never
 blocks GTK on service IO or starts a missing daemon as a side effect of reading.
 
 Overview loads actual session status and offers retry. A connection failure
-clears stale values; detected posture, selected/manual profile, requested and
-applied workspace, action result and error remain individually visible.
+is visible before the state rows and clears stale values; detected posture,
+selected/manual profile, requested and applied workspace, action result and error
+remain individually visible.
 
 Profiles and rotation lock are explicit requests over the session API. Merely
 opening settings never mutates a profile. Successful requests are described as

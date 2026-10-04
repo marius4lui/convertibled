@@ -14,6 +14,11 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
             "Gewünschte Aktionen und bestätigte Ergebnisse werden getrennt angezeigt.",
         ))
         .build();
+    let health = adw::ActionRow::builder()
+        .title(text.text("Connection", "Verbindung"))
+        .subtitle(text.text("Connecting…", "Verbindung wird hergestellt…"))
+        .build();
+    group.add(&health);
     let definitions = [
         (
             text.text("Detected posture", "Erkannte Haltung"),
@@ -84,11 +89,6 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
     let refresh = gtk::Button::with_label(text.text("Refresh", "Aktualisieren"));
     refresh.set_height_request(44);
     group.set_header_suffix(Some(&refresh));
-    let health = adw::ActionRow::builder()
-        .title(text.text("Connection", "Verbindung"))
-        .subtitle(text.text("Connecting…", "Verbindung wird hergestellt…"))
-        .build();
-    group.add(&health);
     page.add(&group);
     let weak_window = window.downgrade();
     refresh.connect_clicked(move |button| {
