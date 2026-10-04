@@ -18,6 +18,7 @@ export class Dock {
     private splitAction: any;
     private touchSetup: any;
     private approveTouch: ((event: any) => boolean) | null = null;
+    suspended = false;
     constructor(navigate: (surface: 'home' | 'overview') => void, private activate: (app: any) => void) {
         this.actor.add_child(this.shelf);
         for (const [surface,label,icon] of [['home','Home','go-home-symbolic'],['overview','Overview','view-grid-symbolic']] as const) {
@@ -38,6 +39,12 @@ export class Dock {
     resize(width: number): void { this.shelf.width = Math.max(240,Math.min(760,width - 32)); }
     select(surface: string | null): void {
         for (const [name,item] of this.navigation) item.checked = name === surface;
+    }
+    setSuspended(suspended: boolean): void {
+        this.suspended = suspended;
+        // Keep the owned strut stable while GNOME animates existing windows.
+        // Hidden shelf children cannot intercept overview input.
+        this.shelf.visible = !suspended; this.actor.opacity = suspended ? 0 : 255;
     }
     showApps(visible: boolean): void { this.strip.visible = visible; }
     setSplitAction(action: (() => void) | null): void {

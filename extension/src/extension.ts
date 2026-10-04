@@ -20,6 +20,7 @@ import {RotationLock} from './rotation.js';
 import {NativePreference} from './native-preference.js';
 import {beforeDock} from './work-area.js';
 import {TouchSource} from './touch-source.js';
+import {DesktopController, desktopEligible} from './desktop.js';
 export default class TabletExtension extends Extension {
     private cleanup?: Cleanup;
     private bridge?: SessionBridge;
@@ -41,6 +42,8 @@ export default class TabletExtension extends Extension {
     private osk?: NativePreference;
     private windowLaters = new Set<number>();
     private touchSource?: TouchSource;
+    private desktop = new DesktopController();
+    private dockStrut = false;
     enable(): void {
         try { this.start(); }
         catch (error) {
@@ -80,24 +83,44 @@ export default class TabletExtension extends Extension {
         this.cleanup.signal(this.animations,'changed::color-scheme', () => this.appearance());
         this.cleanup.signal(this.animations,'changed::text-scaling-factor', () => this.position());
         this.appearance();
-        for (const actor of [this.home.actor,this.dock.actor,this.overview.actor]) {
-            actor.hide(); Main.layoutManager.addChrome(actor,{affectsStruts:actor === this.dock.actor,trackFullscreen:false});
+        const homeActor = this.home.actor;
+        homeActor.hide(); global.window_group.add_child(homeActor);
+        global.window_group.set_child_above_sibling(homeActor,Main.layoutManager._backgroundGroup);
+        Main.layoutManager.trackChrome(homeActor,{affectsStruts:false,trackFullscreen:false});
+        this.cleanup.add(() => {
+            Main.layoutManager.untrackChrome(homeActor);
+            global.window_group.remove_child(homeActor);
+        });
+        for (const actor of [this.dock.actor,this.overview.actor]) {
+            actor.hide(); Main.layoutManager.addChrome(actor,{affectsStruts:false,trackFullscreen:false});
             this.cleanup.add(() => Main.layoutManager.removeChrome(actor));
         }
         for (const actor of [this.home.actor,this.overview.actor]) {
             actor.can_focus = true;
             this.cleanup.signal(actor,'key-press-event', (_actor: any,event: any) => {
                 if (event.get_key_symbol() !== Clutter.KEY_Escape) return Clutter.EVENT_PROPAGATE;
-                this.hideSurfaces(); return Clutter.EVENT_STOP;
+                this.overview?.actor.hide(); this.showDesktop(); return Clutter.EVENT_STOP;
             });
         }
-        Main.uiGroup.set_child_below_sibling(this.home.actor,global.window_group);
         this.cleanup.signal(global.display,'in-fullscreen-changed', () => {
             const fullscreen = this.monitor && Main.layoutManager.monitors[this.monitor.index]?.inFullscreen;
             if (fullscreen) { this.hideSurfaces(); this.dock?.actor.hide(); }
-            else if (this.active) this.dock?.actor.show();
+            else if (this.active) {
+                this.dock?.setSuspended(Main.overview.visible); this.dock?.actor.show(); this.showDesktop();
+            }
         });
         this.cleanup.signal(Main.sessionMode,'updated', () => this.reconcile());
+        this.cleanup.signal(Main.overview,'showing', () => {
+            this.touch?.cancel(); this.hideSurfaces(); this.dock?.setSuspended(true);
+            this.splitController?.setVisible(false);
+        });
+        this.cleanup.signal(Main.overview,'hidden', () => {
+            const fullscreen = this.monitor && Main.layoutManager.monitors[this.monitor.index]?.inFullscreen;
+            this.dock?.setSuspended(false);
+            if (this.active && !fullscreen) {
+                this.position(); this.dock?.actor.show(); this.showDesktop();
+            }
+        });
         this.cleanup.signal(Main.layoutManager,'monitors-changed', () => this.display?.refresh());
         this.cleanup.signal(global.display,'workareas-changed', () => {
             if (this.active && this.monitor) { this.position(); this.windows.reconcileWorkArea(this.monitor.index); }
@@ -122,9 +145,13 @@ export default class TabletExtension extends Extension {
             for (const id of this.windowLaters) laters.remove(id); this.windowLaters.clear();
         });
         this.cleanup.signal(global.display,'notify::focus-window', () => {
-            if (this.active && global.display.focus_window) {
-                this.hideSurfaces(); this.dock?.showApps(!this.settings.get_boolean('dock-autohide'));
+            if (this.active) {
+                this.overview?.actor.hide(); this.showDesktop();
+                this.dock?.showApps(!this.settings.get_boolean('dock-autohide'));
             }
+        });
+        this.cleanup.signal(global.workspace_manager,'active-workspace-changed', () => {
+            this.overview?.actor.hide(); this.showDesktop();
         });
         this.display = new DisplayObserver(() => Main.layoutManager.monitors,
             monitor => { this.monitor = monitor; this.reconcile(); });
@@ -140,6 +167,12 @@ export default class TabletExtension extends Extension {
             .filter((window: any) => this.windows.eligible(window,this.monitor!.index) &&
                 window.located_on_workspace(global.workspace_manager.get_active_workspace()));
     }
+    private desktopWindows(): any[] {
+        if (!this.monitor) return [];
+        return global.get_window_actors().map((actor: any) => actor.meta_window)
+            .filter((window: any) => desktopEligible(window,this.monitor!.index) &&
+                window.located_on_workspace(global.workspace_manager.get_active_workspace()));
+    }
     private appearance(): void {
         const light = this.animations.get_string('color-scheme') === 'prefer-light';
         for (const actor of [this.home?.actor,this.overview?.actor,this.dock?.actor]) {
@@ -148,16 +181,32 @@ export default class TabletExtension extends Extension {
             actor.style_class = base + (light ? ' convertibled-light' : '');
         }
     }
+    private setDockStrut(enabled: boolean): void {
+        if (!this.dock || this.dockStrut === enabled) return;
+        Main.layoutManager.untrackChrome(this.dock.actor);
+        Main.layoutManager.trackChrome(this.dock.actor,{affectsStruts:enabled,trackFullscreen:false});
+        this.dockStrut = enabled;
+    }
+    private showDesktop(): void {
+        const fullscreen = this.monitor && Main.layoutManager.monitors[this.monitor.index]?.inFullscreen;
+        if (!this.active || Main.overview.visible || fullscreen) { this.home?.actor.hide(); return; }
+        this.home?.actor.show();
+        const desktopVisible = this.desktopWindows().every(window => window.minimized);
+        this.dock?.select(desktopVisible ? 'home' : null);
+        this.splitController?.setVisible(!desktopVisible && !this.overview?.actor.visible);
+    }
     private reconcile(): void {
         const allowed = Main.sessionMode.currentMode === 'user' && !Main.sessionMode.isLocked &&
             Boolean(this.monitor) && this.status?.desired.tablet_workspace === true;
         if (allowed && !this.active) {
             this.active = true; this.position();
+            this.setDockStrut(true);
             for (const window of this.internalWindows()) this.windows.maximize(window,this.monitor!.index);
             // Do not open Home or take focus from the application during folding.
-            this.dock?.actor.show();
+            this.dock?.setSuspended(Main.overview.visible); this.dock?.actor.show(); this.showDesktop();
         } else if (!allowed && this.active) {
-            this.active = false; this.touch?.cancel(); this.splitController?.clear(); this.hideSurfaces(); this.dock?.actor.hide(); this.windows.restore();
+            this.active = false; this.touch?.cancel(); this.splitController?.clear(); this.hideSurfaces();
+            this.dock?.actor.hide(); this.setDockStrut(false); this.desktop.restore(); this.windows.restore();
         } else if (allowed) this.position();
         const nativeAllowed = Main.sessionMode.currentMode === 'user' && !Main.sessionMode.isLocked &&
             this.status?.active === true && this.status.locked === false;
@@ -204,7 +253,7 @@ export default class TabletExtension extends Extension {
         if (!this.monitor) return;
         const workArea = Main.layoutManager.getWorkAreaForMonitor(this.monitor.index);
         const dock = this.dock!.actor;
-        const area = beforeDock(workArea,{x:dock.x,y:dock.y,width:dock.width,height:dock.height},dock.visible,this.monitor);
+        const area = beforeDock(workArea,{x:dock.x,y:dock.y,width:dock.width,height:dock.height},this.dockStrut,this.monitor);
         const keyboard = Main.layoutManager.keyboardBox;
         const [kx,boxY] = keyboard.get_transformed_position();
         // GNOME 50 anchors keyboardBox at the monitor bottom and translates its
@@ -222,23 +271,29 @@ export default class TabletExtension extends Extension {
             actor?.set_position(area.x,area.y); actor?.set_size(area.width,Math.max(48,usableHeight - 88));
         }
         this.home?.resize(area.width,usableHeight - 88,this.animations.get_double('text-scaling-factor'));
-        this.widgets?.resize(Math.min(1040,area.width - 80));
-        this.overview?.resize(area.width);
+        this.widgets?.resize(Math.min(1040,area.width - (area.width < 600 ? 40 : 80)),this.animations.get_double('text-scaling-factor'));
+        this.overview?.resize(area.width,usableHeight - 88,this.animations.get_double('text-scaling-factor'));
         this.splitController?.resize({...area,height:Math.max(0,usableHeight - 88)},this.monitor.index);
     }
     private hideSurfaces(): void {
         this.dock?.select(null);
         this.home?.actor.hide(); this.overview?.actor.hide();
-        if (this.home) Main.uiGroup.set_child_below_sibling(this.home.actor,global.window_group);
+        const fullscreen = this.monitor && Main.layoutManager.monitors[this.monitor.index]?.inFullscreen;
+        this.splitController?.setVisible(this.active && !Main.overview.visible && !fullscreen);
     }
     private navigate(surface: 'home' | 'overview' | 'dock'): void {
         if (!this.active || Main.modalCount > 0 || Main.overview.visible) return;
-        this.hideSurfaces(); this.dock?.actor.show();
+        this.overview?.actor.hide(); this.dock?.actor.show();
         this.dock?.showApps(true);
-        const actor = surface === 'home' ? this.home?.actor : surface === 'overview' ? this.overview?.actor : null;
-        if (!actor) return;
+        if (surface === 'home') {
+            this.desktop.show(this.desktopWindows(),this.monitor!.index,global.workspace_manager.get_active_workspace());
+            this.showDesktop(); this.home?.actor.grab_key_focus(); return;
+        }
+        const actor = surface === 'overview' ? this.overview?.actor : null;
+        if (!actor) { this.showDesktop(); return; }
+        this.splitController?.setVisible(false);
         this.dock?.select(surface);
-        if (surface === 'home') Main.uiGroup.set_child_above_sibling(actor,global.window_group);
+        this.home?.actor.hide();
         if (surface === 'overview') this.overview?.refresh();
         actor.show(); actor.opacity = 0;
         actor.ease({opacity:255,duration:this.animations.get_boolean('enable-animations') ? 200 : 0,
@@ -247,18 +302,25 @@ export default class TabletExtension extends Extension {
         // Home must not summon the native OSK until the user chooses search.
         actor.grab_key_focus();
     }
-    private activate(window: any): void { this.hideSurfaces(); Main.activateWindow(window); }
+    private activate(window: any): void {
+        this.desktop.forget(window); this.overview?.actor.hide(); Main.activateWindow(window); this.showDesktop();
+    }
     private activateApp(app: any): void {
         const window = app.get_windows().find((w: any) => w.get_monitor() === this.monitor?.index);
-        this.hideSurfaces(); if (window) Main.activateWindow(window); else app.open_new_window(-1);
+        this.overview?.actor.hide();
+        if (window) { this.desktop.forget(window); Main.activateWindow(window); } else app.open_new_window(-1);
+        this.showDesktop();
     }
     private split(first: any, second: any): void {
         if (!this.monitor || !this.active) return;
-        if (this.splitController?.apply(first,second,Main.layoutManager.getWorkAreaForMonitor(this.monitor.index),this.monitor.index))
-            this.hideSurfaces();
+        if (this.splitController?.apply(first,second,Main.layoutManager.getWorkAreaForMonitor(this.monitor.index),this.monitor.index)) {
+            this.desktop.forget(first); this.desktop.forget(second);
+            first.unminimize(); second.unminimize();
+            this.overview?.actor.hide(); Main.activateWindow(second); this.showDesktop();
+        }
     }
     disable(): void {
-        this.active = false; this.touch?.cancel(); this.splitController?.clear(); this.windows.restore();
+        this.active = false; this.touch?.cancel(); this.splitController?.clear(); this.desktop.restore(); this.windows.restore();
         this.rotation?.destroy(); this.rotation = undefined;
         this.osk?.destroy(); this.osk = undefined;
         this.touchSource?.destroy(); this.touchSource = undefined;
@@ -267,5 +329,6 @@ export default class TabletExtension extends Extension {
         this.bridge = undefined; this.display = undefined; this.cleanup = undefined;
         this.home = undefined; this.dock = undefined; this.overview = undefined; this.widgets = undefined;
         this.monitor = null; this.status = null; this.reported = '';
+        this.dockStrut = false;
     }
 }

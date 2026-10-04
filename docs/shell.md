@@ -76,10 +76,13 @@ identifiers and duplicates are ignored. UPower uses asynchronous local D-Bus,
 with an explicit unavailable label. There are no accounts or network widgets.
 
 The extension entrypoint wires surfaces, service/display observers and window
-management. Folding reveals navigation without opening Home or changing app
-focus. Lock/inactive shell modes, daemon loss and disable restore owned windows
-and hide surfaces. Home/Overview open only through explicit navigation; app
-activation closes them. Reduced-motion preferences disable 200 ms opacity easing.
+management. Folding enables the persistent Home desktop behind application
+windows without changing app focus. Explicit Home minimizes eligible windows
+on the internal current workspace, including standalone preferences dialogs.
+Native reopening, workspace changes and monitor moves relinquish minimization
+ownership. Lock/inactive modes, daemon loss and disable restore only still-owned
+changes. The window picker opens explicitly; app activation closes it. Reduced
+motion disables the picker's 200 ms opacity easing.
 Split selection places two compatible resizable windows and creates a visible
 divider to cycle ratios. Display changes recalculate the portrait-aware layout;
 window closure removes the divider. Incompatible minimums leave both windows
@@ -113,9 +116,12 @@ user changes retain ownership. Actual lock and read-only/absent failures are
 reported separately from requests. GNOME remains the rotation/touch mapper.
 
 Hidden surfaces opt out of LayoutManager's automatic fullscreen visibility
-tracking, which otherwise overrides an actor's hidden state. Home rests below
-the application group and is raised only on explicit navigation. Fullscreen
-entry hides navigation; leaving fullscreen restores it only in active tablet mode.
+tracking, which otherwise overrides an actor's hidden state. Home lives inside
+GNOME's window group, above its wallpaper group and below application windows;
+it has no native application/window identity. Native Overview suppresses tablet
+surfaces, the split divider and shelf while preserving navigation geometry.
+Fullscreen entry hides navigation. Leaving tablet mode untracks the dock's
+strut explicitly: GNOME struts do not disappear merely by hiding an actor.
 
 Installed-app tiles provide explicit touch-sized add/remove favorite controls.
 These use GNOME's existing AppFavorites owner so Home, the tablet dock and the

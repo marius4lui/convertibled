@@ -11,6 +11,7 @@ export class SplitController {
     private area?: Rect;
     private cleanup = new Cleanup();
     private divider: any;
+    private visible = true;
     constructor(private windows: WindowController, private settings: any,private activeChanged: (active: boolean) => void) {}
     apply(first: any, second: any, area: Rect, monitor: number): boolean {
         // Mutter disallows interactive resize while maximized. Tablet entry
@@ -43,6 +44,7 @@ export class SplitController {
         });
         this.divider.set_position(layout.divider.x,layout.divider.y);
         this.divider.set_size(layout.divider.width,layout.divider.height);
+        this.divider.visible = this.visible;
         Main.layoutManager.addChrome(this.divider,{affectsStruts:false,trackFullscreen:false});
         this.cleanup.add(() => { Main.layoutManager.removeChrome(this.divider); this.divider.destroy(); });
         for (const window of [first,second]) {
@@ -55,6 +57,10 @@ export class SplitController {
         if (!this.first || !this.second) return;
         if (this.area && ['x','y','width','height'].every(k => this.area![k as keyof Rect] === area[k as keyof Rect])) return;
         if (!this.apply(this.first,this.second,area,monitor)) this.end(monitor);
+    }
+    setVisible(visible: boolean): void {
+        this.visible = visible;
+        if (this.divider) this.divider.visible = visible;
     }
     end(monitor: number): void {
         for (const window of [this.first,this.second]) {

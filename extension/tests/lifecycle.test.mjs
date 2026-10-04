@@ -25,7 +25,8 @@ test('startup, fold, lock and disable preserve focus and release resources', () 
     extension.status={schema_version:1,profile:'tablet',desired:{tablet_workspace:true,rotation_lock:false}};
     extension.reconcile();
     assert.equal(globalThis.focusChanges,0);assert.equal(extension.dock.actor.visible,true);
-    assert.equal(extension.home.actor.visible,false);
+    assert.equal(extension.home.actor.visible,true);
+    assert.equal(extension.home.actor.get_parent(),global.window_group);
     main.sessionMode.isLocked=true;extension.reconcile();
     assert.ok(main.layoutManager.chrome.every(a=>!a.visible));
     extension.disable();extension.disable();
@@ -36,8 +37,8 @@ test('startup, fold, lock and disable preserve focus and release resources', () 
 test('explicit Home navigation honors reduced motion and OSK allocation', () => {
     const extension=new Extension();extension.enable();extension.monitor=main.layoutManager.monitors[0];
     extension.status={schema_version:1,profile:'tablet',desired:{tablet_workspace:true,rotation_lock:false}};
-    extension.reconcile();extension.animations.values['enable-animations']=false;extension.navigate('home');
-    assert.equal(extension.home.actor.duration,0);
+    extension.reconcile();extension.animations.values['enable-animations']=false;extension.navigate('overview');
+    assert.equal(extension.overview.actor.duration,0);extension.navigate('home');
     main.layoutManager.keyboardBox.visible=true;main.layoutManager.keyboardBox.set_position(0,350);
     main.layoutManager.keyboardBox.set_size(800,250);extension.position();
     assert.equal(extension.home.actor.height,262);assert.equal(extension.dock.actor.y,262);
@@ -70,4 +71,20 @@ test('appearance and navigation selection follow actual native state', () => {
     assert.doesNotMatch(extension.home.actor.style_class,/convertibled-light/);
     extension.hideSurfaces();assert.equal(extension.dock.navigation.get('overview').checked,false);
     extension.disable();
+});
+
+test('tablet desktop stays in the window scene and yields chrome to native Overview', () => {
+    const extension=new Extension();extension.enable();extension.monitor=main.layoutManager.monitors[0];
+    extension.status={schema_version:1,profile:'tablet',desired:{tablet_workspace:true,rotation_lock:false}};
+    extension.reconcile();assert.equal(extension.home.actor.get_parent(),global.window_group);
+    assert.equal(extension.home.actor.visible,true);assert.equal(extension.dockStrut,true);
+    main.overview.visible=true;main.overview.emit('showing');
+    assert.equal(extension.home.actor.visible,false);assert.equal(extension.overview.actor.visible,false);
+    assert.equal(extension.dock.suspended,true);assert.equal(extension.dock.actor.opacity,0);
+    assert.equal(extension.dockStrut,true);
+    main.overview.visible=false;main.overview.emit('hidden');
+    assert.equal(extension.home.actor.visible,true);assert.equal(extension.dock.suspended,false);
+    extension.status.desired.tablet_workspace=false;extension.reconcile();
+    assert.equal(extension.dockStrut,false);assert.equal(extension.home.actor.visible,false);
+    extension.disable();assert.equal(main.overview.signals.size,0);
 });
