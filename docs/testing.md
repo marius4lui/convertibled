@@ -6,6 +6,11 @@ after unchanged passing results.
 
 ## Automated layers
 
+Private D-Bus integration checks exercise actual versioned session calls and
+SensorProxy claims/release/reconnection against disposable bus services. Run
+each ignored daemon/session test under `timeout 90s dbus-run-session`; these
+tests do not connect to the host's system bus or establish hardware acceptance.
+
 - State engine: conflicting/unknown observations, debounce, manual overrides,
   ordering, reconnect, and resume reconciliation.
 - Configuration: validation, precedence, atomic reload, migration compatibility.

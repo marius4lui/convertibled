@@ -100,6 +100,10 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
     rotation.add(&lock);
     page.add(&rotation);
     // Initialize controls from service state without causing writes.
+    selection.set_sensitive(false);
+    lock.set_sensitive(false);
+    apply.set_sensitive(false);
+    save.set_sensitive(false);
     glib::MainContext::default().spawn_local(async move {
         if let Ok(client) = Client::connect().await
             && let Ok(status) = client.status().await
@@ -112,6 +116,10 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
                     .unwrap_or(false),
             );
         }
+        selection.set_sensitive(true);
+        lock.set_sensitive(true);
+        apply.set_sensitive(true);
+        save.set_sensitive(true);
     });
     page.add(&crate::profile_editor::group(text));
     page

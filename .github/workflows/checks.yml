@@ -63,6 +63,7 @@ jobs:
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
       - run: timeout 90s dbus-run-session -- cargo test -p convertibled-session -- --ignored
+      - run: timeout 90s dbus-run-session -- cargo test -p convertibled -- --ignored
       - name: Native GTK startup and missing-service rendering
         run: dbus-run-session -- xvfb-run -a -s '-screen 0 1024x900x24' bash scripts/smoke-settings.sh
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
