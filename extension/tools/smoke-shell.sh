@@ -4,7 +4,7 @@ set -euo pipefail
 bundle=${1:-"$(cd "$(dirname "$0")/.." && pwd)/dist"}
 test -f "$bundle/extension.js"
 test -f "$bundle/metadata.json"
-for command in gnome-shell gnome-extensions gsettings glib-compile-schemas dbus-run-session; do
+for command in gnome-shell gnome-extensions gsettings gdbus glib-compile-schemas dbus-run-session; do
     command -v "$command" >/dev/null
 done
 gnome-shell --version | grep -E 'GNOME Shell 50([. ]|$)'
@@ -30,18 +30,21 @@ wait_state() {
     local wanted=$1
     for attempt in $(seq 1 40); do
         if ! kill -0 "$shell_pid" 2>/dev/null; then cat "$CONVERTIBLED_SMOKE_LOG"; return 1; fi
-        if LC_ALL=C gnome-extensions info "$uuid" 2>/dev/null | grep -Eq "State: $wanted$"; then return 0; fi
+        if gdbus call --session --timeout 1 --dest org.gnome.Shell.Extensions \
+            --object-path /org/gnome/Shell/Extensions \
+            --method org.gnome.Shell.Extensions.GetExtensionInfo "$uuid" 2>/dev/null \
+            | grep -Eq "'state': <$wanted([.]0)?>"; then return 0; fi
         sleep 0.5
     done
     LC_ALL=C gnome-extensions info "$uuid" || true
     cat "$CONVERTIBLED_SMOKE_LOG"
     return 1
 }
-wait_state ENABLED
+wait_state 1 # GNOME 50 ExtensionState.ACTIVE
 gnome-extensions disable "$uuid"
-wait_state DISABLED
+wait_state 2 # GNOME 50 ExtensionState.INACTIVE
 gnome-extensions enable "$uuid"
-wait_state ENABLED
+wait_state 1
 if grep -Eq 'JS ERROR.*convertibled|Failed to (load|enable) extension.*convertibled' "$CONVERTIBLED_SMOKE_LOG"; then
     cat "$CONVERTIBLED_SMOKE_LOG"; exit 1
 fi

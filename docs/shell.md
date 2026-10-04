@@ -160,3 +160,6 @@ localized names and diagnostics retain stable English descriptions.
 GNOME 50 AppSystem's installed list contains Gio AppInfo records, not ShellApp
 objects. Home resolves each ID through `lookup_app` for icons/launching. A native
 adapter test covers that distinction with realistic nonempty app metadata.
+
+Smoke checks use the versioned extension D-Bus numeric state (ACTIVE=1,
+INACTIVE=2), avoiding translated CLI labels and renamed GNOME 50 states.
