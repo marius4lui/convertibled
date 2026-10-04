@@ -81,3 +81,8 @@ logind PrepareForSleep invalidates posture before sleep and on wake, releasing
 accelerometer claims before fresh switch sampling. Both services handle SIGTERM
 for systemd orderly stop in addition to Ctrl-C; the daemon releases sensor claims.
 Suspend/reconnect behavior remains subject to Linux and device integration checks.
+
+A private-bus integration test exercises the actual Session1 wire contract,
+inactive/locked denials, invalid profile/config rejection and bounded reports.
+Run dbus-run-session -- cargo test -p convertibled-session -- --ignored on Linux;
+Windows cross checks compile this test but cannot execute its D-Bus assertions.
