@@ -9,6 +9,16 @@ concurrency:
   group: checks-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  dependencies:
+    name: Dependency advisories and licenses
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d
+        with:
+          toolchain: '1.99.0'
+      - run: cargo install cargo-deny --locked --version 0.20.2
+      - run: cargo deny --locked check
   fedora:
     name: Fedora 44 and GNOME 50 lifecycle
     runs-on: ubuntu-24.04
@@ -74,6 +84,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - run: npm audit --audit-level=high
   documentation:
     runs-on: ubuntu-24.04
     steps:

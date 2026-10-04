@@ -7,6 +7,9 @@ or physical-device acceptance. Public publishing remains separately gated.
 Distribution CI exercises signature failures, archive rejection, installation
 transactions and recovery in isolated temporary directories. Pull requests run
 once per update; branch pushes do not duplicate the same checks.
+Dependency gates check RustSec advisories, declared licenses and registry sources
+with a pinned cargo-deny version, plus npm's high-severity audit. These gates do
+not replace review of privileged code or a production signing-key procedure.
 
 ## Version policy
 
