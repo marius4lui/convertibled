@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Install native build dependencies
-        run: sudo apt-get update && sudo apt-get install -y libgtk-4-dev libadwaita-1-dev pkg-config
+        run: sudo apt-get update && sudo apt-get install -y libgtk-4-dev libadwaita-1-dev pkg-config xvfb dbus-x11 imagemagick
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d
         with:
           toolchain: stable
@@ -24,6 +24,14 @@ jobs:
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
+      - name: Native GTK startup and missing-service rendering
+        run: dbus-run-session -- xvfb-run -a -s '-screen 0 1024x900x24' bash scripts/smoke-settings.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: native-settings-smoke
+          path: artifacts/
+          if-no-files-found: ignore
   distribution:
     name: Signed updates and recovery
     runs-on: ubuntu-24.04

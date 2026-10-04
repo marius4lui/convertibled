@@ -38,6 +38,14 @@ based only on intended behavior.
 
 ## Documentation-only checks
 
+## Headless settings check
+
+Linux CI starts the real GTK/libadwaita application under disposable Xvfb and
+D-Bus, checks it remains alive without GTK criticals and captures its initial
+missing-service view. The screenshot/log artifact aids review of native layout.
+This X11 software-rendered smoke check does not validate Wayland, touch, OSK,
+screenreader behavior or GNOME Shell integration; those remain physical gates.
+
 Resolve relative Markdown links, check mandatory reading targets, inspect UTF-8,
 run `git diff --check`, and review planned/current wording. Do not introduce
 application tests before implementation exists solely to mirror documentation.
