@@ -276,3 +276,9 @@ and [input device declarations](https://github.com/GNOME/mutter/blob/50.5/clutte
 confirm `list_devices`, `device-removed`, `get_device_type` and `get_device_node`.
 The regression exercises seat discovery, approval and removal through extension
 startup; physical touchscreen acceptance remains separate.
+
+The disposable native smoke canonicalizes and freezes its own mktemp root.
+After compositor/bus shutdown, cleanup retries deletion up to 20 times with a
+quarter-second drain between attempts, covering short-lived cache writers.
+The original failing test status is retained; persistent cleanup failure also
+fails an otherwise successful test. Cleanup refuses unexpected root names.

@@ -9,8 +9,20 @@ for command in gnome-shell gnome-extensions gsettings gdbus glib-compile-schemas
 done
 gnome-shell --version | grep -E 'GNOME Shell 50([. ]|$)'
 task_root=$(mktemp -d "${TMPDIR:-/tmp}/convertibled-shell-smoke.XXXXXXXX")
+task_root=$(cd "$task_root" && pwd -P)
+readonly task_root
 task_system_pid=''
-trap 'if test -n "$task_system_pid"; then kill "$task_system_pid" 2>/dev/null || true; fi; rm -rf -- "$task_root"' EXIT
+source "$(dirname "$0")/smoke-cleanup.sh"
+cleanup() {
+    local original_status=$?
+    trap - EXIT
+    if test -n "$task_system_pid"; then kill "$task_system_pid" 2>/dev/null || true; fi
+    # The helper preserves a test failure, or reports a persistent cleanup error.
+    local final_status=0
+    cleanup_smoke_root "$task_root" "$original_status" || final_status=$?
+    exit "$final_status"
+}
+trap cleanup EXIT
 export XDG_DATA_HOME="$task_root/data" XDG_CONFIG_HOME="$task_root/config"
 export XDG_CACHE_HOME="$task_root/cache" XDG_RUNTIME_DIR="$task_root/runtime"
 export GSETTINGS_BACKEND=keyfile LIBGL_ALWAYS_SOFTWARE=1
