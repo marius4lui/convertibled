@@ -11,6 +11,11 @@ class MetadataTests(unittest.TestCase):
         with self.assertRaises(UpdateError):
             decode(b'{"a":1,"a":2}')
 
+    def test_nonfinite_numbers_denied(self):
+        for raw in (b'{"a":NaN}', b'{"a":Infinity}', b'{"a":-Infinity}'):
+            with self.assertRaises(UpdateError):
+                decode(raw)
+
     def test_unsafe_versions_denied(self):
         for value in ("../1", "01.0.0", "1.2", "1.0.0;id", "1.0.0-beta.0"):
             with self.assertRaises(UpdateError):

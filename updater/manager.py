@@ -39,6 +39,8 @@ class Manager:
         accepted = read(self.layout.state / "accepted.json", {"schema": 1, "root_sequence": 0, "channels": {}})
         now = dt.datetime.now(dt.timezone.utc)
         ring = keyring(self.network(trusted["keyring_url"]), trusted["roots"], now, accepted["root_sequence"])
+        if ring["sequence"] == accepted["root_sequence"] and accepted.get("keyring") not in (None, ring):
+            raise UpdateError("Immutable keyring sequence changed")
         signed = self.network(trusted["channels"][channel])
         metadata = envelope(signed, ring["keys"])
         # Re-checking the same authenticated version is idempotent, while older
@@ -54,6 +56,7 @@ class Manager:
             if old.get("version") and version_order(metadata["version"]) < version_order(old["version"]):
                 raise UpdateError("Signed version downgrade requires explicit local rollback")
         accepted["root_sequence"] = ring["sequence"]
+        accepted["keyring"] = ring
         accepted["channels"][channel] = metadata
         atomic(self.layout.state / "accepted.json", accepted)
         atomic(self.layout.state / "available.json", metadata)

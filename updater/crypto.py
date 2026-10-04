@@ -1,6 +1,7 @@
 """Ed25519 signatures use OpenSSL, with no shell interpolation."""
 import base64
 import re
+import datetime as dt
 import subprocess
 import tempfile
 from pathlib import Path
@@ -51,12 +52,14 @@ def envelope(raw, keys):
 
 def keyring(raw, roots, now, minimum=0):
     value = envelope(raw, roots)
-    if not isinstance(value, dict) or set(value) != {"schema", "sequence", "issued", "expires", "keys"} or value["schema"] != 1:
+    if not isinstance(value, dict) or set(value) != {"schema", "sequence", "issued", "expires", "keys"} or type(value["schema"]) is not int or value["schema"] != 1:
         raise UpdateError("Invalid root-signed keyring")
     if type(value["sequence"]) is not int or value["sequence"] < minimum:
         raise UpdateError("Keyring replay")
     if not timestamp(value["issued"]) <= now < timestamp(value["expires"]):
         raise UpdateError("Expired keyring")
+    if timestamp(value["expires"]) - timestamp(value["issued"]) > dt.timedelta(days=366):
+        raise UpdateError("Offline-root keyring validity exceeds one year")
     if not isinstance(value["keys"], dict) or not 1 <= len(value["keys"]) <= 16:
         raise UpdateError("Invalid release keyring")
     for key_id, pem in value["keys"].items():

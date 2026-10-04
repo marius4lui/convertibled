@@ -24,7 +24,7 @@ def version_order(value):
 
 
 def canonical(value):
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode()
 
 
 def unique_object(pairs):
@@ -40,7 +40,9 @@ def decode(raw, maximum=262144):
     if len(raw) > maximum:
         raise UpdateError("Metadata exceeds size limit")
     try:
-        return json.loads(raw, object_pairs_hook=unique_object)
+        def invalid_constant(_):
+            raise UpdateError("Non-finite JSON number")
+        return json.loads(raw, object_pairs_hook=unique_object, parse_constant=invalid_constant)
     except (ValueError, UnicodeError) as exc:
         raise UpdateError("Invalid JSON metadata") from exc
 
@@ -57,7 +59,7 @@ def timestamp(value):
 
 def release(value, channel, now, sequence=0):
     required = {"schema", "version", "sequence", "channel", "platform", "issued", "expires", "artifact", "config_schema", "notes"}
-    if not isinstance(value, dict) or set(value) != required or value["schema"] != 1:
+    if not isinstance(value, dict) or set(value) != required or type(value["schema"]) is not int or value["schema"] != 1:
         raise UpdateError("Unsupported release metadata")
     version(value["version"])
     if channel not in ("stable", "preview") or value["channel"] != channel:
@@ -79,6 +81,6 @@ def release(value, channel, now, sequence=0):
         raise UpdateError("Invalid artifact size")
     if not isinstance(artifact["sha256"], str) or not re.fullmatch(r"[0-9a-f]{64}", artifact["sha256"]):
         raise UpdateError("Invalid artifact digest")
-    if value["config_schema"] != 1 or not isinstance(value["notes"], str) or len(value["notes"]) > 16384:
+    if type(value["config_schema"]) is not int or value["config_schema"] != 1 or not isinstance(value["notes"], str) or len(value["notes"]) > 16384:
         raise UpdateError("Unsupported configuration or notes")
     return value

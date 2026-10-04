@@ -19,7 +19,7 @@ def safe_name(name):
 
 
 def manifest(value):
-    if not isinstance(value, dict) or set(value) != {"schema", "version", "files"} or value["schema"] != 1:
+    if not isinstance(value, dict) or set(value) != {"schema", "version", "files"} or type(value["schema"]) is not int or value["schema"] != 1:
         raise UpdateError("Unsupported bundle manifest")
     version(value["version"])
     files = value["files"]

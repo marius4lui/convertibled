@@ -176,3 +176,8 @@ Archive metadata is bounded during enumeration, before reading a later entry.
 Payload extraction follows physical archive order to avoid repeated gzip
 rewinds. Tests construct actual symlink, duplicate and traversal tar entries and
 verify rejection before the candidate directory is created.
+
+JSON rejects non-finite numbers and boolean schema impostors. Root keyring
+validity is capped at 366 days and an accepted sequence binds the exact keyring
+payload; changed keys/expiry require a new root sequence, preventing same-sequence
+keyring swaps after revocation.
