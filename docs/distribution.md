@@ -181,3 +181,9 @@ JSON rejects non-finite numbers and boolean schema impostors. Root keyring
 validity is capped at 366 days and an accepted sequence binds the exact keyring
 payload; changed keys/expiry require a new root sequence, preventing same-sequence
 keyring swaps after revocation.
+
+A rolled-back candidate is quarantined from automatic retry, preventing a
+logout/update/failure loop. A newer version or an explicit administrator
+`activate` can retry. Service sandbox write paths include only the complete fixed
+integration destinations. SELinux enforcing installation/activation must still
+be verified on Fedora 44; no SELinux protections are disabled by the installer.

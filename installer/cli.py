@@ -63,7 +63,7 @@ def execute(args, layout):
             from installer.uninstall import uninstall
             uninstall(layout)
         elif args.command == "scheduled":
-            from updater.schedule import due
+            from updater.schedule import due, quarantined
             if graphical_sessions():
                 transaction.observe_login()
                 if preferences(layout)["automatic_updates"] and due(layout):
@@ -74,7 +74,9 @@ def execute(args, layout):
                     if due(layout):
                         manager.prepare()
                     if read(layout.state / "prepared.json"):
-                        transaction.activate(manager.activation_ready())
+                        candidate = manager.activation_ready()
+                        if not quarantined(layout, candidate):
+                            transaction.activate(candidate)
         return publish(layout)
 
 

@@ -15,3 +15,8 @@ def due(layout, now=None):
             return False
     atomic(layout.state / "schedule.json", {"schema": 1, "checked": now.isoformat()})
     return True
+
+
+def quarantined(layout, candidate):
+    previous = read(layout.state / "transaction.json", {})
+    return previous.get("phase") == "rolled_back" and previous.get("candidate") == candidate

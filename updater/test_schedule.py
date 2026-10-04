@@ -1,8 +1,8 @@
 import datetime as dt
 import tempfile
 import unittest
-from .schedule import due
-from installer.storage import Layout
+from .schedule import due, quarantined
+from installer.storage import Layout, atomic
 
 
 class ScheduleTests(unittest.TestCase):
@@ -15,3 +15,11 @@ class ScheduleTests(unittest.TestCase):
             self.assertFalse(due(layout, now + dt.timedelta(minutes=2)))
             self.assertFalse(due(layout, now - dt.timedelta(hours=1)))
             self.assertTrue(due(layout, now + dt.timedelta(hours=6)))
+
+    def test_failed_candidate_is_not_automatically_retried(self):
+        with tempfile.TemporaryDirectory() as root:
+            layout = Layout(root)
+            layout.initialize()
+            atomic(layout.state / "transaction.json", {"phase": "rolled_back", "candidate": "0.2.0"})
+            self.assertTrue(quarantined(layout, "0.2.0"))
+            self.assertFalse(quarantined(layout, "0.2.1"))
