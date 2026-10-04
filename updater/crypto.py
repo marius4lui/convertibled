@@ -9,7 +9,7 @@ from .model import UpdateError, canonical, decode, timestamp
 def verify(public_pem, payload, signature):
     try:
         signature = base64.b64decode(signature, validate=True)
-        if len(signature) != 64 or "BEGIN PUBLIC KEY" not in public_pem:
+        if len(signature) != 64 or not isinstance(public_pem, str) or "BEGIN PUBLIC KEY" not in public_pem:
             raise ValueError()
         with tempfile.TemporaryDirectory(prefix="convertibled-verify-") as directory:
             directory = Path(directory)
@@ -27,7 +27,7 @@ def envelope(raw, keys):
     value = decode(raw)
     if not isinstance(value, dict) or set(value) != {"key_id", "payload", "signature"}:
         raise UpdateError("Invalid signed envelope")
-    if value["key_id"] not in keys:
+    if not isinstance(value["key_id"], str) or value["key_id"] not in keys:
         raise UpdateError("Unknown or revoked signing key")
     verify(keys[value["key_id"]], canonical(value["payload"]), value["signature"])
     return value["payload"]

@@ -93,3 +93,7 @@ monotonic sequence, release notes and a 14-day lifetime. `sign.py` signs canonic
 payloads with an external Ed25519 private key and rejects keys inside the repo.
 The same signer signs independent offline-root keyring payloads. Publication
 and key custody remain maintainer operations; these scripts never publish.
+
+Crypto tests generate ephemeral temporary Ed25519 keys and execute OpenSSL to
+verify valid/tampered payloads, revoked keys, offline-root sequence rollback and
+malformed signatures. These keys are test fixtures, never production trust.
