@@ -62,3 +62,7 @@ Startup shell health now uses explicit Session1.ReportShellHealth(version,health
 separate from action reports: normal laptop mode does not imply failed startup
 or prove a successful startup. Extension-provided matching metadata version is
 validated before the bounded relay to the system daemon.
+
+Selected profile TOML actions now resolve to desired rotation/osk tri-state fields.
+Defaults remain unchanged; switching profiles recomputes actions and never infers
+applied success. Unsupported input/scaling directives still fail validation.

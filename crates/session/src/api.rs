@@ -6,6 +6,7 @@ use zbus::{Connection, message::Header, object_server::SignalEmitter};
 pub struct Api {
     pub state: Arc<RwLock<Status>>,
     pub capabilities: Arc<RwLock<Capabilities>>,
+    pub config: Arc<RwLock<convertibled_core::config::Config>>,
 }
 async fn authorize(connection: &Connection, header: &Header<'_>) -> zbus::fdo::Result<()> {
     let sender = header
@@ -49,6 +50,7 @@ impl Api {
             ));
         }
         state.set_profile(profile).map_err(failed)?;
+        state.apply_config(&*self.config.read().await);
         let json = serde_json::to_string(&*state).map_err(failed)?;
         drop(state);
         Self::changed(&emitter, &json)
@@ -175,9 +177,11 @@ impl Api {
                 "Session is inactive or locked".into(),
             ));
         }
+        *self.config.write().await = candidate.clone();
         state.desired.rotation_lock = candidate.rotation_lock.unwrap_or(false);
         state.desired.rotation_lock_requested = candidate.rotation_lock.is_some();
         state.reconcile();
+        state.apply_config(&candidate);
         let json = serde_json::to_string(&*state).map_err(failed)?;
         drop(state);
         Self::changed(&emitter, &json)

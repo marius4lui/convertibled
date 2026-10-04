@@ -82,6 +82,8 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut initial = Status::default();
     initial.desired.rotation_lock = config.rotation_lock.unwrap_or(false);
     initial.desired.rotation_lock_requested = config.rotation_lock.is_some();
+    initial.apply_config(&config);
+    let config = Arc::new(RwLock::new(config));
     let state = Arc::new(RwLock::new(initial));
     let capabilities = Arc::new(RwLock::new(Capabilities::default()));
     let connection = zbus::connection::Builder::session()?
@@ -91,6 +93,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             Api {
                 state: state.clone(),
                 capabilities,
+                config: config.clone(),
             },
         )?
         .build()
@@ -107,6 +110,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             status.active = active;
             status.locked = locked;
             status.reconcile();
+            status.apply_config(&*config.read().await);
             let json = serde_json::to_string(&*status)?;
             drop(status);
             Api::changed(&emitter, &json).await?;

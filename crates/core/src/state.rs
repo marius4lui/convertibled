@@ -59,6 +59,8 @@ pub struct Desired {
     pub tablet_workspace: bool,
     pub rotation_lock: bool,
     pub rotation_lock_requested: bool,
+    pub rotation: crate::config::Action,
+    pub osk: crate::config::Action,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Applied {
@@ -115,6 +117,17 @@ impl Status {
         self.desired.tablet_workspace =
             self.active && !self.locked && self.profile != Profile::Laptop;
         self.revision = self.revision.saturating_add(1);
+    }
+    pub fn apply_config(&mut self, config: &crate::config::Config) {
+        let key = match self.profile {
+            Profile::Laptop => "laptop",
+            Profile::Tablet => "tablet",
+            Profile::Stand => "stand",
+            Profile::Tent => "tent",
+        };
+        let profile = config.profiles.get(key).cloned().unwrap_or_default();
+        self.desired.rotation = profile.rotation;
+        self.desired.osk = profile.osk;
     }
     pub fn set_profile(&mut self, profile: &str) -> Result<(), String> {
         self.manual_override = Profile::parse(profile)?;
@@ -189,5 +202,23 @@ mod tests {
         state.set_profile("auto").unwrap();
         assert_eq!(state.profile, Profile::Laptop);
         assert!(state.set_profile("shell command").is_err());
+    }
+    #[test]
+    fn selected_profile_resolves_configured_actions() {
+        let config = crate::config::Config::parse(
+            "schema_version=1\n[profiles.tablet]\nrotation='enabled'\nosk='disabled'",
+        )
+        .unwrap();
+        let mut state = Status {
+            active: true,
+            ..Status::default()
+        };
+        state.set_profile("tablet").unwrap();
+        state.apply_config(&config);
+        assert_eq!(state.desired.rotation, crate::config::Action::Enabled);
+        assert_eq!(state.desired.osk, crate::config::Action::Disabled);
+        state.set_profile("laptop").unwrap();
+        state.apply_config(&config);
+        assert_eq!(state.desired.rotation, crate::config::Action::Unchanged);
     }
 }
