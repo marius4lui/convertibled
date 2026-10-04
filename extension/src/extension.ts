@@ -148,6 +148,7 @@ export default class TabletExtension extends Extension {
         this.reportApplied();
     }
     private reportApplied(): void {
+        this.widgets?.setSession(this.status?.profile ?? null,this.active,this.rotation?.locked ?? false);
         const rotationRequest = this.status?.desired.rotation_lock_requested
             ? this.status.desired.rotation_lock ? 'disabled' : 'enabled' : this.status?.desired.rotation ?? 'unchanged';
         const rotationActual = this.rotation?.locked ? 'disabled' : 'enabled';
@@ -184,7 +185,7 @@ export default class TabletExtension extends Extension {
             actor?.set_position(area.x,area.y); actor?.set_size(area.width,Math.max(48,usableHeight - 96));
         }
         this.home?.resize(area.width);
-        this.splitController?.resize({...area,height:Math.max(0,area.height - 88)},this.monitor.index);
+        this.splitController?.resize({...area,height:Math.max(0,usableHeight - 88)},this.monitor.index);
     }
     private hideSurfaces(): void {
         this.home?.actor.hide(); this.overview?.actor.hide();

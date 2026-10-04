@@ -7,6 +7,8 @@ const german: Record<string,string> = {
     'Change split':'Teilung ändern','End split':'Teilung beenden',
     'Automatic mode':'Automatik','Rotation lock':'Drehsperre',
     'Battery status unavailable':'Akkustatus nicht verfügbar','Battery':'Akku',
+    'Laptop mode':'Laptop-Modus','Tablet mode':'Tablet-Modus','Stand mode':'Stand-Modus','Tent mode':'Zelt-Modus',
+    'Session service unavailable':'Sitzungsdienst nicht verfügbar',
     'No windows on this display':'Keine Fenster auf diesem Bildschirm',
     'Application':'Anwendung','These apps need more space for this split':'Diese Apps brauchen mehr Platz für die Teilung',
     'Choose two resizable main windows on the internal display':'Zwei anpassbare Hauptfenster auf dem internen Bildschirm auswählen',

@@ -203,3 +203,8 @@ maximized application controls above navigation. Position calculations remove
 only that owned inset to avoid repeated self-shrinking work areas. Native work
 area changes refresh maximize ownership; split allocations exclude the dock.
 Portable regression tests cover inset feedback, OSK placement and external bounds.
+
+The battery/system widget includes the selected native mode and an explicit
+session-service-unavailable state. Rotation quick action exposes actual native
+checked state. Widget adapter tests cover ordered visibility, unavailable/live
+battery updates and clock timer cleanup. Split space also excludes visible OSK.
