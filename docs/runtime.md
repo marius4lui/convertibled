@@ -119,3 +119,7 @@ and blocking workers. The private-bus contract test is internally bounded to
 Sensor claim recovery tracks the actual SensorProxy bus owner. Restarted owners
 are reclaimed; canceled/failed claims are released before retry because the remote
 service may already have received the request. Loss never creates valid orientation.
+
+Switch sampling pauses throughout PrepareForSleep(true)..false; stale folded state
+cannot return during suspend preparation. A closed logind stream fails for systemd
+restart rather than spinning. Successful sensor release clears local claim state.

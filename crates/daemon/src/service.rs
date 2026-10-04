@@ -72,13 +72,15 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut terminate = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
     let mut interval = tokio::time::interval(Duration::from_millis(250));
     let mut sensor = crate::sensor::Sensor::default();
+    let mut suspended = false;
     loop {
         tokio::select! {
             _=tokio::signal::ctrl_c()=>break,
             _=terminate.recv()=>break,
             signal=sleep_events.next()=>{
-                if let Some(signal)=signal
-                    && signal.body().deserialize::<(bool,)>().is_ok() {
+                let Some(signal)=signal else{return Err("logind signal stream closed".into());};
+                if let Ok((sleeping,))=signal.body().deserialize::<(bool,)>() {
+                        suspended=sleeping;
                         debouncer.invalidate();sensor.release(&connection).await;
                         let mut state=data.write().await;state.observation=Observation::default();state.revision=state.revision.saturating_add(1);
                         let json=serde_json::json!({"schema_version":1,"revision":state.revision,"observation":state.observation}).to_string();drop(state);
@@ -87,6 +89,9 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
                 continue;
             },
             _=interval.tick()=>{}
+        }
+        if suspended {
+            continue;
         }
         // Rediscovery + fresh ioctl every tick covers initial, reconnect and resume.
         let devices = tokio::task::spawn_blocking(hardware::discover).await?;

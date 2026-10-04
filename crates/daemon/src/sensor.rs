@@ -51,7 +51,7 @@ impl Sensor {
         if !needed || !available {
             if self.claimed {
                 proxy.call::<_, _, ()>("ReleaseAccelerometer", &()).await?;
-                self.recovery = true;
+                self.claimed = false;
             }
             return Ok(Orientation::Unknown);
         }
