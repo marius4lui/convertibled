@@ -115,3 +115,4 @@ pipeline. It grants no arbitrary local file-read or extraction path arguments.
 Ownership intent is persisted before host links are created. Configuration backup
 files and containing directories are fsynced. Interruption before selection
 does not stop/restart the unchanged previous service during recovery.
+Backup fsync uses a writable descriptor so the same tests run on Windows.
