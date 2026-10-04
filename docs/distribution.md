@@ -159,8 +159,12 @@ From a TTY after every graphical user logs out, run the independently verified
 source's `sudo sh installer/install` (or `--no-automatic-updates`). It explains
 the automatic default, prepares only authenticated assets, then activates the
 version. First login loads the installed session unit. Enable
-`convertibled@convertibled.org` for that user through GNOME Extensions; other users'
-settings are untouched. Reference-device first-login acceptance is still required.
+`convertibled@convertibled.org` for that user through GNOME Extensions or run
+`sh /opt/convertibled/current/installer/finish-user.sh`. This explicit unprivileged
+onboarding verifies GNOME 50/Wayland and changes only the current user's project
+extension. Other users' settings are untouched. Reference-device first-login
+acceptance is still required. Before logout/removal, use the same script with
+`--disable`; the root remover never edits unrelated user preferences.
 
 Subsequent fixed helper commands use
 `pkexec /opt/convertibled/current/installer/cli.py COMMAND`. Status is unprivileged:

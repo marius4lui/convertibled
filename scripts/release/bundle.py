@@ -27,6 +27,8 @@ def collect(binary_directory, extension_directory):
         for path in sorted((ROOT / component).glob("*.py")):
             if not path.name.startswith("test_"):
                 result[component + "/" + path.name] = (path.read_bytes().replace(b"\r\n", b"\n"), path.name == "cli.py")
+    for name in ("install", "finish-user.sh"):
+        result["installer/" + name] = ((ROOT / "installer" / name).read_bytes().replace(b"\r\n", b"\n"), True)
     for path in sorted((ROOT / "data").rglob("*")):
         if path.is_file() and not path.is_symlink():
             result[path.relative_to(ROOT).as_posix()] = (path.read_bytes().replace(b"\r\n", b"\n"), False)
