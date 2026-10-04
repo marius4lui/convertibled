@@ -20,6 +20,8 @@ mod tablet;
 #[cfg(target_os = "linux")]
 mod ui;
 #[cfg(target_os = "linux")]
+mod update_preferences;
+#[cfg(target_os = "linux")]
 mod updates;
 
 #[cfg(target_os = "linux")]

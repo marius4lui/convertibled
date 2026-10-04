@@ -46,3 +46,7 @@ critical helper operations when the settings window closes.
 Diagnostics collects a bounded `convertiblectl --json doctor` response only
 when requested. Users can inspect it before an explicit native save dialog
 exports a private-permission file using asynchronous Gio IO. Nothing is uploaded.
+
+Update opt-out and stable/preview selection require an explicit save. Existing
+system values load before saving is enabled; partial save failures re-read the
+actual preferences rather than pretending the entire change was applied.

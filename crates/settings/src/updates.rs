@@ -80,6 +80,7 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
         });
     }
     page.add(&group);
+    page.add(&crate::update_preferences::group(text));
     refresh.emit_clicked();
     page
 }
