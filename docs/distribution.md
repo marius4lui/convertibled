@@ -167,16 +167,27 @@ the repository; only public PEM keys belong in `/etc/convertibled/trust.json`.
 placeholders. Review actual immutable artifact/channel URLs before provisioning
 that root-owned 0600 file. Never use curl-pipe-to-root installation.
 
-From a TTY after every graphical user logs out, run the independently verified
-source's `sudo sh installer/install` (or `--no-automatic-updates`). It explains
-the automatic default, prepares only authenticated assets, then activates the
-version. First login loads the installed session unit. Enable
+Run `sh installer/install` from the independently authenticated installer
+distribution (or pass `--no-automatic-updates`). It requests administrator
+authorization, explains the automatic default, prepares authenticated assets
+and schedules activation after ordinary graphical logout or reboot. A fixed
+root-owned timer executes only the verified candidate's bootstrap code. It
+reauthenticates the prepared version and uses the existing admission interlock;
+no session is forcibly closed. First login loads the installed session unit. Enable
 `convertibled@convertibled.org` for that user through GNOME Extensions or run
 `sh /opt/convertibled/current/installer/finish-user.sh`. This explicit unprivileged
 onboarding verifies GNOME 50/Wayland and changes only the current user's project
 extension. Other users' settings are untouched. Reference-device first-login
 acceptance is still required. Before logout/removal, use the same script with
 `--disable`; the root remover never edits unrelated user preferences.
+
+The temporary `convertibled-install` service/timer are journaled before creation
+and removed only while their contents still match project ownership. Logout or
+admission contention keeps the timer waiting; actual activation errors publish
+status and stop retries. An explicit installer rerun can authorize one retry of
+a previously rolled-back candidate. `bootstrap.py --cancel-install`, run with
+administrator privileges, cancels owned scheduling and retains verified files
+and configuration. Uninstall also removes owned pending bootstrap scheduling.
 
 Subsequent fixed helper commands use
 `pkexec /opt/convertibled/current/installer/cli.py COMMAND`. Status is unprivileged:

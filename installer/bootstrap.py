@@ -41,17 +41,29 @@ def prepare(layout, source, automatic, manager_type=Manager):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("automatic", choices=("on", "off"))
+    parser.add_argument("automatic", nargs="?", choices=("on", "off"))
+    parser.add_argument("--finish-install", action="store_true")
+    parser.add_argument("--cancel-install", action="store_true")
     args = parser.parse_args()
+    if sum((args.automatic is not None, args.finish_install, args.cancel_install)) != 1:
+        parser.error("Choose installation, finish, or cancellation")
     try:
         if os.name != "posix" or os.geteuid() != 0:
             raise UpdateError("Use installer/install to authorize installation")
         layout = Layout()
         with layout.lock():
+            from installer.deferred import finish, remove, schedule
+            if args.finish_install:
+                finish(layout)
+                return 0
+            if args.cancel_install:
+                remove(layout)
+                print("Pending installation cancelled; verified files and configuration retained.")
+                return 0
             metadata = prepare(layout, Path(__file__).with_name("bootstrap-trust.json"), args.automatic == "on")
-            from installer.transaction import Transaction
-            Transaction(layout).activate(metadata["version"])
-        print("convertibled installed. Log in to complete your personal setup.")
+            schedule(layout, metadata["version"])
+        print("Download verified. Log out all graphical users to finish installation automatically.")
+        print("No session will be closed for you. The installer also resumes after reboot.")
         return 0
     except (UpdateError, OSError, ValueError) as exc:
         print(str(exc)[:512], file=sys.stderr)

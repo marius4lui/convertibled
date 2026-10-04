@@ -60,6 +60,8 @@ def _uninstall(layout, run, sessions):
         versions.append((path, owned_version(path, interrupted=removing)))
     if sessions():
         raise UpdateError("Graphical login appeared during removal preflight")
+    from .deferred import remove as remove_bootstrap
+    remove_bootstrap(layout, run)
     pending(layout, True)
     atomic(layout.state / "transaction.json", {"schema": 1, "phase": "removing", "versions": [path.name for path, names in versions]})
     run(["systemctl", "disable", "--now", "convertibled-update.timer", "convertibled.service"])
