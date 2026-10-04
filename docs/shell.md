@@ -2,7 +2,8 @@
 
 Work-area conversion reads native rectangle fields explicitly. GI boxed geometry
 can expose prototype accessors that disappear when spread into a plain object;
-the regression uses non-enumerable accessors matching that native boundary.
+the regressions use non-enumerable accessors matching that native boundary,
+including every rectangle emitted by portrait and landscape split layout.
 
 The extension targets GNOME Shell 50 and is compiled from TypeScript to GJS
 ES modules. `cd extension && npm ci && npm test` builds a distributable `dist`

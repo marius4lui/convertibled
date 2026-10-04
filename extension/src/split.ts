@@ -19,6 +19,8 @@ export function splitLayout(area: Rect, ratio: Ratio, first: Minimum, second: Mi
         ? a >= first.height && b >= second.height && area.width >= Math.max(first.width, second.width)
         : a >= first.width && b >= second.width && area.height >= Math.max(first.height, second.height);
     if (!fits) return {error: 'These apps need more space for this split'};
+    // Mutter supplies boxed rectangles with non-enumerable GI accessors.
+    area = {x:area.x,y:area.y,width:area.width,height:area.height};
     if (portrait) return {
         first: {...area, height: a},
         second: {...area, y: area.y + a + gap, height: b},

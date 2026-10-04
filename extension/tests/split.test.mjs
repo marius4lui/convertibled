@@ -2,6 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {splitLayout, nextRatio} from '../dist/split.js';
 const min = {width: 200, height: 100};
+test('native rectangle fields remain present in both split orientations', () => {
+    for (const [width,height] of [[1280,800],[800,1280]]) {
+        const area=Object.create(Object.defineProperties({}, {
+            x:{get:()=>0},y:{get:()=>32},width:{get:()=>width},height:{get:()=>height},
+        }));
+        const native=splitLayout(area,'half',min,min);
+        assert.deepEqual(native,splitLayout({x:0,y:32,width,height},'half',min,min));
+    }
+});
 test('landscape split partitions work area without overlap', () => {
     const result = splitLayout({x: 100, y: 20, width: 1000, height: 600}, 'third', min, min);
     assert.equal(result.first.width + result.second.width + result.divider.width, 1000);
