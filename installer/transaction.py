@@ -35,6 +35,8 @@ class Transaction:
         if not (self.layout.versions / candidate / "manifest.json").is_file():
             raise UpdateError("Candidate is not verified")
         value = {"schema": 1, "candidate": candidate, "previous": previous, "phase": "backup"}
+        if previous is not None:
+            value.update(shell_acceptance="pending_intent", observed_sessions=[])
         if previous is None:
             onboarding = read(self.layout.state / "onboarding.json", {})
             if type(onboarding.get("pending_uid")) is int:
@@ -59,6 +61,9 @@ class Transaction:
                 self.run(["systemctl", "stop", "convertibled.service"])
             self.require_logout()
             self.record(value, "switching")
+            if value.get("shell_acceptance") == "pending_intent":
+                from .shell_acceptance import reset
+                reset(self.layout)
             (self.layout.state / "health/shell-health.json").unlink(missing_ok=True)
             if "expected_uid" in value:
                 (self.layout.state / f"health/shell-health-{value['expected_uid']}.json").unlink(missing_ok=True)
@@ -146,25 +151,46 @@ class Transaction:
             pending(self.layout, False)
             return value
         if phase == "awaiting_shell":
+            if self.acceptance(value) != "failed":
+                pending(self.layout, False)
+                return value
+        return self.rollback(value)
+
+    def acceptance(self, value):
+        """Journal-only success may settle online; failure never mutates services."""
+        if value.get("shell_acceptance") == "pending_intent":
+            from .shell_acceptance import evaluate
+            result = evaluate(self.layout, value)
+            if result not in ("failed", "pending_intent"):
+                value["shell_acceptance"] = result
+                self.record(value, "complete")
+            return result
+        else:
             receipt = read(self.layout.state / "health/shell-health.json", {})
             if "expected_uid" in value:
                 receipt = read(self.layout.state / f"health/shell-health-{value['expected_uid']}.json", {})
             if "expected_uid" in value and receipt.get("uid") != value["expected_uid"]:
                 receipt = {}
             if receipt.get("version") == value["candidate"] and receipt.get("healthy") is True:
+                value["shell_acceptance"] = "verified"
                 self.record(value, "complete")
-                pending(self.layout, False)
-                return value
+                return "verified"
             if not value.get("first_session_seen") and not (receipt.get("version") == value["candidate"] and receipt.get("healthy") is False):
-                pending(self.layout, False)
-                return value
-        return self.rollback(value)
+                return "pending"
+            return "failed"
 
     def observe_login(self):
         value = read(self.journal, {})
         sessions = self.sessions()
+        if value.get("phase") == "awaiting_shell" and value.get("shell_acceptance") == "pending_intent":
+            from .shell_acceptance import observe
+            observe(value, sessions)
+            self.record(value, "awaiting_shell")
+            self.acceptance(value)
+            return
         if "expected_uid" in value:
             sessions = [item for item in sessions if str(item.get("user")) == str(value["expected_uid"])]
         if value.get("phase") == "awaiting_shell" and sessions:
             value["first_session_seen"] = True
             self.record(value, "awaiting_shell")
+            self.acceptance(value)

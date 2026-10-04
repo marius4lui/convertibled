@@ -79,7 +79,7 @@ class TransactionTests(unittest.TestCase):
             transaction = Transaction(layout, sessions=lambda: [], run=lambda args: None)
             result = transaction.activate("0.2.0")
             self.assertEqual(result["phase"], "awaiting_shell")
-            self.assertNotIn("shell_acceptance", result)
+            self.assertEqual(result["shell_acceptance"], "pending_intent")
 
     def test_no_activation_while_locked_session_exists(self):
         with tempfile.TemporaryDirectory() as root:

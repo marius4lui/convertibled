@@ -9,6 +9,8 @@ def publish(layout, error=None):
     available = read(layout.state / "available.json", {})
     prepared = read(layout.state / "prepared.json", {})
     value = {"schema": 1, "installed": layout.active(), "available": available.get("version"), "prepared": prepared.get("version"), "phase": transaction.get("phase", "idle"), "preferences": preferences(layout), "error": str(error)[:512] if error else None}
+    acceptance = transaction.get("shell_acceptance")
+    value["shell_acceptance"] = acceptance if acceptance in ("pending_intent", "verified", "not_requested") else None
     from .pending import requested
     pending = requested(layout)
     value["pending_action"] = pending["action"] if pending else None

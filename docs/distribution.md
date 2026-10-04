@@ -236,7 +236,22 @@ prematurely complete or fail that acceptance. Explicitly declining first-login
 workspace setup instead completes installation after the real daemon checks,
 recording `shell_acceptance: not_requested`; it does not claim Shell acceptance.
 An absent legacy consent record is not an explicit decline. Manual opt-in remains
-available later. The temporary `convertibled-install`
+available later. A matching healthy receipt can complete first-login acceptance
+while the user works; it does not require a second logout.
+
+Updates obtain current per-user enablement from the independent native session
+observer, not from old onboarding consent. A bounded, strictly typed intent
+receipt must match the candidate version, UID, logind session and kernel boot ID.
+Enabled intent requires actual matching healthy Shell evidence; missing or failed
+health triggers recovery only after graphical logout. Explicitly disabled intent
+completes service-only acceptance with `shell_acceptance: not_requested`; no
+healthy receipt is fabricated. Unknown, stale or legacy unbound intent stays
+pending. All observed users are evaluated, so one disabled user cannot hide
+another user's enabled failure. Later sessions supersede the same user's earlier
+trial; other users' unresolved trials remain. Successful journal-only acceptance
+can complete online, while rollback and binary changes always require logout.
+
+The temporary `convertibled-install`
 service/timer are journaled before creation and removed only while their contents
 still match project ownership. Logout or
 admission contention keeps the timer waiting; actual activation errors publish
