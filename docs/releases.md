@@ -40,6 +40,18 @@ retry. Both workflows share a concurrency group. Failures before promotion leave
 the prior channel unchanged; a release already made public remains public and
 the job may be rerun while metadata is fresh.
 
+An exact already-promoted signed envelope is a verified no-op on retry; changed
+content at the same sequence is rejected. Stable releases become GitHub's latest
+release only after verified promotion. Preview releases never become latest.
+
+Because channel metadata expires after 14 days, dispatch `Renew accepted release
+channel metadata` before expiry, using the same published version and a new
+sequence. It signs fresh metadata with the currently authorized release key,
+rechecks acceptance, deployed keyring and public artifact bytes, then changes
+only the channel file. Immutable version assets remain untouched. A revoked key
+cannot renew metadata. This manual operation is intentionally not an unattended
+signing schedule; expiry remains a fail-closed trust boundary.
+
 Maintainers provision reviewed public `release/trust.json` and the offline-signed
 `release/keyring.json` on main, plus the `update-channels` branch before dispatch.
 Trust URLs use `https://raw.githubusercontent.com/OWNER/REPO/main/release/keyring.json`

@@ -1,0 +1,60 @@
+name: Renew accepted release channel metadata
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Existing published accepted version without v; artifact bytes remain unchanged
+        required: true
+        type: string
+      channel:
+        required: true
+        type: choice
+        options: [stable, preview]
+      sequence:
+        description: New monotonic channel sequence
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: release-delivery
+  cancel-in-progress: false
+jobs:
+  refresh:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: release
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ inputs.version }}
+      CHANNEL: ${{ inputs.channel }}
+      SEQUENCE: ${{ inputs.sequence }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+      - name: Require protected environment and existing published release
+        run: |
+          set -euo pipefail
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta)\.[0-9]+)?$ && "$SEQUENCE" =~ ^[1-9][0-9]*$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/environments/release" --jq '.protection_rules | any(.type == "required_reviewers")' | grep -qx true
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/v$VERSION" --jq '.draft' | grep -qx false
+          gh release download "v$VERSION" --dir refresh --pattern convertibled-fedora44-x86_64.tar.gz
+      - name: Sign fresh metadata with the currently authorized release key
+        env:
+          RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+          RELEASE_KEY_ID: ${{ vars.RELEASE_KEY_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$RELEASE_SIGNING_KEY" && test -n "$RELEASE_KEY_ID"
+          umask 077
+          key="$RUNNER_TEMP/convertibled-release-key.pem"
+          trap 'rm -f -- "$key"' EXIT
+          printf '%s' "$RELEASE_SIGNING_KEY" > "$key"
+          python3 scripts/release/metadata.py --artifact refresh/convertibled-fedora44-x86_64.tar.gz --url "https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION/convertibled-fedora44-x86_64.tar.gz" --version "$VERSION" --sequence "$SEQUENCE" --channel "$CHANNEL" --notes CHANGELOG.md --output "$RUNNER_TEMP/renewed-channel.json"
+          python3 scripts/release/sign.py --input "$RUNNER_TEMP/renewed-channel.json" --key "$key" --key-id "$RELEASE_KEY_ID" --output "refresh/$CHANNEL.json"
+          cp release/keyring.json refresh/keyring.json
+      - name: Reverify acceptance and public bytes, then atomically renew channel
+        run: python3 scripts/release/publish.py --version "$VERSION" --channel "$CHANNEL" --refresh-prepared refresh

@@ -26,6 +26,8 @@ def verify(directory, roots, channel, repository, now, previous=None):
     if candidate.get("version") != current["version"] or candidate.get("artifact_sha256") != digest:
         raise UpdateError("Candidate provenance differs from signed release")
     if previous is not None:
+        if signed == previous:
+            return current
         # Old channel metadata may have expired or used a now-revoked key. It is
         # read from the maintainer-controlled channel, never trusted for install.
         old = decode(previous)["payload"]

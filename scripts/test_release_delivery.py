@@ -95,3 +95,11 @@ class DeliveryTests(unittest.TestCase):
         old["version"] = "2.0.0"
         with self.assertRaises(UpdateError):
             self.check(canonical({"payload": old}))
+
+    def test_identical_envelope_is_safe_noop_but_changed_payload_is_not(self):
+        previous = (self.directory / "stable.json").read_bytes()
+        self.assertEqual(self.check(previous)["sequence"], 2)
+        self.payload["notes"] = "different content, same sequence"
+        self.resign()
+        with self.assertRaises(UpdateError):
+            self.check(previous)

@@ -29,6 +29,7 @@ class PublishTests(unittest.TestCase):
                                 "channels": {"stable": "https://raw.githubusercontent.com/owner/project/update-channels/stable.json"}})
         self.calls = []
         self.public_failure = self.conflict = False
+        self.identical = self.refresh = False
         self.old = dict(self.fixture.payload, sequence=1)
 
     def gh(self, *args):
@@ -48,13 +49,14 @@ class PublishTests(unittest.TestCase):
                 raise subprocess.CalledProcessError(1, args)
             return "{}"
         if "/releases/tags/" in endpoint:
-            return json.dumps({"prerelease": False, "draft": True})
+            return json.dumps({"prerelease": False, "draft": not self.refresh})
         if "/git/ref/" in endpoint:
             return json.dumps({"object": {"sha": "branch-head"}})
         if "/git/trees/" in endpoint:
             return json.dumps({"tree": [{"path": "stable.json", "sha": "original-blob"}]})
         if "/git/blobs/" in endpoint:
-            return json.dumps({"content": base64.b64encode(canonical({"payload": self.old})).decode()})
+            content = (self.assets / "stable.json").read_bytes() if self.identical else canonical({"payload": self.old})
+            return json.dumps({"content": base64.b64encode(content).decode()})
         self.fail(f"Unexpected gh operation {args}")
 
     def run_command(self, args, **kwargs):
@@ -73,7 +75,10 @@ class PublishTests(unittest.TestCase):
         trust = self.trust
         def read(path):
             return trust if path == Path("release/trust.json") else original_read(path)
-        with patch.dict(os.environ, {"GITHUB_REPOSITORY": "owner/project"}), patch("sys.argv", ["publish", "--version", "1.0.0", "--channel", "stable"]), \
+        argv = ["publish", "--version", "1.0.0", "--channel", "stable"]
+        if self.refresh:
+            argv += ["--refresh-prepared", str(self.assets)]
+        with patch.dict(os.environ, {"GITHUB_REPOSITORY": "owner/project"}), patch("sys.argv", argv), \
              patch.object(publish, "gh", self.gh), patch.object(publish, "fetch", self.fetch), \
              patch.object(publish, "subprocess", types.SimpleNamespace(check_output=lambda *a, **k: self.commit + "\n", run=self.run_command)), \
              patch.object(Path, "read_bytes", read):
@@ -83,8 +88,9 @@ class PublishTests(unittest.TestCase):
         self.invoke()
         self.assertEqual(self.request["sha"], "original-blob")
         self.assertEqual(self.request["branch"], "update-channels")
-        self.assertEqual(self.calls[-2][0], "fetch")
-        self.assertIn("--input", self.calls[-1])
+        self.assertEqual(self.calls[-3][0], "fetch")
+        self.assertIn("--input", self.calls[-2])
+        self.assertEqual(self.calls[-1], ("release", "edit", "v1.0.0", "--latest=true"))
 
     def test_public_download_failure_preserves_channel(self):
         self.public_failure = True
@@ -103,3 +109,25 @@ class PublishTests(unittest.TestCase):
         with self.assertRaises(UpdateError):
             self.invoke()
         self.assertFalse(any(call[:2] == ("release", "edit") for call in self.calls))
+
+    def test_identical_channel_is_verified_noop(self):
+        self.identical = True
+        self.invoke()
+        self.assertFalse(any("--input" in call for call in self.calls))
+        self.assertTrue(any(call[0] == "fetch" and call[1].endswith(".tar.gz") for call in self.calls))
+
+    def test_metadata_refresh_does_not_modify_release_assets(self):
+        self.refresh = True
+        self.invoke()
+        self.assertFalse(any(call[:2] == ("release", "upload") for call in self.calls))
+        self.assertFalse(any("--draft=false" in call for call in self.calls))
+
+    def test_refresh_rejects_signature_from_revoked_key(self):
+        self.refresh = True
+        from release.keyring import create
+        ring = create({"next-release": self.fixture.keys["release"]}, 2, 90,
+                      self.assets / "root.pem", "root", self.fixture.roots, self.fixture.now)
+        (self.assets / "keyring.json").write_bytes(ring)
+        with self.assertRaises(UpdateError):
+            self.invoke()
+        self.assertFalse(any("--input" in call for call in self.calls))
