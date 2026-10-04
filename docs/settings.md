@@ -31,3 +31,9 @@ control values come from the service; automatic selection resets manual mode.
 Hardware presents service capability support and its explanation independently
 for the workspace, rotation, input suppression and scaling. Missing support is
 never promoted to available merely because an input sensor was discovered.
+
+Tablet preferences use the extension's GSettings schema, loaded from the
+installed bundle if not registered globally. Gestures, dock visibility, split
+ratio and ordered local widgets are configurable. Hidden widgets stay hidden
+when their reorder button is pressed. The application never changes GNOME's
+global theme or external-input preferences.
