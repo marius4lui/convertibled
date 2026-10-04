@@ -73,7 +73,12 @@ async fn observation(connection: &Connection) -> Observation {
     };
     serde_json::from_str::<serde_json::Value>(&json)
         .ok()
-        .and_then(|v| serde_json::from_value(v.get("observation")?.clone()).ok())
+        .and_then(|v| {
+            if v.get("schema_version")?.as_u64()? != 1 {
+                return None;
+            }
+            serde_json::from_value(v.get("observation")?.clone()).ok()
+        })
         .unwrap_or_default()
 }
 pub async fn run() -> Result<(), Box<dyn std::error::Error>> {

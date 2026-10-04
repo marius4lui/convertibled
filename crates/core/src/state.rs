@@ -39,11 +39,20 @@ impl Profile {
         }
     }
 }
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum Confidence {
+    DirectSwitch,
+    #[default]
+    None,
+}
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Observation {
     pub posture: Posture,
     pub orientation: Orientation,
     pub source: String,
+    #[serde(default)]
+    pub confidence: Confidence,
 }
 impl Default for Observation {
     fn default() -> Self {
@@ -51,6 +60,7 @@ impl Default for Observation {
             posture: Posture::Unknown,
             orientation: Orientation::Unknown,
             source: "unavailable".into(),
+            confidence: Confidence::None,
         }
     }
 }
@@ -94,6 +104,9 @@ impl Default for Applied {
 pub struct Status {
     pub schema_version: u32,
     pub revision: u64,
+    pub version: String,
+    pub backend: String,
+    pub override_origin: String,
     pub observation: Observation,
     pub profile: Profile,
     pub manual_override: Option<Profile>,
@@ -107,6 +120,9 @@ impl Default for Status {
         Self {
             schema_version: SCHEMA_VERSION,
             revision: 0,
+            version: env!("CARGO_PKG_VERSION").into(),
+            backend: "gnome50-wayland".into(),
+            override_origin: "automatic".into(),
             observation: Observation::default(),
             profile: Profile::Laptop,
             manual_override: None,
@@ -125,6 +141,12 @@ impl Status {
                 Posture::Folded => Profile::Tablet,
                 _ => Profile::Laptop,
             });
+        self.override_origin = if self.manual_override.is_some() {
+            "session-manual"
+        } else {
+            "automatic"
+        }
+        .into();
         self.desired.tablet_workspace =
             self.active && !self.locked && self.profile != Profile::Laptop;
         self.revision = self.revision.saturating_add(1);

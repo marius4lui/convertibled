@@ -1,5 +1,5 @@
 use crate::hardware::{self, Device};
-use convertibled_core::{Capabilities, Observation, Posture, debounce::Debouncer};
+use convertibled_core::{Capabilities, Confidence, Observation, Posture, debounce::Debouncer};
 use futures_lite::StreamExt;
 use std::{
     sync::Arc,
@@ -19,7 +19,7 @@ struct Api(Arc<RwLock<Data>>);
 impl Api {
     async fn get_status(&self) -> String {
         let data = self.0.read().await;
-        serde_json::json!({"schema_version":1,"revision":data.revision,"observation":data.observation}).to_string()
+        serde_json::json!({"schema_version":1,"version":env!("CARGO_PKG_VERSION"),"backend":"evdev-sensor-proxy","revision":data.revision,"observation":data.observation}).to_string()
     }
     async fn get_devices(&self) -> String {
         serde_json::to_string(&self.0.read().await.devices).unwrap_or_else(|_| "[]".into())
@@ -108,6 +108,11 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         let posture = debouncer.sample(samples, start.elapsed());
         let current = Observation {
             posture,
+            confidence: if posture == Posture::Unknown {
+                Confidence::None
+            } else {
+                Confidence::DirectSwitch
+            },
             orientation: sensor.sample(&connection, posture == Posture::Folded).await,
             source: if samples.is_empty() {
                 "unavailable"
