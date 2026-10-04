@@ -12,10 +12,19 @@ async fn main() {
         } => std::fs::read_to_string(path)
             .map_err(|e| e.to_string())
             .and_then(|text| {
-                convertibled_core::config::Config::parse(&text)
-                    .map(|_| "Configuration valid (schema 1)".to_string())
+                convertibled_core::config::Config::parse(&text).map(|_| {
+                    if args.json {
+                        serde_json::json!({"schema_version":1,"valid":true}).to_string()
+                    } else {
+                        "Configuration valid (schema 1)".to_string()
+                    }
+                })
             }),
-        Command::Profiles => Ok("auto\nlaptop\ntablet\nstand (manual)\ntent (manual)".into()),
+        Command::Profiles => Ok(if args.json {
+            serde_json::json!({"schema_version":1,"profiles":["auto","laptop","tablet","stand","tent"],"manual_only":["stand","tent"]}).to_string()
+        } else {
+            "auto\nlaptop\ntablet\nstand (manual)\ntent (manual)".into()
+        }),
         _ => run(&args).await,
     };
     match result {
@@ -26,7 +35,7 @@ async fn main() {
         }
         Err(error) => {
             eprintln!("{error}");
-            std::process::exit(3);
+            std::process::exit(exit_code(&args.command, &error));
         }
     }
 }
@@ -37,4 +46,15 @@ async fn run(args: &Args) -> Result<String, String> {
 #[cfg(not(target_os = "linux"))]
 async fn run(_: &Args) -> Result<String, String> {
     Err("This command requires Linux D-Bus".into())
+}
+fn exit_code(command: &Command, error: &str) -> i32 {
+    if error.contains("AccessDenied") {
+        4
+    } else if matches!(command, Command::Config { .. }) || error.contains("InvalidArgs") {
+        2
+    } else if matches!(command, Command::Update { .. }) {
+        5
+    } else {
+        3
+    }
 }

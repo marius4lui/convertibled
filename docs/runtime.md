@@ -100,3 +100,9 @@ Doctor now collects services independently so missing session/hardware services
 still produce a versioned report. Export uses a typed allowlist, omitting device
 identifiers, source strings and arbitrary backend errors while retaining action
 status and supported booleans. File export is explicit and created privately.
+
+CLI configuration show/save use GetConfig/SaveConfig; profiles and validation have
+versioned JSON output. Mode names and positive watch counts are validated before
+connecting. Update recover/automatic/channel commands use fixed argument arrays.
+Exit codes: 0 completed request, 2 usage/configuration error, 3 unavailable runtime,
+4 denied authorization, 5 failed updater operation. Desired is never applied.

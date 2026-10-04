@@ -1,4 +1,4 @@
-use crate::args::{Args, Command};
+use crate::args::{Args, Command, ConfigCommand, UpdateCommand};
 use zbus::{Connection, Proxy};
 async fn session(connection: &Connection) -> Result<Proxy<'_>, String> {
     Proxy::new(
@@ -29,8 +29,8 @@ fn render(raw: String, json: bool) -> Result<String, String> {
     }
 }
 pub async fn run(args: &Args) -> Result<String, String> {
-    if let Command::Update { action } = &args.command {
-        return update(action).await;
+    if let Command::Update { command } = &args.command {
+        return update(command).await;
     }
     if let Command::Doctor { export } = &args.command {
         return doctor(export.as_deref(), args.json).await;
@@ -100,6 +100,30 @@ pub async fn run(args: &Args) -> Result<String, String> {
             }
             Ok(String::new())
         }
+        Command::Config {
+            command: ConfigCommand::Show,
+        } => {
+            let text: String = proxy
+                .call("GetConfig", &())
+                .await
+                .map_err(|e| e.to_string())?;
+            if args.json {
+                Ok(serde_json::json!({"schema_version":1,"toml":text}).to_string())
+            } else {
+                Ok(text)
+            }
+        }
+        Command::Config {
+            command: ConfigCommand::Save { path },
+        } => {
+            let text = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+            convertibled_core::config::Config::parse(&text)?;
+            proxy
+                .call::<_, _, ()>("SaveConfig", &(text,))
+                .await
+                .map_err(|e| e.to_string())?;
+            Ok("Configuration saved and reloaded".into())
+        }
         Command::Reload => {
             proxy
                 .call::<_, _, ()>("Reload", &())
@@ -110,8 +134,8 @@ pub async fn run(args: &Args) -> Result<String, String> {
         _ => Err("Command unavailable".into()),
     }
 }
-async fn update(action: &str) -> Result<String, String> {
-    let mut command = if action == "status" {
+async fn update(action: &UpdateCommand) -> Result<String, String> {
+    let mut command = if matches!(action, UpdateCommand::Status) {
         let mut command = tokio::process::Command::new("/usr/bin/python3");
         command
             .arg("-I")
@@ -123,7 +147,7 @@ async fn update(action: &str) -> Result<String, String> {
         command
     };
     let status = command
-        .arg(action)
+        .args(action.arguments())
         .status()
         .await
         .map_err(|e| format!("Updater unavailable: {e}"))?;

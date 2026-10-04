@@ -18,7 +18,7 @@ pub enum Command {
     Devices,
     Capabilities,
     Watch {
-        #[arg(long)]
+        #[arg(long,value_parser=clap::value_parser!(u32).range(1..))]
         count: Option<u32>,
     },
     Doctor {
@@ -26,6 +26,7 @@ pub enum Command {
         export: Option<PathBuf>,
     },
     Mode {
+        #[arg(value_parser=["auto","laptop","tablet","stand","tent"])]
         profile: String,
     },
     RotationLock {
@@ -39,13 +40,46 @@ pub enum Command {
     },
     Reload,
     Update {
-        #[arg(value_parser=["check","prepare","status","activate","rollback"])]
-        action: String,
+        #[command(subcommand)]
+        command: UpdateCommand,
     },
 }
 #[derive(Subcommand)]
 pub enum ConfigCommand {
     Validate { path: PathBuf },
+    Show,
+    Save { path: PathBuf },
+}
+#[derive(Subcommand)]
+pub enum UpdateCommand {
+    Check,
+    Prepare,
+    Status,
+    Activate,
+    Recover,
+    Rollback,
+    Automatic {
+        #[arg(value_parser=["on","off"])]
+        value: String,
+    },
+    Channel {
+        #[arg(value_parser=["stable","preview"])]
+        value: String,
+    },
+}
+impl UpdateCommand {
+    pub fn arguments(&self) -> Vec<&str> {
+        match self {
+            Self::Check => vec!["check"],
+            Self::Prepare => vec!["prepare"],
+            Self::Status => vec!["status"],
+            Self::Activate => vec!["activate"],
+            Self::Recover => vec!["recover"],
+            Self::Rollback => vec!["rollback"],
+            Self::Automatic { value } => vec!["automatic", value],
+            Self::Channel { value } => vec!["channel", value],
+        }
+    }
 }
 #[cfg(test)]
 mod tests {
@@ -60,5 +94,20 @@ mod tests {
     #[test]
     fn rejects_arbitrary_update_commands() {
         assert!(Args::try_parse_from(["convertiblectl", "update", "shell"]).is_err());
+    }
+    #[test]
+    fn rejects_zero_watch_and_invalid_profiles() {
+        assert!(Args::try_parse_from(["convertiblectl", "watch", "--count", "0"]).is_err());
+        assert!(Args::try_parse_from(["convertiblectl", "mode", "arbitrary"]).is_err());
+    }
+    #[test]
+    fn updater_preferences_are_fixed_argument_arrays() {
+        let parsed =
+            Args::try_parse_from(["convertiblectl", "update", "channel", "preview"]).unwrap();
+        let Command::Update { command } = parsed.command else {
+            panic!("Expected update")
+        };
+        assert_eq!(command.arguments(), ["channel", "preview"]);
+        assert!(Args::try_parse_from(["convertiblectl", "update", "automatic", "maybe"]).is_err());
     }
 }
