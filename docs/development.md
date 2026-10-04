@@ -76,3 +76,27 @@ Public repository documentation is English. User communication may be German.
 Use UTF-8. Mark planned features clearly. Update decisions before implementing
 changes to agreed architecture. Never turn a proposed device into tested support
 or mark a roadmap item complete without evidence.
+
+## Executable development checks
+
+The workspace pins Rust 1.99. On Linux, install GTK4/libadwaita development
+libraries, a C compiler, pkg-config, Node/npm, Python 3 and OpenSSL as build
+prerequisites. These OS prerequisites do not replace project-owned distribution.
+
+```sh
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --locked
+cargo build --workspace --release --locked
+(cd extension && npm ci && npm test)
+python3 -m unittest discover -s updater -t . -v
+python3 -m unittest discover -s installer -t . -v
+python3 scripts/check-docs.py
+```
+
+The isolated session integration test requires a private bus:
+`timeout 90s dbus-run-session -- cargo test -p convertibled-session -- --ignored`.
+The native startup scripts create disposable display/bus contexts and never
+install into the developer's real GNOME profile. See testing.md for limits.
+Workspace path dependency version and extension package version must stay in
+sync with the canonical workspace version when preparing a version change.

@@ -1,76 +1,62 @@
 # Roadmap
 
-All items below are planned. Dates are intentionally omitted. Versions are
-milestone targets, not commitments or evidence of working software.
+Implementation and acceptance are tracked separately. Checked implementation
+items mean code exists with scoped automated evidence, not verified hardware
+support or permission to publish. No public version has been released.
 
-## D0 — Documentation foundation
+## Selected first product
 
-- [x] Product, architecture, tablet UX, distribution, and release plans
-- [x] Mandatory agent reading and batch/commit rules
-- [x] Contribution, security, issue, and PR guidance
-- [ ] Confirm first desktop, Linux version, and physical reference device
+Fedora 44, GNOME 50, Wayland, x86_64, ThinkPad X1 Yoga Gen 8. Rust system/session
+services and CLI, GTK4/libadwaita settings, TypeScript/GJS Shell extension and
+project-owned installer/updater. See [decisions](docs/decisions.md).
 
-Exit: unresolved platform decisions are explicit and implementation can be
-broken into reviewable batches.
+## Implementation checkpoints
 
-## M0 — Feasibility and interaction design
+- [x] Product, architecture, native tablet UX and batch/commit contracts
+- [x] Rust workspace, typed observations/policy and versioned D-Bus contracts
+- [x] Read-only tablet-switch discovery, debounce and sensor-loss fallback
+- [x] Active-session authorization, manual profiles and requested/applied state
+- [x] CLI status/devices/capabilities/watch/doctor/config/profile/update commands
+- [x] Native Shell Home, search, favorites, dock and live window overview
+- [x] Touchscreen gesture recognition and visible navigation alternatives
+- [x] Portrait-aware split ratios, minimum-size checks and owned restoration
+- [x] Local clock/battery/action widgets and persistent workspace preferences
+- [x] Native settings pages, German/English text and explicit diagnostic export
+- [x] Validated per-profile native rotation/OSK configuration and reset
+- [x] Ed25519 release metadata and independently root-signed release keyring
+- [x] Bounded verified downloads/extraction and immutable version directories
+- [x] Logout-safe activation, journal recovery, previous version and owned removal
+- [x] Configurable automatic preparation and explicit stable/preview choice
+- [x] Linux/Fedora CI, dependency review and isolated native startup checks
+- [x] Internal candidate bundles and guarded manual signing/draft workflow
 
-- [ ] Capture sanitized hardware capabilities on the reference device
-- [ ] Identify native desktop behavior and avoid competing controllers
-- [ ] Prove sensor access and session authorization paths
-- [ ] Evaluate safe internal-input control and crash recovery
-- [ ] Choose native UI toolkit and desktop integration mechanism
-- [ ] Review laptop, tablet, transition, failure, and update screen designs
+Implementation details and current caveats live in [runtime](docs/runtime.md),
+[shell](docs/shell.md), [settings](docs/settings.md) and
+[distribution](docs/distribution.md). The PR records the latest CI results.
 
-Exit: documented capabilities and physical evidence; UI/backend decisions
-recorded; unsupported behavior has an explicit fallback.
+## Integration and first public release gates
 
-## M1 — v0.1.0 preview: observable foundation
+- [ ] Final aggregate checks green on the exact reviewed commit
+- [ ] Clean Fedora 44 host installation, systemd/Polkit/SELinux acceptance
+- [ ] Real fold/unfold, application focus and geometry restoration
+- [ ] Real touchscreen gestures, native OSK and rotation/touch mapping
+- [ ] Split view with varied real applications and portrait layouts
+- [ ] External inputs/displays, docking, suspend, lock and sensor loss
+- [ ] Extension/daemon failure and unsupported GNOME version fallback
+- [ ] Large text, keyboard navigation, screenreader and reduced motion
+- [ ] At least 95 percent of measured 60 Hz animation frames within budget
+- [ ] Invalid signature, corrupt download, low disk and interrupted update
+- [ ] Real logout/update/next-login/rollback/uninstall acceptance
+- [ ] Production root/keyring custody and protected release environment configured
+- [ ] Exact candidate hash and named physical acceptance recorded
+- [ ] Maintainer authorization to tag, publish and promote the update channel
 
-- [ ] Rust workspace, Linux CI, version policy, dependency checks
-- [ ] Read-only daemon with discovery, hotplug, suspend reconciliation
-- [ ] State engine and versioned D-Bus contract
-- [ ] CLI status, devices, capabilities, watch, doctor, config validation
-- [ ] systemd lifecycle and initial settings app
-- [ ] Versioned installer, uninstall, and initial verified update path
-- [ ] Preview release bundle with signatures and documented recovery
+Use [the acceptance record contract](docs/acceptance/README.md). Nested Shell,
+virtual displays and mocks cannot check off these physical gates.
 
-Exit: install/start/stop/update/remove verified on a clean reference system;
-physical detection verified; no unproven automatic input suppression.
+## Deliberately disabled or deferred
 
-## M2 — v0.2.0 preview: native tablet experience
-
-- [ ] First desktop backend and native quick controls
-- [ ] Automatic/manual profiles and stable transitions
-- [ ] Rotation lock and on-screen keyboard coordination
-- [ ] Safe, explicitly scoped internal keyboard/touchpad behavior if feasible
-- [ ] Preference restoration, focus preservation, accessibility testing
-- [ ] Update interruption and rollback tests
-
-Exit: complete laptop → folded → laptop physical acceptance, including
-suspend, dock, session lock, restart, and failure recovery.
-
-## M3 — v0.3.0: broader reliability
-
-- [ ] Additional hardware validated through reproducible reports
-- [ ] Stable and preview channel lifecycle
-- [ ] Optional scaling with per-display restoration and emergency recovery
-- [ ] Config migrations and documented downgrade compatibility
-- [ ] Second desktop feasibility evaluation; implement only after decision
-
-Exit: repeatable support matrix and verified upgrade paths from prior previews.
-
-## M4 — v1.0.0: stable contract
-
-- [ ] Stable configuration and documented D-Bus compatibility policy
-- [ ] Fully tested installer/updater/uninstaller and recovery documentation
-- [ ] Accessible native UX and published desktop/version support matrix
-- [ ] Security review, release provenance, and maintenance procedures
-
-Exit: every advertised feature has implementation and acceptance evidence.
-
-## Deferred
-
-Replacement desktop shell; automatic stand/tent classification without
-sufficient sensors; arbitrary root hooks; distro packaging; untested aarch64
-support. These require a new decision rather than implicit expansion.
+Internal keyboard/touchpad suppression is disabled until physical assignment
+and crash recovery are proved. Automatic scaling is disabled. Stand/tent remain
+manual profiles. Other GNOME versions, KDE, other architectures, third-party or
+network widgets and floating replacement-shell windows require separate planning.
