@@ -129,3 +129,10 @@ Native-boundary mocks exercise complete extension enable/fold/lock/disable,
 focus preservation, timer/signal/chrome cleanup, reduced motion and keyboard
 allocation. Tests import the built entrypoint, rather than mirroring controller
 logic. Their native surfaces are test doubles and cannot prove GNOME rendering.
+
+`extension/tools/smoke-shell.sh extension/dist` launches GNOME 50 with a headless
+Wayland virtual monitor, an isolated user D-Bus and temporary XDG directories.
+It compiles schemas and requires enable/disable/re-enable extension states.
+Software rendering and the virtual output prove startup/lifecycle only, never
+physical tablet behavior. The script was prepared from GNOME 50 CLI/extension
+contracts on Windows; its first Linux execution remains a CI requirement.
