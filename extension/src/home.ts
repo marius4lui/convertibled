@@ -43,9 +43,9 @@ export class Home {
         clear(this.favorites); clear(this.grid);
         for (const app of Favorites.getAppFavorites().getFavorites()) this.favorites.add_child(this.appButton(app));
         const system = Shell.AppSystem.get_default();
-        const apps: AppInfo[] = system.get_installed().filter((app: any) => app.get_app_info()?.should_show())
-            .map((app: any) => ({id:app.get_id(),name:app.get_name(),
-                description:app.get_description() ?? '',keywords:app.get_app_info()?.get_keywords() ?? []}));
+        const apps: AppInfo[] = system.get_installed().filter((info: any) => info.should_show())
+            .map((info: any) => ({id:info.get_id(),name:info.get_name(),
+                description:info.get_description() ?? '',keywords:info.get_keywords?.() ?? []}));
         const filtered = searchApps(apps, this.search.get_text());
         const columns = gridColumns(this.width,176);
         let row: any;

@@ -156,3 +156,7 @@ Delayed notifications matching the owned write retain ownership.
 Built-in interaction text is available in German and English according to
 GLib's language preferences. Installed application names remain their native
 localized names and diagnostics retain stable English descriptions.
+
+GNOME 50 AppSystem's installed list contains Gio AppInfo records, not ShellApp
+objects. Home resolves each ID through `lookup_app` for icons/launching. A native
+adapter test covers that distinction with realistic nonempty app metadata.

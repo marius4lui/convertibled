@@ -39,8 +39,8 @@ export const main={
     uiGroup:{set_child_below_sibling(){},set_child_above_sibling(){}},
     activateWindow(){globalThis.focusChanges++;},notify(){},
 };
-const system=Object.assign(new Emitter(),{get_installed:()=>[],get_running:()=>[]});
-const favorites=Object.assign(new Emitter(),{getFavorites:()=>[]});
+export const system=Object.assign(new Emitter(),{get_installed:()=>[],get_running:()=>[]});
+export const favorites=Object.assign(new Emitter(),{getFavorites:()=>[],isFavorite:()=>false});
 globalThis.focusChanges=0;
 globalThis.global={display:new Emitter(),stage:new Emitter(),window_group:new Actor(),
     workspace_manager:Object.assign(new Emitter(),{get_active_workspace:()=>({})}),get_window_actors:()=>[]};
