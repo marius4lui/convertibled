@@ -143,3 +143,24 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(read(self.transaction.journal)["phase"], "rolled_back")
         self.assertIn(["systemctl", "start", "convertibled.service"], self.calls)
         self.assertNotIn(["systemctl", "daemon-reload"], self.calls)
+
+    @patch("installer.identity.ensure")
+    def test_interrupted_uninstall_resumes_only_owned_remaining_files(self, identity):
+        self.candidate("0.1.0")
+        self.transaction.activate("0.1.0")
+        def interrupted_reload(args):
+            if args[:2] == ["loginctl", "list-users"]:
+                raise KeyboardInterrupt("removal interrupted after integration removal")
+        with self.assertRaises(KeyboardInterrupt):
+            uninstall(self.layout, run=interrupted_reload, sessions=lambda: [])
+        self.assertEqual(read(self.transaction.journal)["phase"], "removing")
+        self.assertTrue((self.layout.state / "admission.pending").exists())
+        self.assertTrue((self.layout.root / "usr/lib/systemd/user/convertibled-admission.service").exists())
+        self.assertTrue((self.layout.root / "usr/lib/systemd/user/org.gnome.Shell@user.service.d/convertibled-admission.conf").exists())
+        (self.layout.versions / "0.1.0/bin/convertibled").unlink()
+        self.transaction.run = lambda args: None
+        self.transaction.sessions = lambda: [{"type": "wayland", "user": "1000"}]
+        with patch("installer.transaction.waiting_at_gate", return_value=True):
+            self.assertEqual(self.transaction.recover()["phase"], "removed")
+        self.assertEqual(list(self.layout.versions.iterdir()), [])
+        self.assertFalse((self.layout.state / "admission.pending").exists())

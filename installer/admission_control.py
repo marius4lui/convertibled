@@ -37,10 +37,75 @@ def reload_users(run):
             run(["systemctl", "--user", f"--machine={uid}@.host", "daemon-reload"])
 
 
+def guard_process(pid, uid):
+    try:
+        path = Path("/proc") / str(pid)
+        if path.stat().st_uid != uid:
+            return False
+        arguments = (path / "cmdline").read_bytes().split(b"\0")
+        return arguments[1:4] == [b"-I", b"/var/lib/convertibled/admission.py", b""]
+    except OSError:
+        return False
+
+
+def waiting_at_gate(layout, session, run):
+    """Only the supported manager path, never merely absence of a receipt."""
+    uid = str(session.get("user", ""))
+    if not uid.isascii() or not uid.isdecimal() or not 0 <= int(uid) < 4294967295:
+        return False
+    def properties(unit):
+        text = run(["systemctl", "--user", f"--machine={uid}@.host", "show", unit,
+                    "-p", "ActiveState", "-p", "SubState", "-p", "MainPID", "-p", "FragmentPath", "-p", "DropInPaths", "-p", "Job"])
+        return dict(line.split("=", 1) for line in text.splitlines() if "=" in line)
+    try:
+        shell = properties("org.gnome.Shell@user.service")
+        guard = properties("convertibled-admission.service")
+        shell_path = "/usr/lib/systemd/user/org.gnome.Shell@.service"
+        guard_path = "/usr/lib/systemd/user/convertibled-admission.service"
+        dropin = "/usr/lib/systemd/user/org.gnome.Shell@user.service.d/convertibled-admission.conf"
+        if shell.get("FragmentPath") != shell_path or guard.get("FragmentPath") != guard_path:
+            return False
+        paths = shell.get("DropInPaths", "").split() + guard.get("DropInPaths", "").split()
+        if paths != [dropin]:
+            return False
+        for name in [shell_path, guard_path] + paths:
+            if not name.startswith(("/usr/lib/systemd/user/", "/etc/systemd/user/")):
+                return False
+            info = (layout.root / name.lstrip("/")).stat()
+            if info.st_uid != os.geteuid() or info.st_mode & 0o022:
+                return False
+        job = shell.get("Job", "").split(" ", 1)[0]
+        pid = guard.get("MainPID", "")
+        return (shell.get("MainPID") == "0" and shell.get("ActiveState") in ("inactive", "activating")
+                and job.isdecimal() and int(job) > 0
+                and guard.get("ActiveState") == "activating" and guard.get("SubState") == "start"
+                and pid.isdecimal() and 0 < int(pid) < 4294967295 and guard_process(int(pid), int(uid)))
+    except (OSError, AttributeError, ValueError, UpdateError):
+        return False
+
+
 def provision(layout, source=None):
     source = source or layout.current
     for relative, name in STABLE.items():
         _provision_file(layout, layout.state / name, (source / relative).read_bytes())
+
+
+def pending(layout, active):
+    path = layout.state / "admission.pending"
+    if path.is_symlink():
+        raise UpdateError("Unsafe admission recovery marker")
+    if active:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW, 0o644)
+        try:
+            info = os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode) or info.st_uid != os.geteuid() or info.st_mode & 0o022:
+                raise UpdateError("Unsafe admission recovery marker")
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+    else:
+        path.unlink(missing_ok=True)
+    sync_directory(layout.state)
 
 
 def _provision_file(layout, helper, content):
@@ -103,5 +168,10 @@ def admitted(method):
             if value and value.get("phase") == "quiescing" and self.layout.active() == value.get("previous"):
                 return method(self, *args, **kwargs)
         with exclusive(self.layout):
-            return method(self, *args, **kwargs)
+            previous = getattr(self, "_admission_recovery", False)
+            self._admission_recovery = method.__name__ in ("recover", "rollback")
+            try:
+                return method(self, *args, **kwargs)
+            finally:
+                self._admission_recovery = previous
     return wrapped

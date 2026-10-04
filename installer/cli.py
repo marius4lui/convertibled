@@ -64,6 +64,12 @@ def execute(args, layout):
             uninstall(layout)
         elif args.command == "scheduled":
             from updater.schedule import due, quarantined
+            if (layout.state / "admission.pending").exists():
+                # GDM may already register a graphical session while its Shell
+                # waits at the gate. Recovery itself verifies that distinction.
+                recovered = transaction.recover()
+                if recovered.get("phase") == "removed":
+                    return publish(layout)
             if graphical_sessions():
                 transaction.observe_login()
                 if preferences(layout)["automatic_updates"] and due(layout):

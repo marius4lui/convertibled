@@ -4,7 +4,7 @@ from .configuration import backup, restore
 from .integration import install, remove
 from .platform import command, graphical_sessions
 from updater.model import UpdateError, version
-from .admission_control import admitted, reload_users
+from .admission_control import admitted, reload_users, pending, waiting_at_gate
 
 
 class Transaction:
@@ -17,7 +17,10 @@ class Transaction:
         atomic(self.journal, value)
 
     def require_logout(self):
-        if self.sessions():
+        sessions = self.sessions()
+        if getattr(self, "_admission_recovery", False) and (self.layout.state / "admission.pending").exists():
+            sessions = [session for session in sessions if not waiting_at_gate(self.layout, session, self.run)]
+        if sessions:
             raise UpdateError("Waiting for graphical logout; locking does not count")
 
     @admitted
@@ -44,6 +47,7 @@ class Transaction:
             self.run([str(self.layout.versions / candidate / "bin/convertibled"), "--check"])
             # Preflight may be slow. Recheck immediately before quiescing.
             self.require_logout()
+            pending(self.layout, True)
             self.record(value, "quiescing")
             if previous:
                 self.run(["systemctl", "stop", "convertibled.service"])
@@ -58,6 +62,7 @@ class Transaction:
             self.run(["systemctl", "enable", "--now", "convertibled.service", "convertibled-update.timer"])
             self.run(["systemctl", "is-active", "--quiet", "convertibled.service"])
             self.record(value, "awaiting_shell")
+            pending(self.layout, False)
             return value
         except Exception:
             self.rollback(value)
@@ -74,13 +79,16 @@ class Transaction:
                 self.run(["systemctl", "start", "convertibled.service"])
                 self.run(["systemctl", "is-active", "--quiet", "convertibled.service"])
             self.record(value, "rolled_back")
+            pending(self.layout, False)
             return value
         self.require_logout()
         if value.get("phase") in ("backup", "prepared"):
             self.record(value, "rolled_back")
+            pending(self.layout, False)
             return value
         if not value.get("candidate") or value.get("phase") in (None, "rolled_back", "removed"):
             raise UpdateError("No recoverable previous transaction")
+        pending(self.layout, True)
         self.record(value, "rolling_back")
         if (self.layout.root / "usr/lib/systemd/system/convertibled.service").exists():
             self.run(["systemctl", "stop", "convertibled.service"])
@@ -94,31 +102,44 @@ class Transaction:
             self.run(["systemctl", "start", "convertibled.service"])
             self.run(["systemctl", "is-active", "--quiet", "convertibled.service"])
         else:
-            remove(self.layout)
+            remove(self.layout, preserve_admission=True)
             self.layout.current.unlink(missing_ok=True)
             self.run(["systemctl", "daemon-reload"])
             reload_users(self.run)
         self.record(value, "rolled_back")
+        pending(self.layout, False)
+        if not previous:
+            remove(self.layout)
+            reload_users(self.run)
         return value
 
     @admitted
     def recover(self):
         value = read(self.journal, {})
         phase = value.get("phase")
-        if phase in (None, "complete", "rolled_back"):
+        if phase == "removing":
+            self.require_logout()
+            from .uninstall import _uninstall
+            _uninstall(self.layout, self.run, lambda: self.require_logout() or [])
+            return read(self.journal, {})
+        if phase in (None, "complete", "rolled_back", "removed"):
+            pending(self.layout, False)
             return value
         if phase == "quiescing" and self.layout.active() == value.get("previous"):
             return self.rollback(value)
         self.require_logout()
         if phase == "backup":
             self.record(value, "rolled_back")
+            pending(self.layout, False)
             return value
         if phase == "awaiting_shell":
             receipt = read(self.layout.state / "health/shell-health.json", {})
             if receipt.get("version") == value["candidate"] and receipt.get("healthy") is True:
                 self.record(value, "complete")
+                pending(self.layout, False)
                 return value
             if not value.get("first_session_seen") and not (receipt.get("version") == value["candidate"] and receipt.get("healthy") is False):
+                pending(self.layout, False)
                 return value
         return self.rollback(value)
 

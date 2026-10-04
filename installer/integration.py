@@ -73,12 +73,18 @@ def install(layout, admission_only=False, candidate=None):
             target.symlink_to(expected(layout, source), target_is_directory=destination.endswith(UUID))
 
 
-def remove(layout):
+def remove(layout, preserve_admission=False):
+    from .admission_control import STABLE
     owned = read(layout.state / "owned.json", {"schema": 1, "links": {}})
     retained = []
-    for destination, source in owned.get("links", {}).items():
+    preserved = {}
+    entries = owned.get("links", {}).items()
+    for destination, source in sorted(entries, key=lambda item: item[0].endswith("convertibled-admission.service")):
         if LINKS.get(destination) != source:
             raise UpdateError("Invalid ownership manifest")
+        if preserve_admission and source in STABLE:
+            preserved[destination] = source
+            continue
         target = layout.root / destination
         if destination == "usr/share/polkit-1/actions/org.convertibled.installer.policy":
             temporary = target.with_name(".convertibled-next-" + target.name)
@@ -92,4 +98,4 @@ def remove(layout):
             retained.append(destination)
     if retained:
         raise UpdateError("User-modified integration retained: " + ", ".join(retained))
-    atomic(layout.state / "owned.json", {"schema": 1, "links": {}})
+    atomic(layout.state / "owned.json", {"schema": 1, "links": preserved})

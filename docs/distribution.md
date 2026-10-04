@@ -9,10 +9,9 @@ configuration schema and bounded release notes. Stable rejects preview versions.
 No production trust key is committed. Without provisioned trust, updates fail
 closed. Physical installation and GNOME activation remain acceptance gates.
 
-**Open implementation blocker:** no GNOME login admission interlock exists.
-Repeated logout checks are snapshots, not a race-free guarantee; login can begin
-during version selection/restart. Public release requires resolving this contract,
-not merely recording physical acceptance of the current checks.
+The implemented admission interlock covers the selected GNOME 50 GDM/systemd
+startup contract. Real concurrent GDM login, activation and recovery acceptance
+is still a public-release gate; direct/custom Shell starts are unsupported.
 
 Signed envelopes contain `key_id`, `payload`, `signature` (base64). Signatures
 cover canonical UTF-8 JSON (sorted keys, compact separators). The offline root
@@ -214,10 +213,9 @@ match the authenticated metadata; equal version strings alone do not bind bytes.
 Quiescing is journaled before stopping the daemon, so an interruption there
 restarts the unchanged previous version during recovery. Logout is rechecked
 after the potentially slow candidate preflight and again after daemon stop.
-These repeated logind observations do not provide an atomic login admission
-lock: a remaining TOCTOU window exists during selection/restart. No display
-manager is stopped, sessions forced out, or global login lock imposed. This
-integration limitation must be tested/reviewed before public release.
+These observations run inside the exclusive admission lease. No display manager
+is stopped, sessions forced out, or global nologin file imposed. Normal GNOME
+Shell startup waits at a separate service until the updater releases its lease.
 
 Bundle assembly qualifies the Polkit helper annotation with the canonical
 version-directory path, matching upstream pkexec's realpath-based lookup.
@@ -231,11 +229,41 @@ still selects the unchanged previous version, recovery directly resumes that
 daemon even with the session present. It does not select a version, restore
 configuration or edit integration. Recovery after selection still requires logout.
 
-Admission feasibility was checked against GNOME 50's
+The admission ordering follows GNOME 50's
 [Shell service template](https://github.com/GNOME/gnome-shell/blob/50.0/data/org.gnome.Shell%40.service.in)
-and [session targets](https://github.com/GNOME/gnome-session/blob/50.0/data/gnome-session.target).
-The current project session unit starts from `graphical-session.target`, after
-Shell startup, so adding a shared lock there cannot gate extension code loading.
-A reliable design would need a root-owned stable lock plus a verified pre-Shell
-admission contract for every supported startup path. No GNOME service drop-ins
-or speculative startup ordering are installed by this implementation.
+and [GNOME session definition](https://github.com/GNOME/gnome-session/blob/50.0/data/gnome.session.conf).
+The actual Shell instance is `org.gnome.Shell@user.service`; `user` is its mode,
+not its display protocol. Its project drop-in Requires/After a separate
+`convertibled-admission.service`. The admission service has Type=notify and
+signals READY only after acquiring the shared flock. It holds that lease until
+the initialized session target stops it. The existing project session service
+continues to start from graphical-session.target without an ordering cycle.
+
+The root-owned `/var/lib/convertibled/admission.lock` inode is never replaced or
+deleted, including on uninstall. Activation, rollback, recovery and removal hold
+the same inode exclusively, nonblocking, before their final logind observations
+and through mutation/restart. Stable standalone helper/unit/drop-in copies in
+the state directory are readable0644 under the existing traversable0755 parent;
+private journals/trust remain0600. They import no versioned project code. Changed
+stable guard bytes require an explicit future migration; updates cannot silently
+replace the admission contract. First installation establishes the gate before
+selection. Active, numerically validated user managers receive daemon-reload.
+
+A persistent root-owned admission.pending marker survives updater interruption.
+The guard releases SH and retries while this marker exists, so recovery can take
+EX. Only pending recovery/rollback may tolerate a registered GDM session whose
+canonical systemd units prove a waiting Shell startjob with MainPID=0 and a live
+activating admission process. Foreign overrides, ambiguous unit state and every
+running Shell still block. Scheduled recovery runs before the graphical-session
+branch, avoiding a pending-marker/login deadlock. Interrupted removal journals
+version names, hashes all remaining files, retains manifests until last deletion,
+and resumes only owned deletion; added files remain protected. Recovery clears
+the marker after a healthy selection, completed rollback or completed removal.
+
+POSIX tests exercise real competing locks, notify readiness, updater-crash marker
+recovery and inode retention using disposable roots. Offline systemd-analyze
+checks a GNOME50 ordering fixture with the real project units; it does not run
+GDM or prove the distribution's physical session lifecycle. Guard failure or an
+unrecovered marker intentionally prevents a new supported Shell start; recovery
+from a TTY remains available. Direct GNOME Shell processes, custom user units and
+other startup paths can bypass this gate and are outside the supported contract.

@@ -3,6 +3,7 @@ import os
 import signal
 import socket
 import stat
+import time
 
 
 def checked_descriptor(path, create=False):
@@ -21,7 +22,14 @@ def guard():
     import fcntl
     fd = checked_descriptor("/var/lib/convertibled/admission.lock")
     try:
-        fcntl.flock(fd, fcntl.LOCK_SH)
+        while True:
+            fcntl.flock(fd, fcntl.LOCK_SH)
+            if not os.path.lexists("/var/lib/convertibled/admission.pending"):
+                break
+            # A killed updater releases its lock, but its journal must recover
+            # before admitting Shell. Never retain SH while recovery needs EX.
+            fcntl.flock(fd, fcntl.LOCK_UN)
+            time.sleep(0.1)
         address = os.environ.get("NOTIFY_SOCKET")
         if not address or address[0] not in ("/", "@"):
             raise RuntimeError("Admission requires systemd notify startup")
