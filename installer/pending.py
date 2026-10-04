@@ -28,10 +28,10 @@ def request(layout, action, run=command):
     if previous and previous["action"] != action:
         raise UpdateError("Cancel the pending action before requesting another")
     atomic(layout.state / "pending-action.json", {"schema": 1, "action": action, "version": active, "state": "waiting"})
-    # Timer exists regardless of automatic-download preference. An explicit
-    # request also resumes a timer disabled by an administrator.
+    # Managed boot links already exist. Start the timer without systemctl enable,
+    # which canonicalizes our versioned source into a stale /etc unit alias.
     try:
-        run(["systemctl", "enable", "--now", "convertibled-update.timer"])
+        run(["systemctl", "start", "convertibled-update.timer"])
     except (UpdateError, OSError, ValueError) as exc:
         atomic(layout.state / "pending-action.json", {"schema": 1, "action": action, "version": active, "state": "failed", "error": str(exc)[:512]})
         raise

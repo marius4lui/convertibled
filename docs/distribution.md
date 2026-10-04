@@ -39,6 +39,21 @@ activation regardless of active/locked state; greeters do not count.
 
 Host integration uses an explicit fixed destination map. Links resolve through
 `current` and are journaled in `owned.json`; conflicting files are never replaced.
+Daemon/timer boot wants links are also manifest-owned and point to the fixed
+`/usr/lib/systemd/system` unit entries. Activation and explicit queued requests
+start the units without generating canonical version-pinned enable aliases.
+Legacy `/etc` aliases migrate only after their exact installed unit bytes match
+the version manifest; foreign or modified aliases stop activation before daemon
+quiescence. Wants links are replaced atomically after ownership is journaled.
+An administrator's manually removed boot link remains their choice when merely
+requesting a queued operation; that operation starts the timer for this boot.
+
+Activation and rollback synchronously reload `dbus.service` after installing or
+restoring system-bus policy, before starting the daemon. Fedora's notify-reload
+contract confirms policy loading; the system bus is never restarted. Removal
+reloads policy after deleting the owned entry. A reload failure fails activation
+and follows the existing recovery transaction.
+
 Removal checks original link ownership and retains later user modifications.
 The extension is installed system-wide. Explicit installer consent records the
 authenticated installing user's UID; a GNOME autostart enables the extension

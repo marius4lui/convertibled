@@ -49,7 +49,7 @@ def stop_units(layout, run, verified_versions=()):
                 continue
             if not {"LoadState", "ActiveState", "FragmentPath"} <= state.keys():
                 raise UpdateError("Ambiguous project service state: " + name)
-        run(["systemctl", "disable", "--now", name])
+        run(["systemctl", "stop", name])
     # systemctl may already remove these. Recheck ownership before clearing
     # dangling links belonging to absent units (e.g. failed first activation).
     enable_links(layout, verified_versions)
@@ -124,6 +124,7 @@ def _uninstall(layout, run, sessions):
     clear_pending(layout)
     stop_units(layout, run, verified_versions)
     remove(layout, preserve_admission=True)
+    run(["systemctl", "reload", "dbus.service"])
     reload_users(run)
     layout.current.unlink(missing_ok=True)
     for path, names in versions:

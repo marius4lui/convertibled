@@ -2,9 +2,12 @@
 import os
 from .storage import atomic, read, sync_directory
 from updater.model import UpdateError
+from .system_units import WANTS, legacy_aliases, remove_direct_aliases
 
 UUID = "convertibled@convertibled.org"
 LINKS = {
+    "etc/systemd/system/multi-user.target.wants/convertibled.service": "data/systemd/convertibled.service",
+    "etc/systemd/system/timers.target.wants/convertibled-update.timer": "data/systemd/convertibled-update.timer",
     "etc/xdg/autostart/org.convertibled.Onboarding.desktop": "data/autostart/org.convertibled.Onboarding.desktop",
     "usr/bin/convertiblectl": "bin/convertiblectl",
     "usr/bin/convertibled-settings": "bin/convertibled-settings",
@@ -24,7 +27,9 @@ LINKS = {
 }
 
 
-def expected(layout, source):
+def expected(layout, source, destination=None):
+    if destination in WANTS:
+        return layout.root / WANTS[destination]
     from .admission_control import STABLE
     if source in STABLE:
         return layout.state / STABLE[source]
@@ -32,13 +37,13 @@ def expected(layout, source):
     return layout.current / source
 
 
-def refresh_policy(layout, target, source):
+def refresh_policy(layout, target, source, destination=None):
     temporary = target.with_name(".convertibled-next-" + target.name)
     if temporary.exists() or temporary.is_symlink():
-        if not temporary.is_symlink() or str(temporary.readlink()) != str(expected(layout, source)):
+        if not temporary.is_symlink() or str(temporary.readlink()) != str(expected(layout, source, destination)):
             raise UpdateError("Unrelated policy staging entry retained")
         temporary.unlink()
-    temporary.symlink_to(expected(layout, source))
+    temporary.symlink_to(expected(layout, source, destination))
     os.replace(temporary, target)
     sync_directory(target.parent)
 
@@ -47,13 +52,16 @@ def install(layout, admission_only=False, candidate=None):
     from .admission_control import provision
     from .admission_control import STABLE
     links = {destination: source for destination, source in LINKS.items() if not admission_only or source in STABLE}
+    aliases = legacy_aliases(layout)
+    if admission_only:
+        aliases = {}  # Validate before quiescing, but mutate only full integration.
     owned = read(layout.state / "owned.json", {"schema": 1, "links": {}})
     if owned.get("schema") != 1:
         raise UpdateError("Unsupported ownership manifest")
     for destination, source in links.items():
         target = layout.root / destination
         if target.exists() or target.is_symlink():
-            if not target.is_symlink() or str(target.readlink()) != str(expected(layout, source)):
+            if not target.is_symlink() or (str(target.readlink()) != str(expected(layout, source, destination)) and target not in aliases):
                 raise UpdateError("Refusing to overwrite unrelated integration: " + destination)
     provision(layout, layout.versions / candidate if candidate else None)
     for destination, source in links.items():
@@ -63,15 +71,18 @@ def install(layout, admission_only=False, candidate=None):
     # link creation and journaling cannot leave an untracked project link.
     owned["links"].update(links)
     atomic(layout.state / "owned.json", owned)
+    remove_direct_aliases(aliases)
     for destination, source in links.items():
         target = layout.root / destination
         target.parent.mkdir(parents=True, exist_ok=True)
-        if destination == "usr/share/polkit-1/actions/org.convertibled.installer.policy":
+        if target in aliases and (not target.is_symlink() or target.readlink() != aliases[target]):
+            raise UpdateError("System-unit alias changed during migration")
+        if destination == "usr/share/polkit-1/actions/org.convertibled.installer.policy" or destination in WANTS:
             # A changed `current` symlink is outside Polkit's watched actions
             # directory. Refresh its entry atomically to trigger policy reload.
-            refresh_policy(layout, target, source)
+            refresh_policy(layout, target, source, destination)
         elif not target.is_symlink():
-            target.symlink_to(expected(layout, source), target_is_directory=destination.endswith(UUID))
+            target.symlink_to(expected(layout, source, destination), target_is_directory=destination.endswith(UUID))
 
 
 def remove(layout, preserve_admission=False):
@@ -87,13 +98,13 @@ def remove(layout, preserve_admission=False):
             preserved[destination] = source
             continue
         target = layout.root / destination
-        if destination == "usr/share/polkit-1/actions/org.convertibled.installer.policy":
+        if destination == "usr/share/polkit-1/actions/org.convertibled.installer.policy" or destination in WANTS:
             temporary = target.with_name(".convertibled-next-" + target.name)
-            if temporary.is_symlink() and str(temporary.readlink()) == str(expected(layout, source)):
+            if temporary.is_symlink() and str(temporary.readlink()) == str(expected(layout, source, destination)):
                 temporary.unlink()
             elif temporary.exists() or temporary.is_symlink():
                 retained.append(str(temporary.relative_to(layout.root)))
-        if target.is_symlink() and str(target.readlink()) == str(expected(layout, source)):
+        if target.is_symlink() and str(target.readlink()) == str(expected(layout, source, destination)):
             target.unlink()
         elif target.exists() or target.is_symlink():
             retained.append(destination)

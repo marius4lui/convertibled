@@ -66,8 +66,9 @@ class Transaction:
             self.record(value, "selected")
             install(self.layout)
             self.run(["systemctl", "daemon-reload"])
+            self.run(["systemctl", "reload", "dbus.service"])
             reload_users(self.run)
-            self.run(["systemctl", "enable", "--now", "convertibled.service", "convertibled-update.timer"])
+            self.run(["systemctl", "start", "convertibled.service", "convertibled-update.timer"])
             self.run(["systemctl", "is-active", "--quiet", "convertibled.service"])
             # Explicitly declined first-login setup still requires real service
             # checks above; it is not a claim that the Shell was exercised.
@@ -108,6 +109,7 @@ class Transaction:
             restore(self.layout)
             install(self.layout)
             self.run(["systemctl", "daemon-reload"])
+            self.run(["systemctl", "reload", "dbus.service"])
             reload_users(self.run)
             self.run(["systemctl", "start", "convertibled.service"])
             self.run(["systemctl", "is-active", "--quiet", "convertibled.service"])
@@ -115,6 +117,7 @@ class Transaction:
             remove(self.layout, preserve_admission=True)
             self.layout.current.unlink(missing_ok=True)
             self.run(["systemctl", "daemon-reload"])
+            self.run(["systemctl", "reload", "dbus.service"])
             reload_users(self.run)
         self.record(value, "rolled_back")
         pending(self.layout, False)
