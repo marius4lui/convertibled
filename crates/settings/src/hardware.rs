@@ -62,7 +62,8 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
                     }
                     Err(error) => row.set_subtitle(&format!(
                         "{}: {}",
-                        text.text("Service unavailable", "Dienst nicht verfügbar")
+                        text.text("Service unavailable", "Dienst nicht verfügbar"),
+                        text.error(error)
                     )),
                 }
             }
