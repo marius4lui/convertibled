@@ -13,7 +13,7 @@ parser.add_argument("--artifact", type=Path, required=True)
 args = parser.parse_args()
 root = Path(__file__).resolve().parents[1]
 version = tomllib.loads((root / "Cargo.toml").read_text())["workspace"]["package"]["version"]
-commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+commit = subprocess.check_output(["git", "-c", f"safe.directory={root}", "rev-parse", "HEAD"], cwd=root, text=True).strip()
 with args.artifact.open("rb") as stream:
     digest = hashlib.file_digest(stream, "sha256").hexdigest()
 record = {"schema": 1, "version": version, "commit": commit, "artifact": args.artifact.name,
