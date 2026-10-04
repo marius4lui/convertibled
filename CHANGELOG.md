@@ -13,6 +13,12 @@ Changes are grouped by release. Planned work belongs in `ROADMAP.md`.
 
 ### Experimental implementation
 
+- Refined shared native UI: centered Home with deliberate favorite editing,
+  compact local widgets and navigation shelf, proportional live previews, and
+  coordinated light/dark styling. Search remains reachable above the native OSK.
+- Settings now group selected, requested and applied state with adaptive actions;
+  demo checks cover larger text, reduced motion and keyboard geometry.
+
 - Windows WSLg preview runs the actual GNOME extension and GTK settings with
   isolated scenario controls, virtual monitor resizing and native smoke captures.
 - Native boxed geometry and maximized-window split eligibility fixes found by

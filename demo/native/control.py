@@ -206,7 +206,7 @@ def launch_controls(connection, samples_only=False, controls_only=False):
                 self.sample("Demo notes B")
                 return
             window = Gtk.ApplicationWindow(application=self, title="convertibled — Demo-Steuerung",
-                                           default_width=520, default_height=590)
+                                           default_width=520, default_height=680)
             box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
             for side in ("top", "bottom", "start", "end"):
                 getattr(box, "set_margin_" + side)(18)
@@ -220,7 +220,11 @@ def launch_controls(connection, samples_only=False, controls_only=False):
                 ("Querformat", "landscape"), ("Tastatur", "keyboard"), ("Dunkel", "dark"),
                 ("Hell", "light"), ("Fehler simulieren", "failure"),
                 ("Große Schrift", "large-text"), ("Normale Schrift", "normal-text"),
-                ("Weniger Bewegung", "reduced-motion"), ("Animationen", "normal-motion"))
+                ("Weniger Bewegung", "reduced-motion"), ("Animationen", "normal-motion"),
+                ("GNOME-Fenster", "gnome-overview"), ("GNOME-Apps", "gnome-apps"),
+                ("GNOME-Übersicht schließen", "leave-overview"),
+                ("Schmales Fenster", "compact"), ("Kleines Fenster", "small"),
+                ("App öffnen", "app"), ("Apps minimieren", "minimize-apps"))
             for index, (label, value) in enumerate(scenarios):
                 button = Gtk.Button(label=label, height_request=44)
                 button.connect("clicked", lambda _button, action=value: self.scenario(action))
@@ -235,7 +239,7 @@ def launch_controls(connection, samples_only=False, controls_only=False):
             box.append(settings)
             self.message = Gtk.Label(label="Bereit. Wähle ein Szenario.", wrap=True, xalign=0)
             box.append(self.message)
-            window.set_child(box)
+            window.set_child(Gtk.ScrolledWindow(child=box, hscrollbar_policy=Gtk.PolicyType.NEVER))
             window.present()
             if not controls_only:
                 self.sample("Demo notes A")

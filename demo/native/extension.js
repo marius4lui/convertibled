@@ -33,8 +33,20 @@ export default class DemoExtension extends TabletExtension {
     Scenario(name) {
         this.lastScenario = name;
         const allowed = ['laptop','tablet','home','overview','split','portrait','landscape',
-            'keyboard','dark','light','failure','large-text','normal-text','reduced-motion','normal-motion'];
+            'keyboard','dark','light','failure','large-text','normal-text','reduced-motion','normal-motion',
+            'gnome-overview','gnome-apps','leave-overview','compact','small','app','minimize-apps','settings-small'];
         if (!allowed.includes(name)) throw new Error('Unknown demo scenario');
+        if (name === 'gnome-overview') { Main.overview.show(); return this.Inspect(); }
+        if (name === 'gnome-apps') { Main.overview.showApps(); return this.Inspect(); }
+        if (name === 'leave-overview') { Main.overview.hide(); return this.Inspect(); }
+        if (name === 'settings-small') {
+            for (const actor of global.get_window_actors()) {
+                const window = actor.meta_window;
+                if (window.get_gtk_application_id() === 'org.convertibled.Settings')
+                    window.move_resize_frame(false,40,70,360,540);
+            }
+            return this.Inspect();
+        }
         this.failed = name === 'failure';
         const appearance = new Gio.Settings({schema_id:'org.gnome.desktop.interface'});
         if (name === 'large-text' || name === 'normal-text') {
@@ -60,6 +72,12 @@ export default class DemoExtension extends TabletExtension {
                     this.demoTimer = 0;
                     if (name === 'home' || name === 'overview') this.navigate(name);
                     if (name === 'tablet') this.navigate('dock');
+                    if (name === 'app') {
+                        const window = this.internalWindows()[0]; if (window) this.activate(window);
+                    }
+                    if (name === 'minimize-apps') {
+                        for (const window of this.desktopWindows()) window.minimize();
+                    }
                     if (name === 'split') {
                         const windows = this.internalWindows().filter(w =>
                             !w.get_title().includes('Demo-Steuerung'));
@@ -79,7 +97,7 @@ export default class DemoExtension extends TabletExtension {
         });
         // Monitor dimensions are controlled by the nested compositor window,
         // never faked in the product's geometry calculations.
-        if (name === 'portrait' || name === 'landscape') {
+        if (['portrait','landscape','compact','small'].includes(name)) {
             const process = Gio.Subprocess.new(['python3', GLib.getenv('CONVERTIBLED_DEMO_RESIZE'), name],
                 Gio.SubprocessFlags.NONE);
             process.wait_check_async(null, (source, result) => {
@@ -102,7 +120,11 @@ export default class DemoExtension extends TabletExtension {
         const keyboard = Main.layoutManager.keyboardBox;
         return JSON.stringify({active:this.active, monitor:this.monitor,
             home:this.home?.actor.visible, overview:this.overview?.actor.visible,
-            dock:this.dock?.actor.visible, windows:this.internalWindows().length,
+            dock:this.dock?.actor.visible && !this.dock?.suspended, windows:this.internalWindows().length,
+            homeIsDesktop:this.home?.actor.get_parent() === global.window_group,
+            desktopExposed:this.home?.actor.visible && this.desktopWindows().every(window => window.minimized),
+            divider:this.splitController?.divider?.visible ?? false,
+            workArea:Main.layoutManager.getWorkAreaForMonitor(this.monitor.index).height,
             failure:this.failed, nativeOverview:Main.overview.visible,
             appearance:appearance.get_string('color-scheme'),
             textScale:appearance.get_double('text-scaling-factor'),
@@ -114,7 +136,7 @@ export default class DemoExtension extends TabletExtension {
             scenario:this.lastScenario, splitCandidates:this.splitCandidates,
             frames:this.internalWindows().map(w => {
                 const r = w.get_frame_rect();
-                return {title:w.get_title(),x:r.x,y:r.y,width:r.width,height:r.height,
+                return {title:w.get_title(),minimized:w.minimized,x:r.x,y:r.y,width:r.width,height:r.height,
                     minimum:this.windows.minimum(w)};
             })});
     }

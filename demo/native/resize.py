@@ -20,7 +20,7 @@ from gi.repository import Gio, GLib
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("orientation", choices=("portrait", "landscape"))
+    parser.add_argument("orientation", choices=("portrait", "landscape", "compact", "small"))
     args = parser.parse_args()
     root = Path(os.environ.get("CONVERTIBLED_DEMO_ROOT", "/invalid")).resolve()
     address = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
@@ -70,7 +70,8 @@ def main():
     window = candidates[0]
     geometry = dict(line.split("=", 1) for line in xdo("getwindowgeometry", "--shell", window).splitlines())
     old_width, old_height = dimensions()
-    target_width, target_height = (800, 1280) if args.orientation == "portrait" else (1280, 800)
+    target_width, target_height = {"portrait": (800, 1280), "landscape": (1280, 800),
+                                   "compact": (480, 720), "small": (640, 480)}[args.orientation]
     # Preserve the viewer's native header/decorations while changing content size.
     width = target_width + int(geometry["WIDTH"]) - old_width
     height = target_height + int(geometry["HEIGHT"]) - old_height
