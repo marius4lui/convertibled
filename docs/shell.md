@@ -307,3 +307,8 @@ Navigation now sits in a centered shelf while retaining the full-width owned
 work-area reservation. Home/Overview selection reflects the visible surface;
 apps and secondary actions remain horizontally scrollable. System color-scheme
 changes update all three surfaces without rebuilding product state.
+
+Short allocations (including the native OSK) hide Home's ancillary cards and
+favorites while keeping search and app results reachable. Opening a navigation
+surface does not request text entry; search focus explicitly opens the native
+keyboard. Escape dismisses Home and Overview. Wide headers use a single row.

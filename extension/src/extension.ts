@@ -83,6 +83,13 @@ export default class TabletExtension extends Extension {
             actor.hide(); Main.layoutManager.addChrome(actor,{affectsStruts:actor === this.dock.actor,trackFullscreen:false});
             this.cleanup.add(() => Main.layoutManager.removeChrome(actor));
         }
+        for (const actor of [this.home.actor,this.overview.actor]) {
+            actor.can_focus = true;
+            this.cleanup.signal(actor,'key-press-event', (_actor: any,event: any) => {
+                if (event.get_key_symbol() !== Clutter.KEY_Escape) return Clutter.EVENT_PROPAGATE;
+                this.hideSurfaces(); return Clutter.EVENT_STOP;
+            });
+        }
         Main.uiGroup.set_child_below_sibling(this.home.actor,global.window_group);
         this.cleanup.signal(global.display,'in-fullscreen-changed', () => {
             const fullscreen = this.monitor && Main.layoutManager.monitors[this.monitor.index]?.inFullscreen;
@@ -211,9 +218,9 @@ export default class TabletExtension extends Extension {
         this.dock?.actor.set_size(area.width,88);
         this.dock?.resize(area.width);
         for (const actor of [this.home?.actor,this.overview?.actor]) {
-            actor?.set_position(area.x,area.y); actor?.set_size(area.width,Math.max(48,usableHeight - 96));
+            actor?.set_position(area.x,area.y); actor?.set_size(area.width,Math.max(48,usableHeight - 88));
         }
-        this.home?.resize(area.width);
+        this.home?.resize(area.width,usableHeight - 88);
         this.widgets?.resize(Math.min(1040,area.width - 80));
         this.overview?.resize(area.width);
         this.splitController?.resize({...area,height:Math.max(0,usableHeight - 88)},this.monitor.index);
@@ -235,7 +242,9 @@ export default class TabletExtension extends Extension {
         actor.show(); actor.opacity = 0;
         actor.ease({opacity:255,duration:this.animations.get_boolean('enable-animations') ? 200 : 0,
             mode:Clutter.AnimationMode.EASE_OUT_QUAD});
-        if (surface === 'home') this.home?.focusSearch();
+        // Navigation itself is not a text-entry request. In particular, opening
+        // Home must not summon the native OSK until the user chooses search.
+        actor.grab_key_focus();
     }
     private activate(window: any): void { this.hideSurfaces(); Main.activateWindow(window); }
     private activateApp(app: any): void {

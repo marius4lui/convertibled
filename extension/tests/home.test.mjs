@@ -40,7 +40,15 @@ test('Home caps wide content, adapts narrow app rows and keeps pagination reacha
     assert.equal(home.content.width,1040);assert.equal(home.header.width,1040);
     const count=()=>home.grid.children.filter(child=>child.style_class==='convertibled-app-row').reduce((sum,row)=>sum+row.children.length,0);
     assert.equal(count(),40);home.grid.children.at(-1).emit('clicked');assert.equal(count(),65);
-    home.resize(360);assert.equal(home.content.width,296);assert.equal(home.grid.children[0].children.length,2);
+    home.resize(360);assert.equal(home.content.width,280);assert.equal(home.grid.children[0].children.length,2);
     home.search.text='01';home.search.clutter_text.emit('text-changed');assert.equal(home.limit,40);
     assert.equal(count(),1);home.destroy();system.get_installed=()=>[];
+});
+
+test('keyboard-height Home preserves search and apps while removing ancillary sections', () => {
+    const home=new Home(()=>{});const widgets=new Actor();home.addWidgets(widgets);
+    home.resize(1280,300);assert.equal(home.title.visible,false);assert.equal(widgets.visible,false);
+    assert.equal(home.favoriteSection.visible,false);assert.equal(home.search.visible,true);
+    home.resize(1280,700);assert.equal(home.title.visible,true);assert.equal(widgets.visible,true);
+    home.destroy();
 });

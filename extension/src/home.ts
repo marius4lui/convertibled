@@ -9,6 +9,7 @@ import {_} from './localized.js';
 export class Home {
     readonly actor = new St.BoxLayout({vertical:true,style_class:'convertibled-surface convertibled-home',reactive:true});
     private header = new St.BoxLayout({vertical:true,style_class:'convertibled-home-header',x_align:Clutter.ActorAlign.CENTER});
+    private title = new St.Label({text:_('Home'),style_class:'convertibled-home-title',y_align:Clutter.ActorAlign.CENTER});
     private search = new St.Entry({hint_text:_('Search apps'),style_class:'convertibled-search',can_focus:true,accessible_name:_('Search apps'),x_expand:true});
     private favorites = new St.BoxLayout({style_class:'convertibled-app-row',y_align:Clutter.ActorAlign.START});
     private favoriteSection = new St.BoxLayout({vertical:true,style_class:'convertibled-home-section'});
@@ -22,12 +23,13 @@ export class Home {
     private appInfos: AppInfo[] = [];
     private limit = 40;
     private editing = false;
+    private compact = false;
     constructor(private launch: (app: any) => void) {
-        this.header.add_child(new St.Label({text:_('Home'),style_class:'convertibled-home-title'}));
+        this.header.add_child(this.title);
         this.header.add_child(this.search); this.actor.add_child(this.header);
         this.favoriteSection.add_child(new St.Label({text:_('Favorites'),style_class:'convertibled-section-heading'}));
         const favoriteScroll = scroll(this.favorites); favoriteScroll.y_expand = false;
-        favoriteScroll.height = 132;
+        favoriteScroll.height = 108;
         this.favoriteSection.add_child(favoriteScroll); this.content.add_child(this.favoriteSection);
         const apps = new St.BoxLayout({vertical:true,style_class:'convertibled-home-section'});
         const heading = new St.BoxLayout({style_class:'convertibled-section-tools'});
@@ -47,17 +49,20 @@ export class Home {
             .map((info: any) => ({id:info.get_id(),name:info.get_name(),description:info.get_description() ?? '',
                 keywords:info.get_keywords?.() ?? []}));
     }
-    resize(width: number): void {
-        this.width = Math.min(1040,Math.max(160,width - 64));
+    resize(width: number,height = 800): void {
+        this.width = Math.min(1040,Math.max(160,width - 80));
+        this.compact = height < 460;
+        this.title.visible = !this.compact;
+        this.header.vertical = width < 900;
         this.header.width = this.width; this.content.width = this.width; this.refresh();
     }
     private appButton(app: any, editable = false): any {
-        const columns = gridColumns(this.width,128);
+        const columns = gridColumns(this.width + 32,128);
         const tile = new St.BoxLayout({vertical:true,style_class:'convertibled-app-tile',width:Math.floor((this.width - (columns - 1) * 12) / columns)});
-        const result = new St.Button({style_class:'convertibled-app',can_focus:true,
+        const result = new St.Button({style_class:editable ? 'convertibled-app' : 'convertibled-app convertibled-favorite-app',can_focus:true,
             accessible_name:app.get_name(),reactive:true,x_expand:true});
         const box = new St.BoxLayout({vertical:true,style_class:'convertibled-app-content'});
-        const icon = app.create_icon_texture(64); icon.x_align = Clutter.ActorAlign.CENTER; box.add_child(icon);
+        const icon = app.create_icon_texture(editable ? 64 : 48); icon.x_align = Clutter.ActorAlign.CENTER; box.add_child(icon);
         const label = new St.Label({text:app.get_name(),style_class:'convertibled-app-label',x_align:Clutter.ActorAlign.CENTER});
         box.add_child(label); result.set_child(box); result.connect('clicked', () => this.launch(app)); tile.add_child(result);
         if (editable && this.editing) {
@@ -79,13 +84,13 @@ export class Home {
         const favorites = Favorites.getAppFavorites().getFavorites();
         for (const app of favorites) this.favorites.add_child(this.appButton(app));
         const query = this.search.get_text().trim();
-        this.favoriteSection.visible = !query && favorites.length > 0;
-        if (this.widgets) this.widgets.visible = !query;
+        this.favoriteSection.visible = !query && !this.compact && favorites.length > 0;
+        if (this.widgets) this.widgets.visible = !query && !this.compact;
         this.appHeading.text = _(query ? 'Search results' : 'All apps');
         this.editButton.checked = this.editing;
         const system = Shell.AppSystem.get_default();
         const filtered = searchApps(this.appInfos,query);
-        const columns = gridColumns(this.width,128);
+        const columns = gridColumns(this.width + 32,128);
         let row: any;
         filtered.slice(0,this.limit).forEach((info, index) => {
             if (index % columns === 0) { row = new St.BoxLayout({style_class:'convertibled-app-row'}); this.grid.add_child(row); }

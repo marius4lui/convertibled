@@ -62,6 +62,7 @@ export default class DemoExtension extends TabletExtension {
                         accessibility.set_boolean('screen-keyboard-enabled',
                             !accessibility.get_boolean('screen-keyboard-enabled'));
                         this.navigate('home');
+                        this.home.focusSearch();
                     }
                     return GLib.SOURCE_REMOVE;
                 });
