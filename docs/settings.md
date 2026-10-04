@@ -50,3 +50,7 @@ exports a private-permission file using asynchronous Gio IO. Nothing is uploaded
 Update opt-out and stable/preview selection require an explicit save. Existing
 system values load before saving is enabled; partial save failures re-read the
 actual preferences rather than pretending the entire change was applied.
+
+Recovery and previous-version requests use native confirmation dialogs with
+Cancel as the default. The helper still enforces logout requirements; an error
+is displayed instead of forcing the user's current graphical session to stop.

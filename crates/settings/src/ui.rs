@@ -26,7 +26,7 @@ fn build_window(app: &adw::Application) {
     window.add(&crate::profiles::page(&window, text));
     window.add(&crate::hardware::page(text));
     window.add(&crate::tablet::page(text));
-    window.add(&crate::updates::page(text));
+    window.add(&crate::updates::page(&window, text));
     window.add(&crate::diagnostics::page(&window, text));
     let quit = gio::SimpleAction::new("quit", None);
     let weak = app.downgrade();

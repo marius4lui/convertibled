@@ -16,6 +16,8 @@ mod overview;
 #[cfg(target_os = "linux")]
 mod profiles;
 #[cfg(target_os = "linux")]
+mod recovery;
+#[cfg(target_os = "linux")]
 mod tablet;
 #[cfg(target_os = "linux")]
 mod ui;

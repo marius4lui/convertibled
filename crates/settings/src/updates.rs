@@ -2,7 +2,7 @@ use crate::{model::field, operations::helper, strings::Strings};
 use adw::prelude::*;
 use gtk::glib;
 
-pub fn page(text: Strings) -> adw::PreferencesPage {
+pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesPage {
     let page = adw::PreferencesPage::builder()
         .title(text.text("Updates", "Updates"))
         .icon_name("software-update-available-symbolic")
@@ -81,6 +81,7 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
     }
     page.add(&group);
     page.add(&crate::update_preferences::group(text));
+    page.add(&crate::recovery::group(window, text));
     refresh.emit_clicked();
     page
 }
