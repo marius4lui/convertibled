@@ -87,7 +87,11 @@ async fn authorize(
             .get_property::<String>("Type")
             .await
             .unwrap_or_default();
-        if active && !remote && !locked && kind == "wayland" {
+        let class = proxy
+            .get_property::<String>("Class")
+            .await
+            .unwrap_or_default();
+        if class == "user" && active && !remote && !locked && kind == "wayland" {
             if id.is_empty() || id.len() > 32 || !id.bytes().all(|c| c.is_ascii_alphanumeric()) {
                 return Err(failed("Invalid session identifier"));
             }
@@ -148,6 +152,10 @@ fn write_receipt(
 fn failed(error: impl ToString) -> zbus::fdo::Error {
     zbus::fdo::Error::Failed(error.to_string())
 }
+
+#[cfg(test)]
+#[path = "health_integration.rs"]
+mod integration;
 
 #[cfg(test)]
 mod tests {

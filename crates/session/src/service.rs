@@ -38,6 +38,11 @@ pub(crate) async fn session_state(connection: &Connection) -> (bool, bool) {
             continue;
         };
         candidates.push(SessionCandidate {
+            user: session
+                .get_property::<String>("Class")
+                .await
+                .unwrap_or_default()
+                == "user",
             active: session
                 .get_property::<bool>("Active")
                 .await

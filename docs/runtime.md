@@ -56,6 +56,9 @@ The matching versioned interfaces and signals are in `../data/dbus/`.
 
 Session coordination requires exactly one active local Wayland seat for the user
 service UID. Locked, remote, absent and ambiguous sessions are conservative fallbacks.
+Both session policy and daemon receipt authorization require logind `Class=user`.
+Greeter, manager, background, missing and other classes cannot own the workspace
+or supply acceptance intent/health, even when active, local and unlocked.
 Hardware/logind polling runs concurrently with two-second deadlines; timeout replaces
 cached observation with unknown or cached authorization with inactive/locked.
 Profile, rotation and configuration mutations validate the actual bus sender UID
@@ -115,10 +118,12 @@ installed helper; mutations request pkexec authorization. Exit codes: 0 complete
 request, 2 usage/configuration error, 3 unavailable runtime, 4 denied authorization,
 5 updater failure. Request completion never proves desktop action success.
 
-The CLI's recover, rollback and uninstall commands queue fixed `request-*` verbs
+The CLI's activate, recover, rollback and uninstall commands queue fixed `request-*` verbs
 for graphical logout. Those explicit aliases are accepted too. `cancel-pending`
-cancels waiting or failed maintenance. The installed Python helper retains
-immediate recover/rollback/uninstall verbs for an administrator's offline TTY.
+cancels waiting or failed activation and maintenance. Explicit activation binds
+the authenticated prepared version and works without enabling automatic updates.
+The installed Python helper retains immediate activate/recover/rollback/uninstall
+verbs for an administrator's offline TTY.
 
 `convertibled --check` validates Linux x86_64, the input subsystem and system config
 without claiming a bus name, modifying hardware or creating health receipts.
