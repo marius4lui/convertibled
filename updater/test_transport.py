@@ -11,3 +11,10 @@ class TransportTests(unittest.TestCase):
 
     def test_release_host(self):
         self.assertEqual(url("https://github.com/a/b/releases/download/v1/a.tar.gz"), "https://github.com/a/b/releases/download/v1/a.tar.gz")
+
+    def test_atomic_channel_metadata_host(self):
+        address = "https://raw.githubusercontent.com/a/b/update-channels/stable.json"
+        self.assertEqual(url(address), address)
+        for address in ("http://raw.githubusercontent.com/a/b", "https://raw.githubusercontent.com.evil/a", "https://user@raw.githubusercontent.com/a", "https://raw.githubusercontent.com:8443/a"):
+            with self.assertRaises(UpdateError):
+                url(address)

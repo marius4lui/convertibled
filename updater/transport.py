@@ -4,7 +4,7 @@ import urllib.parse
 import urllib.request
 from .model import UpdateError
 
-HOSTS = {"github.com", "api.github.com", "release-assets.githubusercontent.com", "objects.githubusercontent.com"}
+HOSTS = {"github.com", "api.github.com", "release-assets.githubusercontent.com", "objects.githubusercontent.com", "raw.githubusercontent.com"}
 
 
 def url(value):
