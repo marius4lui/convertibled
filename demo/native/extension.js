@@ -33,9 +33,18 @@ export default class DemoExtension extends TabletExtension {
     Scenario(name) {
         this.lastScenario = name;
         const allowed = ['laptop','tablet','home','overview','split','portrait','landscape',
-            'keyboard','dark','light','failure'];
+            'keyboard','dark','light','failure','large-text','normal-text','reduced-motion','normal-motion'];
         if (!allowed.includes(name)) throw new Error('Unknown demo scenario');
         this.failed = name === 'failure';
+        const appearance = new Gio.Settings({schema_id:'org.gnome.desktop.interface'});
+        if (name === 'large-text' || name === 'normal-text') {
+            appearance.set_double('text-scaling-factor', name === 'large-text' ? 1.25 : 1);
+            return this.Inspect();
+        }
+        if (name === 'reduced-motion' || name === 'normal-motion') {
+            appearance.set_boolean('enable-animations', name === 'normal-motion');
+            return this.Inspect();
+        }
         if (name === 'dark' || name === 'light') {
             new Gio.Settings({schema_id:'org.gnome.desktop.interface'})
                 .set_string('color-scheme', name === 'dark' ? 'prefer-dark' : 'prefer-light');
@@ -89,10 +98,19 @@ export default class DemoExtension extends TabletExtension {
             });
     }
     Inspect() {
+        const appearance = new Gio.Settings({schema_id:'org.gnome.desktop.interface'});
+        const keyboard = Main.layoutManager.keyboardBox;
         return JSON.stringify({active:this.active, monitor:this.monitor,
             home:this.home?.actor.visible, overview:this.overview?.actor.visible,
             dock:this.dock?.actor.visible, windows:this.internalWindows().length,
             failure:this.failed, nativeOverview:Main.overview.visible,
+            appearance:appearance.get_string('color-scheme'),
+            textScale:appearance.get_double('text-scaling-factor'),
+            animations:appearance.get_boolean('enable-animations'),
+            keyboard:{visible:keyboard.visible,height:keyboard.height},
+            layout:{homeBottom:this.home.actor.y + this.home.actor.height,
+                dockTop:this.dock.actor.y,dockBottom:this.dock.actor.y + this.dock.actor.height,
+                compact:this.home.compact},
             scenario:this.lastScenario, splitCandidates:this.splitCandidates,
             frames:this.internalWindows().map(w => {
                 const r = w.get_frame_rect();

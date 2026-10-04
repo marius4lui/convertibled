@@ -218,7 +218,9 @@ def launch_controls(connection, samples_only=False, controls_only=False):
             scenarios = (("Laptop", "laptop"), ("Tablet", "tablet"), ("Home", "home"),
                 ("Übersicht", "overview"), ("Geteilte Ansicht", "split"), ("Hochformat", "portrait"),
                 ("Querformat", "landscape"), ("Tastatur", "keyboard"), ("Dunkel", "dark"),
-                ("Hell", "light"), ("Fehler simulieren", "failure"))
+                ("Hell", "light"), ("Fehler simulieren", "failure"),
+                ("Große Schrift", "large-text"), ("Normale Schrift", "normal-text"),
+                ("Weniger Bewegung", "reduced-motion"), ("Animationen", "normal-motion"))
             for index, (label, value) in enumerate(scenarios):
                 button = Gtk.Button(label=label, height_request=44)
                 button.connect("clicked", lambda _button, action=value: self.scenario(action))
