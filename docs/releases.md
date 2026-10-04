@@ -25,9 +25,28 @@ acceptance or an existing release. Configure the `release` environment with
 required reviewers, `RELEASE_SIGNING_KEY` and public `RELEASE_KEY_ID` only after
 key custody is established. The offline trust root never enters CI. API access
 to environment protection must be available; inability to verify it fails closed.
-The workflow signs accepted bytes and creates a draft only. Publishing remains
-an explicit maintainer action after reviewing metadata freshness and the deployed
-root-signed release keyring. It never rebuilds or overwrites a published version.
+The workflow signs accepted bytes, verifies the signer against the reviewed
+root-signed keyring, packages the bootstrap installer and creates a draft only.
+It never rebuilds or overwrites the accepted product bundle.
+
+`Publish accepted release and promote channel` is a separate manual main-only
+workflow behind the same reviewed environment. It rechecks signatures, freshness,
+tag/commit identity, physical acceptance and exact bootstrap source/trust bytes.
+It requires the deployed root-signed keyring to match the release. After making
+the release public it downloads and verifies the public bundle before atomically
+writing the selected channel file on `update-channels`. GitHub's required prior
+blob SHA prevents overwriting a competing promotion; a conflict fails without
+retry. Both workflows share a concurrency group. Failures before promotion leave
+the prior channel unchanged; a release already made public remains public and
+the job may be rerun while metadata is fresh.
+
+Maintainers provision reviewed public `release/trust.json` and the offline-signed
+`release/keyring.json` on main, plus the `update-channels` branch before dispatch.
+Trust URLs use `https://raw.githubusercontent.com/OWNER/REPO/main/release/keyring.json`
+and `https://raw.githubusercontent.com/OWNER/REPO/update-channels/stable.json`
+(or `preview.json`). Neither workflow fabricates missing production trust.
+The bootstrap asset is `convertibled-installer.tar.gz`; authenticating its source
+before executing `sh installer/install` remains the initial trust boundary.
 
 ## Version policy
 
@@ -53,7 +72,8 @@ Define Rust MSRV and release platform baseline before adding a build matrix.
 5. Create draft release with tested bundles, signed metadata, checksums, SBOM,
    provenance, installation/recovery instructions, and limitations.
 6. Publish only with authorization and all required artifacts present.
-7. Promote update-channel metadata only after artifacts are available and verified.
+7. Dispatch the protected publisher to verify public bytes and atomically promote
+   the selected channel. A channel conflict requires fresh inspection, not force.
 
 Never rebuild different bytes under the same published version. Prefer immutable
 published releases. Failed release jobs leave channel pointers unchanged. Retry
