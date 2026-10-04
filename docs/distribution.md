@@ -199,3 +199,9 @@ Authenticated offline-root keyring advancements are persisted before requesting
 channel metadata. A revoked/unavailable channel cannot undo a learned revocation
 or permit replay of a previously fresh older keyring. Root trust and per-channel
 availability are independent atomic state transitions.
+
+Activation reauthenticates retained channel envelopes using the latest retained
+root-signed keyring, including root freshness and administrator-provisioned root
+trust. Learning a revocation through another channel invalidates a cached prepared
+release signed by that key. The installed candidate's artifact identity must also
+match the authenticated metadata; equal version strings alone do not bind bytes.

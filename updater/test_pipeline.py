@@ -10,6 +10,7 @@ from .manager import Manager
 from .offline import Offline
 from .model import canonical, decode, UpdateError
 from installer.storage import Layout, atomic, read
+from installer.configuration import set_preferences
 from scripts.release.bundle import build
 
 
@@ -105,3 +106,28 @@ class PipelineTests(unittest.TestCase):
         (self.incoming / "keyring.json").write_bytes(old_ring)
         with self.assertRaisesRegex(UpdateError, "Keyring replay"):
             self.manager.check()
+
+    def test_prepared_activation_rechecks_revocation_learned_on_other_channel(self):
+        self.setup_release()
+        self.manager.prepare()
+        next_key = self.rotate_release_key()
+        set_preferences(self.layout, channel="preview")
+        self.metadata.update(channel="preview", version="0.2.0")
+        old_key = self.key
+        self.key = next_key
+        (self.incoming / "channel.json").write_bytes(canonical(self.signed(self.metadata, "next-release")))
+        self.key = old_key
+        Manager(self.layout, network=Offline(self.layout)).check()
+        set_preferences(self.layout, channel="stable")
+        with self.assertRaisesRegex(UpdateError, "revoked"):
+            self.manager.activation_ready()
+
+    def test_same_version_different_signed_hash_cannot_activate_cached_bundle(self):
+        self.setup_release()
+        self.manager.prepare()
+        self.metadata["sequence"] = 2
+        self.metadata["artifact"]["sha256"] = "0" * 64
+        self.write_metadata()
+        self.manager.check()
+        with self.assertRaisesRegex(UpdateError, "bundle bytes"):
+            self.manager.activation_ready()

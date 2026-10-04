@@ -6,7 +6,7 @@ import tarfile
 from pathlib import Path
 from .archive import extract
 from .crypto import ed25519_public, envelope, keyring
-from .model import UpdateError, release, version_order
+from .model import UpdateError, canonical, decode, release, version_order
 from .transport import fetch, url
 from installer.configuration import preferences
 from installer.platform import preflight
@@ -45,7 +45,6 @@ class Manager:
             raise UpdateError("Immutable keyring sequence changed")
         # Root trust advances independently of channel availability/signatures.
         # Once learned, a revocation must survive a failed downstream request.
-        from .model import decode
         accepted["root_sequence"] = ring["sequence"]
         accepted["keyring"] = ring
         accepted["keyring_envelope"] = decode(signed_ring)
@@ -65,6 +64,7 @@ class Manager:
             if old.get("version") and version_order(metadata["version"]) < version_order(old["version"]):
                 raise UpdateError("Signed version downgrade requires explicit local rollback")
         accepted["channels"][channel] = metadata
+        accepted.setdefault("channel_envelopes", {})[channel] = decode(signed)
         atomic(self.layout.state / "accepted.json", accepted)
         atomic(self.layout.state / "available.json", metadata)
         return metadata
@@ -113,8 +113,16 @@ class Manager:
         if prepared.get("channel") != channel:
             raise UpdateError("Prepared release is from another channel")
         accepted = read(self.layout.state / "accepted.json", {})
-        metadata = accepted.get("channels", {}).get(channel)
+        now = dt.datetime.now(dt.timezone.utc)
+        trusted = trust(self.layout)
+        ring = keyring(canonical(accepted.get("keyring_envelope", {})), trusted["roots"], now, accepted.get("root_sequence", 0))
+        metadata = envelope(canonical(accepted.get("channel_envelopes", {}).get(channel, {})), ring["keys"])
+        if metadata != accepted.get("channels", {}).get(channel):
+            raise UpdateError("Cached release metadata differs from authenticated envelope")
         if not metadata or metadata["version"] != prepared.get("version"):
             raise UpdateError("Prepared release no longer matches accepted metadata")
-        release(metadata, channel, dt.datetime.now(dt.timezone.utc), metadata["sequence"] - 1)
+        release(metadata, channel, now, metadata["sequence"] - 1)
+        installed = read(self.layout.versions / metadata["version"] / "release.json", {})
+        if installed.get("artifact", {}).get("sha256") != metadata["artifact"]["sha256"] or installed.get("artifact", {}).get("size") != metadata["artifact"]["size"]:
+            raise UpdateError("Prepared bundle bytes differ from authenticated release")
         return metadata["version"]
