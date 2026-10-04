@@ -54,3 +54,7 @@ actual preferences rather than pretending the entire change was applied.
 Recovery and previous-version requests use native confirmation dialogs with
 Cancel as the default. The helper still enforces logout requirements; an error
 is displayed instead of forcing the user's current graphical session to stop.
+
+Desktop launch metadata and a project-owned scalable icon live under `data/`.
+The installer owns their installation/removal; settings does not register itself
+in the user's desktop by writing files when launched.

@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Name=convertibled
+GenericName=Tablet Workspace Settings
+GenericName[de]=Einstellungen der Tablet-Arbeitsfläche
+Comment=Configure tablet profiles, workspace and verified updates
+Comment[de]=Tablet-Profile, Arbeitsfläche und geprüfte Updates konfigurieren
+Exec=/opt/convertibled/current/bin/convertibled-settings
+Icon=org.convertibled.Settings
+Terminal=false
+Categories=Settings;HardwareSettings;
+Keywords=tablet;convertible;rotation;updates;
+Keywords[de]=Tablet;Convertible;Drehung;Updates;
+StartupNotify=true
+DBusActivatable=false
