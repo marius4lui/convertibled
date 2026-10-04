@@ -296,6 +296,17 @@ private journals/trust remain0600. They import no versioned project code. Change
 stable guard bytes require an explicit future migration; updates cannot silently
 replace the admission contract. First installation establishes the gate before
 selection. Active, numerically validated user managers receive daemon-reload.
+Local user-manager calls resolve each validated UID through the account database
+and use `runuser` with a fixed, cleared environment and that UID's runtime D-Bus
+socket. No user shell runs, including for the greeter's non-login account. A
+failed reload is ignored only after systemd confirms that manager is stopped or
+failed; errors from a still-active or ambiguous manager remain failures.
+
+Logind snapshots restart at most three times when the exact C-locale error proves
+a listed session vanished before property lookup. Every retry re-enumerates the
+whole inventory, so a concurrent new login is retained. Repeated churn produces
+a conservative blocking observation and the next scheduled check retries;
+unrelated command failures never count as logout.
 
 A persistent root-owned admission.pending marker survives updater interruption.
 The guard releases SH and retries while this marker exists, so recovery can take

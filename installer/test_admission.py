@@ -5,7 +5,7 @@ import unittest
 import time
 from pathlib import Path
 from unittest.mock import patch
-from .admission_control import exclusive, reload_users, provision, STABLE, pending, waiting_at_gate
+from .admission_control import exclusive, reload_users, provision, STABLE, pending, waiting_at_gate, user_manager
 from .storage import atomic
 from .transaction import Transaction
 from .storage import Layout
@@ -131,7 +131,8 @@ class AdmissionTests(unittest.TestCase):
 
 
 class UserReloadTests(unittest.TestCase):
-    def test_only_existing_validated_managers_reload(self):
+    @patch("installer.admission_control.user_name", return_value="tester")
+    def test_only_existing_validated_managers_reload(self, account):
         calls = []
         def run(args):
             calls.append(args)
@@ -139,8 +140,28 @@ class UserReloadTests(unittest.TestCase):
                 return '[{"uid":1000},{"uid":1001},{"uid":1000}]'
             return "active" if "user@1000.service" in args else "inactive"
         reload_users(run)
-        self.assertIn(["systemctl", "--user", "--machine=1000@.host", "daemon-reload"], calls)
+        self.assertIn(user_manager(1000, ["daemon-reload"]), calls)
         self.assertEqual(sum("daemon-reload" in call for call in calls), 1)
+
+    @patch("installer.admission_control.user_name", return_value="gdm-greeter")
+    def test_transport_runs_directly_without_user_shell_or_inherited_bus(self, account):
+        args = user_manager(60578, ["show", "convertibled-admission.service"])
+        self.assertEqual(args[:6], ["/usr/bin/runuser", "-u", "gdm-greeter", "--", "/usr/bin/env", "-i"])
+        self.assertIn("XDG_RUNTIME_DIR=/run/user/60578", args)
+        self.assertIn("DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/60578/bus", args)
+        self.assertEqual(args[-4:], ["/usr/bin/systemctl", "--user", "show", "convertibled-admission.service"])
+
+    @patch("installer.admission_control.user_name", return_value="tester")
+    def test_manager_exit_race_skips_only_confirmed_stopped_manager(self, account):
+        from unittest.mock import Mock
+        for final_state in ("inactive", "failed", "active", "activating", "unknown"):
+            run = Mock(side_effect=['[{"uid":1000}]', "active", UpdateError("bus disconnected"), final_state])
+            if final_state in ("inactive", "failed"):
+                reload_users(run)
+            else:
+                with self.assertRaisesRegex(UpdateError, "bus disconnected"):
+                    reload_users(run)
+            self.assertEqual(run.call_args.args[0], ["systemctl", "show", "user@1000.service", "-p", "ActiveState", "--value"])
 
     def test_argument_injection_rejected(self):
         with self.assertRaises(UpdateError):
@@ -163,7 +184,7 @@ class UserReloadTests(unittest.TestCase):
                 values = shell if "org.gnome.Shell@user.service" in args else guard
                 return "\n".join(key + "=" + value for key, value in values.items())
             session = {"user": "1000", "type": "wayland", "locked": True}
-            with patch("installer.admission_control.guard_process", return_value=True):
+            with patch("installer.admission_control.guard_process", return_value=True), patch("installer.admission_control.user_name", return_value="tester"):
                 self.assertTrue(waiting_at_gate(layout, session, run))
                 shell["MainPID"] = "999"
                 self.assertFalse(waiting_at_gate(layout, session, run))
