@@ -32,6 +32,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d
         with:
           toolchain: '1.99.0'
+      - name: Root-owned admission and installer isolation tests
+        run: python3 -m unittest discover -s installer -t . -v
       - run: cargo build --workspace --release --locked
       - run: cargo test --workspace --locked
       - run: npm ci && npm test
