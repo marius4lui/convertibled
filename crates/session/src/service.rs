@@ -78,7 +78,10 @@ async fn observation(connection: &Connection) -> Observation {
 }
 pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let system = Connection::system().await?;
-    let state = Arc::new(RwLock::new(Status::default()));
+    let config = crate::config::load()?;
+    let mut initial = Status::default();
+    initial.desired.rotation_lock = config.rotation_lock;
+    let state = Arc::new(RwLock::new(initial));
     let capabilities = Arc::new(RwLock::new(Capabilities::default()));
     let connection = zbus::connection::Builder::session()?
         .name("org.convertibled.Session1")?

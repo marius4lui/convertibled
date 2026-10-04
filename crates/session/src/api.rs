@@ -130,6 +130,28 @@ impl Api {
         }
         Ok(())
     }
+    async fn reload(
+        &self,
+        #[zbus(connection)] connection: &Connection,
+        #[zbus(header)] header: Header<'_>,
+        #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
+    ) -> zbus::fdo::Result<()> {
+        authorize(connection, &header).await?;
+        let candidate = crate::config::load().map_err(failed)?;
+        let mut state = self.state.write().await;
+        if !state.active || state.locked {
+            return Err(zbus::fdo::Error::AccessDenied(
+                "Session is inactive or locked".into(),
+            ));
+        }
+        state.desired.rotation_lock = candidate.rotation_lock;
+        state.reconcile();
+        let json = serde_json::to_string(&*state).map_err(failed)?;
+        drop(state);
+        Self::changed(&emitter, &json)
+            .await
+            .map_err(|e| zbus::fdo::Error::Failed(e.to_string()))
+    }
     #[zbus(signal)]
     pub async fn changed(emitter: &SignalEmitter<'_>, status: &str) -> zbus::Result<()>;
 }

@@ -12,3 +12,5 @@ fn main() {
     eprintln!("convertibled-session requires Linux logind and D-Bus");
     std::process::exit(3);
 }
+#[cfg(target_os = "linux")]
+mod config;

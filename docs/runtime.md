@@ -21,3 +21,8 @@ one active local Wayland seat, and denies mutations while locked or ambiguous.
 D-Bus caller credentials are checked against the service UID. Extension reports
 are bounded, validated, and never inferred from desired state. Manual choices
 are currently session-local and reset when the service restarts.
+
+Session reload validates both whole configuration candidates before changing
+rotation preferences. User profile entries override system defaults; debounce
+and session authorization retain system ownership. Missing files use defaults;
+invalid startup configurations fail explicitly instead of silently accepting them.
