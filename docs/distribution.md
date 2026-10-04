@@ -81,3 +81,9 @@ manifest, stops/disables only project services, removes owned links and verified
 version files, and retains configuration/state by default. Added/modified files
 abort removal before service shutdown. No broad `/opt` or home-directory deletion
 is performed. The dedicated service account is retained for safe reinstall.
+
+`scripts/release/bundle.py --bin-dir ... --extension-dir ... --output ...`
+assembles all four ELF binaries, compiled GNOME extension schemas, Python
+helpers, units/policies and desktop entry into a deterministic tar.gz with
+manifest hashes and normalized ownership/modes. Version comes from Cargo's
+canonical workspace version. Existing output files are never overwritten.

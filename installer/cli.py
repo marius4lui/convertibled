@@ -8,6 +8,7 @@ from pathlib import Path
 
 # Isolated mode ignores user site/PYTHONPATH. Only this root-owned bundle is used.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.dont_write_bytecode = True
 from installer.configuration import preferences, set_preferences
 from installer.platform import graphical_sessions
 from installer.status import public, publish
