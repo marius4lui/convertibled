@@ -23,6 +23,12 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
             text.text("Tablet workspace", "Tablet-Arbeitsfläche"),
         ),
         ("rotation", text.text("Rotation", "Drehung")),
+        ("rotation_lock", text.text("Rotation lock", "Drehsperre")),
+        (
+            "osk",
+            text.text("Native on-screen keyboard", "Native Bildschirmtastatur"),
+        ),
+        ("split_view", text.text("Split view", "Geteilte Ansicht")),
         (
             "internal_input_suppression",
             text.text(

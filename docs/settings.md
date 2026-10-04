@@ -30,7 +30,8 @@ requested, with Overview providing confirmation of applied state. Initial
 control values come from the service; automatic selection resets manual mode.
 
 Hardware presents service capability support and its explanation independently
-for the workspace, rotation, input suppression and scaling. Missing support is
+for the workspace, rotation, rotation lock, native OSK, split view, input
+suppression and scaling. Missing support is
 never promoted to available merely because an input sensor was discovered.
 
 Tablet preferences use the extension's GSettings schema, loaded from the
