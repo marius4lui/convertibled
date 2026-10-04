@@ -31,6 +31,8 @@ class LifecycleTests(unittest.TestCase):
             if source.startswith("share/gnome-shell/extensions/"):
                 source += "/extension.js"
             files.setdefault(source, (b"fixture", source.endswith(".py")))
+        policy = "data/polkit/org.convertibled.installer.policy"
+        files[policy] = ((Path(__file__).resolve().parent.parent / policy).read_bytes(), False)
         archive = Path(self.temporary.name) / (version + ".tar.gz")
         build(files, version, archive)
         path = self.layout.versions / version

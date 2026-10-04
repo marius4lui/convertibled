@@ -1,5 +1,6 @@
 """Fixed destination ownership; never accept an arbitrary install path."""
-from .storage import atomic, read
+import os
+from .storage import atomic, read, sync_directory
 from updater.model import UpdateError
 
 UUID = "convertibled@convertibled.org"
@@ -25,6 +26,17 @@ def expected(layout, source):
     return layout.current / source
 
 
+def refresh_policy(layout, target, source):
+    temporary = target.with_name(".convertibled-next-" + target.name)
+    if temporary.exists() or temporary.is_symlink():
+        if not temporary.is_symlink() or str(temporary.readlink()) != str(expected(layout, source)):
+            raise UpdateError("Unrelated policy staging entry retained")
+        temporary.unlink()
+    temporary.symlink_to(expected(layout, source))
+    os.replace(temporary, target)
+    sync_directory(target.parent)
+
+
 def install(layout):
     owned = read(layout.state / "owned.json", {"schema": 1, "links": {}})
     if owned.get("schema") != 1:
@@ -43,7 +55,11 @@ def install(layout):
     for destination, source in LINKS.items():
         target = layout.root / destination
         target.parent.mkdir(parents=True, exist_ok=True)
-        if not target.is_symlink():
+        if destination == "usr/share/polkit-1/actions/org.convertibled.installer.policy":
+            # A changed `current` symlink is outside Polkit's watched actions
+            # directory. Refresh its entry atomically to trigger policy reload.
+            refresh_policy(layout, target, source)
+        elif not target.is_symlink():
             target.symlink_to(expected(layout, source), target_is_directory=destination.endswith(UUID))
 
 
@@ -54,6 +70,12 @@ def remove(layout):
         if LINKS.get(destination) != source:
             raise UpdateError("Invalid ownership manifest")
         target = layout.root / destination
+        if destination == "usr/share/polkit-1/actions/org.convertibled.installer.policy":
+            temporary = target.with_name(".convertibled-next-" + target.name)
+            if temporary.is_symlink() and str(temporary.readlink()) == str(expected(layout, source)):
+                temporary.unlink()
+            elif temporary.exists() or temporary.is_symlink():
+                retained.append(str(temporary.relative_to(layout.root)))
         if target.is_symlink() and str(target.readlink()) == str(expected(layout, source)):
             target.unlink()
         elif target.exists() or target.is_symlink():

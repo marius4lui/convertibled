@@ -213,3 +213,10 @@ These repeated logind observations do not provide an atomic login admission
 lock: a remaining TOCTOU window exists during selection/restart. No display
 manager is stopped, sessions forced out, or global login lock imposed. This
 integration limitation must be tested/reviewed before public release.
+
+Bundle assembly qualifies the Polkit helper annotation with the canonical
+version-directory path, matching upstream pkexec's realpath-based lookup.
+Activation and rollback atomically replace the owned host policy-directory entry
+to trigger Polkit reload; changing the external `current` symlink alone would
+not update its watched actions directory. Signed manifest hashes cover the exact
+version-qualified policy bytes. Tests verify program identity and policy refresh.

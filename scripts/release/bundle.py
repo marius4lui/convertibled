@@ -13,7 +13,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from updater.archive import manifest
-from updater.model import canonical, UpdateError
+from updater.model import canonical, UpdateError, version as validate_version
+
+
+def qualify_policy(content, release_version):
+    validate_version(release_version)
+    active = b"/opt/convertibled/current/installer/cli.py"
+    if content.count(active) != 1:
+        raise UpdateError("Polkit template must name the fixed active helper exactly once")
+    # pkexec resolves executable symlinks before literal exec.path matching.
+    return content.replace(active, f"/opt/convertibled/versions/{release_version}/installer/cli.py".encode())
 
 
 def collect(binary_directory, extension_directory):
@@ -47,6 +56,11 @@ def collect(binary_directory, extension_directory):
 
 
 def build(files, version, output):
+    files = dict(files)
+    policy = "data/polkit/org.convertibled.installer.policy"
+    if policy in files:
+        content, executable = files[policy]
+        files[policy] = (qualify_policy(content, version), executable)
     index = {"schema": 1, "version": version, "files": {name: {"size": len(content), "sha256": hashlib.sha256(content).hexdigest(), "executable": executable} for name, (content, executable) in files.items()}}
     manifest(index)
     files = {**files, "manifest.json": (canonical(index), False)}
