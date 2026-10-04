@@ -124,3 +124,8 @@ through `Session1.ReportShellHealth(version, healthy)`. A completed UI/resource
 setup is healthy even in laptop mode; a setup exception cleans resources and
 reports failure. This receipt is distinct from tablet applied state, allowing
 the update helper to evaluate the candidate at the next real login.
+
+Native-boundary mocks exercise complete extension enable/fold/lock/disable,
+focus preservation, timer/signal/chrome cleanup, reduced motion and keyboard
+allocation. Tests import the built entrypoint, rather than mirroring controller
+logic. Their native surfaces are test doubles and cannot prove GNOME rendering.
