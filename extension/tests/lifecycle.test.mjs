@@ -56,3 +56,18 @@ test('explicit laptop native actions apply only in the active unlocked session',
     assert.equal(extension.rotation.locked,false);assert.equal(extension.osk.value,false);
     extension.disable();
 });
+
+test('appearance and navigation selection follow actual native state', () => {
+    const extension=new Extension();extension.enable();extension.monitor=main.layoutManager.monitors[0];
+    extension.status={schema_version:1,profile:'tablet',desired:{tablet_workspace:true,rotation_lock:false}};
+    extension.reconcile();extension.navigate('overview');
+    assert.equal(extension.dock.navigation.get('overview').checked,true);
+    assert.equal(extension.dock.navigation.get('home').checked,false);
+    extension.animations.set_string('color-scheme','prefer-light');
+    for(const actor of [extension.home.actor,extension.overview.actor,extension.dock.actor])
+        assert.match(actor.style_class,/convertibled-light/);
+    extension.animations.set_string('color-scheme','prefer-dark');
+    assert.doesNotMatch(extension.home.actor.style_class,/convertibled-light/);
+    extension.hideSurfaces();assert.equal(extension.dock.navigation.get('overview').checked,false);
+    extension.disable();
+});

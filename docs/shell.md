@@ -302,3 +302,8 @@ percentage. Light/dark palettes retain the same focus and touch geometry.
 Overview uses responsive window cards with a fixed-layout native viewport.
 Live clones fit the allocated viewport without double scaling. Split selection
 survives layout changes and still requires exactly two eligible windows.
+
+Navigation now sits in a centered shelf while retaining the full-width owned
+work-area reservation. Home/Overview selection reflects the visible surface;
+apps and secondary actions remain horizontally scrollable. System color-scheme
+changes update all three surfaces without rebuilding product state.

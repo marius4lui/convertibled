@@ -77,6 +77,8 @@ export default class TabletExtension extends Extension {
             settings: () => Gio.AppInfo.create_from_commandline('convertibled-settings',null,Gio.AppInfoCreateFlags.NONE).launch([],null),
         });
         this.home.addWidgets(this.widgets.actor);
+        this.cleanup.signal(this.animations,'changed::color-scheme', () => this.appearance());
+        this.appearance();
         for (const actor of [this.home.actor,this.dock.actor,this.overview.actor]) {
             actor.hide(); Main.layoutManager.addChrome(actor,{affectsStruts:actor === this.dock.actor,trackFullscreen:false});
             this.cleanup.add(() => Main.layoutManager.removeChrome(actor));
@@ -129,6 +131,14 @@ export default class TabletExtension extends Extension {
         return global.get_window_actors().map((actor: any) => actor.meta_window)
             .filter((window: any) => this.windows.eligible(window,this.monitor!.index) &&
                 window.located_on_workspace(global.workspace_manager.get_active_workspace()));
+    }
+    private appearance(): void {
+        const light = this.animations.get_string('color-scheme') === 'prefer-light';
+        for (const actor of [this.home?.actor,this.overview?.actor,this.dock?.actor]) {
+            if (!actor) continue;
+            const base = actor.style_class.replace(/\s*convertibled-light/g,'');
+            actor.style_class = base + (light ? ' convertibled-light' : '');
+        }
     }
     private reconcile(): void {
         const allowed = Main.sessionMode.currentMode === 'user' && !Main.sessionMode.isLocked &&
@@ -199,13 +209,17 @@ export default class TabletExtension extends Extension {
         const usableHeight = keyboardHere ? Math.min(area.height,Math.max(0,ky - area.y)) : area.height;
         this.dock?.actor.set_position(area.x,area.y + Math.max(0,usableHeight - 88));
         this.dock?.actor.set_size(area.width,88);
+        this.dock?.resize(area.width);
         for (const actor of [this.home?.actor,this.overview?.actor]) {
             actor?.set_position(area.x,area.y); actor?.set_size(area.width,Math.max(48,usableHeight - 96));
         }
         this.home?.resize(area.width);
+        this.widgets?.resize(Math.min(1040,area.width - 80));
+        this.overview?.resize(area.width);
         this.splitController?.resize({...area,height:Math.max(0,usableHeight - 88)},this.monitor.index);
     }
     private hideSurfaces(): void {
+        this.dock?.select(null);
         this.home?.actor.hide(); this.overview?.actor.hide();
         if (this.home) Main.uiGroup.set_child_below_sibling(this.home.actor,global.window_group);
     }
@@ -215,6 +229,7 @@ export default class TabletExtension extends Extension {
         this.dock?.showApps(true);
         const actor = surface === 'home' ? this.home?.actor : surface === 'overview' ? this.overview?.actor : null;
         if (!actor) return;
+        this.dock?.select(surface);
         if (surface === 'home') Main.uiGroup.set_child_above_sibling(actor,global.window_group);
         if (surface === 'overview') this.overview?.refresh();
         actor.show(); actor.opacity = 0;
