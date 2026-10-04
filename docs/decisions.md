@@ -29,6 +29,13 @@ within its Shell; a separate replacement desktop is outside this decision.
 
 ## Technical consequences
 
+The clarified October 4 mandate is a custom desktop in tablet mode, not a Home
+overlay. Home remains in GNOME's window scene above wallpaper and below native
+application windows. Explicit Home minimizes only eligible windows on the
+internal current workspace; leaving tablet mode restores only owned changes.
+Native Overview and workspace transitions retain GNOME application identity.
+The tablet scene and its reserved navigation space disappear in laptop mode.
+
 The October 4 design refinement permits a project-owned Shell palette and
 surface styling while retaining native St/Clutter and GTK/libadwaita controls.
 The goal is consistent visual and interaction quality across the real product

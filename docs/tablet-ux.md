@@ -15,8 +15,11 @@ occlusion in the actual shared native demo; physical acceptance remains separate
 
 Use GNOME typography, symbolic icons, system colors, dialogs and dark mode.
 Settings use GTK4/libadwaita; the tablet workspace uses native Shell actors.
-Home sits behind applications and is opened through navigation; folding must
-keep the active app focused. Eligible main windows maximize; dialogs do not.
+Home is the persistent desktop behind applications in tablet mode. Navigation
+returns to it by minimizing eligible windows on the internal current workspace.
+It is never raised as an application-like overlay. Folding keeps the active app
+focused. Eligible main windows maximize; dialogs do not. Native Overview hides
+tablet chrome during its zoom transition and never lists Home as an app.
 
 ## Planned surfaces
 
