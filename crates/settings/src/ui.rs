@@ -67,6 +67,8 @@ fn build_window(app: &adw::Application) {
     }
     let window = adw::PreferencesWindow::builder()
         .application(app)
+        // This is the application's main window, not a modal preferences dialog.
+        .modal(false)
         .title("convertibled")
         .default_width(760)
         .default_height(720)
