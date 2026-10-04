@@ -18,6 +18,7 @@ import {SplitController} from './split-controller.js';
 import {TouchNavigation} from './touch.js';
 import {RotationLock} from './rotation.js';
 import {NativePreference} from './native-preference.js';
+import {beforeDock} from './work-area.js';
 export default class TabletExtension extends Extension {
     private cleanup?: Cleanup;
     private bridge?: SessionBridge;
@@ -72,7 +73,7 @@ export default class TabletExtension extends Extension {
         });
         this.home.addWidgets(this.widgets.actor);
         for (const actor of [this.home.actor,this.dock.actor,this.overview.actor]) {
-            actor.hide(); Main.layoutManager.addChrome(actor,{affectsStruts:false,trackFullscreen:false});
+            actor.hide(); Main.layoutManager.addChrome(actor,{affectsStruts:actor === this.dock.actor,trackFullscreen:false});
             this.cleanup.add(() => Main.layoutManager.removeChrome(actor));
         }
         Main.uiGroup.set_child_below_sibling(this.home.actor,global.window_group);
@@ -83,6 +84,9 @@ export default class TabletExtension extends Extension {
         });
         this.cleanup.signal(Main.sessionMode,'updated', () => this.reconcile());
         this.cleanup.signal(Main.layoutManager,'monitors-changed', () => this.display?.refresh());
+        this.cleanup.signal(global.display,'workareas-changed', () => {
+            if (this.active && this.monitor) { this.position(); this.windows.reconcileWorkArea(this.monitor.index); }
+        });
         this.cleanup.signal(Main.layoutManager.keyboardBox,'notify::height', () => { if (this.active) this.position(); });
         this.cleanup.signal(Main.layoutManager.keyboardBox,'notify::visible', () => { if (this.active) this.position(); });
         this.cleanup.signal(global.display,'window-created', (_d: any,window: any) => {
@@ -166,7 +170,9 @@ export default class TabletExtension extends Extension {
     }
     private position(): void {
         if (!this.monitor) return;
-        const area = Main.layoutManager.getWorkAreaForMonitor(this.monitor.index);
+        const workArea = Main.layoutManager.getWorkAreaForMonitor(this.monitor.index);
+        const dock = this.dock!.actor;
+        const area = beforeDock(workArea,{x:dock.x,y:dock.y,width:dock.width,height:dock.height},dock.visible,this.monitor);
         const keyboard = Main.layoutManager.keyboardBox;
         const [kx,ky] = keyboard.get_transformed_position();
         const keyboardHere = keyboard.visible && keyboard.height > 0 &&
@@ -178,7 +184,7 @@ export default class TabletExtension extends Extension {
             actor?.set_position(area.x,area.y); actor?.set_size(area.width,Math.max(48,usableHeight - 96));
         }
         this.home?.resize(area.width);
-        this.splitController?.resize(area,this.monitor.index);
+        this.splitController?.resize({...area,height:Math.max(0,area.height - 88)},this.monitor.index);
     }
     private hideSurfaces(): void {
         this.home?.actor.hide(); this.overview?.actor.hide();

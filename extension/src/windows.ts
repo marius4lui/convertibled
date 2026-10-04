@@ -53,4 +53,14 @@ export class WindowController {
     }
     forget(window: any): void { this.owned.forget(window); }
     owns(window: any): boolean { return this.owned.matches(window,this.snapshot(window)); }
+    reconcileWorkArea(monitor: number): void {
+        for (const window of this.owned.keys()) {
+            const applied = this.owned.applied(window);
+            if (!applied || applied.maximized !== Meta.MaximizeFlags.BOTH ||
+                window.get_monitor() !== monitor || window.get_maximize_flags() !== Meta.MaximizeFlags.BOTH) continue;
+            const r = window.get_work_area_current_monitor();
+            this.owned.remember(window,this.snapshot(window),{...applied,
+                rect:{x:r.x,y:r.y,width:r.width,height:r.height}});
+        }
+    }
 }

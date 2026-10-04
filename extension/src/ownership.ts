@@ -14,6 +14,7 @@ export class OwnedState<K, T> {
     matches(key: K,current: T): boolean {
         const record = this.records.get(key); return Boolean(record && this.equal(record.applied,current));
     }
+    applied(key: K): T | undefined { return this.records.get(key)?.applied; }
     keys(): K[] { return [...this.records.keys()]; }
 }
 export class Cleanup {

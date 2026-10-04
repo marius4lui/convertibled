@@ -197,3 +197,9 @@ Native profile actions are reconciled independently of tablet workspace:
 explicit laptop rotation/OSK actions also apply in an active, unlocked user
 session. Inactive/locked states restore owned preferences. Action reports compare
 the actual preference with the request and never claim success on a mismatch.
+
+The visible dock reserves a bottom strut only on the internal output, keeping
+maximized application controls above navigation. Position calculations remove
+only that owned inset to avoid repeated self-shrinking work areas. Native work
+area changes refresh maximize ownership; split allocations exclude the dock.
+Portable regression tests cover inset feedback, OSK placement and external bounds.
