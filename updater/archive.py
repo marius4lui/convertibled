@@ -50,12 +50,13 @@ def extract(archive, destination, expected_version):
     if destination.exists():
         raise UpdateError("Extraction destination already exists")
     with tarfile.open(archive, "r:gz") as bundle:
-        entries = bundle.getmembers()
-        if len(entries) > MAX_FILES + 1:
-            raise UpdateError("Archive has too many entries")
+        entries = []
         names = set()
         total = 0
-        for entry in entries:
+        for entry in bundle:
+            entries.append(entry)
+            if len(entries) > MAX_FILES + 1:
+                raise UpdateError("Archive has too many entries")
             safe_name(entry.name)
             if not entry.isfile() or entry.name in names or entry.size < 0:
                 raise UpdateError("Links, directories and duplicate entries are forbidden")
@@ -70,8 +71,12 @@ def extract(archive, destination, expected_version):
         if contract["version"] != expected_version or names != set(contract["files"]) | {"manifest.json"}:
             raise UpdateError("Bundle and signed release disagree")
         destination.mkdir(mode=0o755, parents=True)
-        for name, info in contract["files"].items():
-            entry = bundle.getmember(name)
+        # Read payloads in archive order to avoid repeated gzip rewind/expansion.
+        for entry in entries:
+            name = entry.name
+            if name == "manifest.json":
+                continue
+            info = contract["files"][name]
             if entry.size != info["size"]:
                 raise UpdateError("Bundle size mismatch")
             path = destination / name

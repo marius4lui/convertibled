@@ -171,3 +171,8 @@ Subsequent fixed helper commands use
 `python3 -I /opt/convertibled/current/installer/cli.py status`. A root TTY can run
 the same helper using `python3 -I` for offline prepare/activate/recover/rollback.
 Do not manually edit `current` or transaction journals during recovery.
+
+Archive metadata is bounded during enumeration, before reading a later entry.
+Payload extraction follows physical archive order to avoid repeated gzip
+rewinds. Tests construct actual symlink, duplicate and traversal tar entries and
+verify rejection before the candidate directory is created.
