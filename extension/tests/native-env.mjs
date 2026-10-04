@@ -24,6 +24,7 @@ export class Settings extends Emitter {
     values={'widgets':['clock','battery','actions'],'split-ratio':'half','gesture-enabled':true,'dock-autohide':false,
         'enable-animations':true,'orientation-lock':false};
     get_strv(key){return this.values[key];}get_string(key){return this.values[key];}get_boolean(key){return this.values[key];}
+    get_double(key){return this.values[key] ?? 1;}
     set_boolean(key,value){this.values[key]=value;this.emit(`changed::${key}`);return true;}
     set_string(key,value){this.values[key]=value;this.emit(`changed::${key}`);return true;}
     is_writable(){return true;}

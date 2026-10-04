@@ -78,6 +78,7 @@ export default class TabletExtension extends Extension {
         });
         this.home.addWidgets(this.widgets.actor);
         this.cleanup.signal(this.animations,'changed::color-scheme', () => this.appearance());
+        this.cleanup.signal(this.animations,'changed::text-scaling-factor', () => this.position());
         this.appearance();
         for (const actor of [this.home.actor,this.dock.actor,this.overview.actor]) {
             actor.hide(); Main.layoutManager.addChrome(actor,{affectsStruts:actor === this.dock.actor,trackFullscreen:false});
@@ -220,7 +221,7 @@ export default class TabletExtension extends Extension {
         for (const actor of [this.home?.actor,this.overview?.actor]) {
             actor?.set_position(area.x,area.y); actor?.set_size(area.width,Math.max(48,usableHeight - 88));
         }
-        this.home?.resize(area.width,usableHeight - 88);
+        this.home?.resize(area.width,usableHeight - 88,this.animations.get_double('text-scaling-factor'));
         this.widgets?.resize(Math.min(1040,area.width - 80));
         this.overview?.resize(area.width);
         this.splitController?.resize({...area,height:Math.max(0,usableHeight - 88)},this.monitor.index);

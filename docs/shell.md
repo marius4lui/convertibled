@@ -184,8 +184,8 @@ it never connects to the CI host's system bus. Fedora container startup required
 that transport for GNOME LoginManager/TimeLimits initialization. Absent actual
 logind/UPower services remain explicit container limitations.
 
-Surfaces inherit GNOME popup theme colors instead of hard-coded backgrounds,
-including light/dark and text contrast. Split selections expose native checked
+Surfaces use the project light/dark palette selected by the native appearance
+preference, with matched geometry and explicit focus contrast. Split selections expose native checked
 button state, and the split action becomes focusable/reactive only after two
 windows are selected. Physical screen-reader and large-text review remains open.
 
@@ -312,3 +312,7 @@ Short allocations (including the native OSK) hide Home's ancillary cards and
 favorites while keeping search and app results reachable. Opening a navigation
 surface does not request text entry; search focus explicitly opens the native
 keyboard. Escape dismisses Home and Overview. Wide headers use a single row.
+
+App columns adapt to the native text scale. Repeated status/geometry updates
+with unchanged layout retain existing app actors and their keyboard focus.
+Split-selection accessible names include the window title and track renames.

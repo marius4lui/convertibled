@@ -87,7 +87,8 @@ export class WindowOverview {
                 style_class:'convertibled-overview-window-title',x_expand:true,y_align:Clutter.ActorAlign.CENTER});
             footer.add_child(title);
             const select = new St.Button({can_focus:true,reactive:true,toggle_mode:true,
-                accessible_name:_('Select for split'),style_class:'button convertibled-overview-select'});
+                accessible_name:`${_('Select for split')}: ${window.get_title() ?? _('Application')}`,
+                style_class:'button convertibled-overview-select'});
             select.set_child(new St.Icon({icon_name:'view-dual-symbolic',icon_size:20}));
             select.connect('clicked', () => {
                 if (this.selection.includes(window)) this.selection = this.selection.filter(value => value !== window);
@@ -99,6 +100,7 @@ export class WindowOverview {
             this.windowCleanup.signal(window,'unmanaged', () => this.refresh());
             this.windowCleanup.signal(window,'notify::title', () => {
                 title.text = window.get_title() ?? _('Application'); preview.accessible_name = title.text;
+                select.accessible_name = `${_('Select for split')}: ${title.text}`;
             });
         });
         if (!windows.length) {

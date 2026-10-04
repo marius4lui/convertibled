@@ -31,6 +31,7 @@ test('split selections survive a responsive rebuild and enforce a pair', () => {
     let applied;const overview = new WindowOverview(()=>windows,()=>{},(a,b)=>applied=[a,b],()=>{});
     overview.refresh();
     const select=index=>cards(overview)[index].children[1].children[1];
+    assert.equal(select(0).accessible_name,'Select for split: One');
     select(0).emit('clicked');assert.equal(overview.splitButton.reactive,false);
     select(1).emit('clicked');select(2).emit('clicked');
     assert.equal(select(2).checked,false);assert.equal(overview.splitButton.reactive,true);

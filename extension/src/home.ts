@@ -24,6 +24,7 @@ export class Home {
     private limit = 40;
     private editing = false;
     private compact = false;
+    private textScale = 1;
     constructor(private launch: (app: any) => void) {
         this.header.add_child(this.title);
         this.header.add_child(this.search); this.actor.add_child(this.header);
@@ -49,15 +50,18 @@ export class Home {
             .map((info: any) => ({id:info.get_id(),name:info.get_name(),description:info.get_description() ?? '',
                 keywords:info.get_keywords?.() ?? []}));
     }
-    resize(width: number,height = 800): void {
-        this.width = Math.min(1040,Math.max(160,width - 80));
-        this.compact = height < 460;
+    resize(width: number,height = 800,textScale = 1): void {
+        const contentWidth = Math.min(1040,Math.max(160,width - 80));
+        const compact = height < 460, vertical = width < 900, scale = Math.max(1,textScale);
+        if (this.width === contentWidth && this.compact === compact &&
+            this.header.vertical === vertical && this.textScale === scale) return;
+        this.width = contentWidth; this.textScale = scale; this.compact = compact;
         this.title.visible = !this.compact;
-        this.header.vertical = width < 900;
+        this.header.vertical = vertical;
         this.header.width = this.width; this.content.width = this.width; this.refresh();
     }
     private appButton(app: any, editable = false): any {
-        const columns = gridColumns(this.width + 32,128);
+        const columns = gridColumns(this.width + 32,128 * this.textScale);
         const tile = new St.BoxLayout({vertical:true,style_class:'convertibled-app-tile',width:Math.floor((this.width - (columns - 1) * 12) / columns)});
         const result = new St.Button({style_class:editable ? 'convertibled-app' : 'convertibled-app convertibled-favorite-app',can_focus:true,
             accessible_name:app.get_name(),reactive:true,x_expand:true});
@@ -90,7 +94,7 @@ export class Home {
         this.editButton.checked = this.editing;
         const system = Shell.AppSystem.get_default();
         const filtered = searchApps(this.appInfos,query);
-        const columns = gridColumns(this.width + 32,128);
+        const columns = gridColumns(this.width + 32,128 * this.textScale);
         let row: any;
         filtered.slice(0,this.limit).forEach((info, index) => {
             if (index % columns === 0) { row = new St.BoxLayout({style_class:'convertibled-app-row'}); this.grid.add_child(row); }
