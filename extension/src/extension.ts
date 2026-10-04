@@ -66,7 +66,7 @@ export default class TabletExtension extends Extension {
             lock: () => this.bridge?.rotationLock(!this.rotation?.locked),
             settings: () => Gio.AppInfo.create_from_commandline('convertibled-settings',null,Gio.AppInfoCreateFlags.NONE).launch([],null),
         });
-        this.home.actor.add_child(this.widgets.actor);
+        this.home.addWidgets(this.widgets.actor);
         for (const actor of [this.home.actor,this.dock.actor,this.overview.actor]) {
             actor.hide(); Main.layoutManager.addChrome(actor,{affectsStruts:false,trackFullscreen:false});
             this.cleanup.add(() => Main.layoutManager.removeChrome(actor));

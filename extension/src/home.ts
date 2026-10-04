@@ -11,16 +11,20 @@ export class Home {
     private search = new St.Entry({hint_text:_('Search apps'),can_focus:true,accessible_name:_('Search apps')});
     private favorites = new St.BoxLayout({style_class:'convertibled-grid'});
     private grid = new St.BoxLayout({vertical:true,style_class:'convertibled-grid'});
+    private content = new St.BoxLayout({vertical:true,style_class:'convertibled-grid'});
     private cleanup = new Cleanup();
     private width = 800;
     constructor(private launch: (app: any) => void) {
-        this.actor.add_child(this.search); this.actor.add_child(scroll(this.favorites));
-        this.actor.add_child(scroll(this.grid));
+        this.actor.add_child(this.search);
+        const favoriteScroll = scroll(this.favorites); favoriteScroll.y_expand = false;
+        this.content.add_child(favoriteScroll); this.content.add_child(this.grid);
+        this.actor.add_child(scroll(this.content));
         this.cleanup.signal(this.search.clutter_text, 'text-changed', () => this.refresh());
         this.cleanup.signal(Shell.AppSystem.get_default(), 'installed-changed', () => this.refresh());
         this.cleanup.signal(Favorites.getAppFavorites(), 'changed', () => this.refresh());
         this.refresh();
     }
+    addWidgets(actor: any): void { this.content.insert_child_at_index(actor,1); }
     resize(width: number): void { this.width = width; this.refresh(); }
     private appButton(app: any, editable = false): any {
         const result = new St.Button({style_class:'button convertibled-app',can_focus:true,

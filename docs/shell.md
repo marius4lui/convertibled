@@ -163,3 +163,7 @@ adapter test covers that distinction with realistic nonempty app metadata.
 
 Smoke checks use the versioned extension D-Bus numeric state (ACTIVE=1,
 INACTIVE=2), avoiding translated CLI labels and renamed GNOME 50 states.
+
+Home keeps search outside one scrollable body containing favorites, widgets and
+the app grid. Narrow displays, large fonts and the OSK therefore cannot make
+the bottom widgets unreachable through fixed-height content accumulation.

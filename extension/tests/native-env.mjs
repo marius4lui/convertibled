@@ -9,6 +9,7 @@ export class Actor extends Emitter {
     children=[];visible=true;opacity=255;width=0;height=0;x=0;y=0;destroyed=false;
     constructor(properties={}){super();Object.assign(this,properties);this.clutter_text=new Emitter();}
     add_child(child){this.children.push(child);child.parent=this;}
+    insert_child_at_index(child,index){this.children.splice(index,0,child);child.parent=this;}
     get_children(){return [...this.children];} get_n_children(){return this.children.length;}
     set_child(child){this.add_child(child);} set_size(w,h){this.width=w;this.height=h;}
     set_position(x,y){this.x=x;this.y=y;}set_scale(x,y){this.scale=[x,y];}
