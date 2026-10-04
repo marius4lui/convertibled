@@ -93,3 +93,10 @@ Window ownership now compares against requested geometry rather than an
 immediate snapshot before a Wayland client acknowledges resizing. Adapter tests
 simulate asynchronous maximize acknowledgement, later user moves, external
 outputs and dialog exclusion. They remain mocks, not compositor acceptance.
+
+Rotation lock uses GNOME Settings Daemon's native touchscreen `orientation-lock`
+preference. An absent request preserves the user's native lock; the versioned
+desired state carries `rotation_lock_requested` to distinguish this from an
+explicit unlock. Owned temporary changes restore on exit, while later native
+user changes retain ownership. Actual lock and read-only/absent failures are
+reported separately from requests. GNOME remains the rotation/touch mapper.

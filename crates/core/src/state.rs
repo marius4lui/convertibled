@@ -158,8 +158,10 @@ mod tests {
     use super::*;
     #[test]
     fn manual_profiles_do_not_invent_observations() {
-        let mut state = Status::default();
-        state.active = true;
+        let mut state = Status {
+            active: true,
+            ..Status::default()
+        };
         state.set_profile("tent").unwrap();
         assert_eq!(state.observation.posture, Posture::Unknown);
         assert!(state.desired.tablet_workspace);

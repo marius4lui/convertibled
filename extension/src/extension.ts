@@ -15,6 +15,7 @@ import {Widgets} from './widgets.js';
 import {WindowController} from './windows.js';
 import {SplitController} from './split-controller.js';
 import {TouchNavigation} from './touch.js';
+import {RotationLock} from './rotation.js';
 export default class TabletExtension extends Extension {
     private cleanup?: Cleanup;
     private bridge?: SessionBridge;
@@ -32,6 +33,7 @@ export default class TabletExtension extends Extension {
     private reported = '';
     private splitController?: SplitController;
     private touch?: TouchNavigation;
+    private rotation?: RotationLock;
     enable(): void {
         this.cleanup = new Cleanup(); this.settings = this.getSettings();
         this.splitController = new SplitController(this.windows,this.settings);
@@ -39,13 +41,14 @@ export default class TabletExtension extends Extension {
             () => this.active && this.settings.get_boolean('gesture-enabled'), surface => this.navigate(surface));
         this.cleanup.signal(global.stage,'captured-event', (_stage: any,event: any) => this.touch?.handle(event));
         this.animations = new Gio.Settings({schema_id:'org.gnome.desktop.interface'});
+        this.rotation = new RotationLock(() => this.reportApplied());
         this.home = new Home(app => this.activateApp(app));
         this.dock = new Dock(surface => this.navigate(surface), app => this.activateApp(app));
         this.overview = new WindowOverview(() => this.internalWindows(), window => this.activate(window),
             (a,b) => this.split(a,b), () => this.navigate('dock'));
         this.widgets = new Widgets(this.settings, {
             auto: () => this.bridge?.profile('auto'),
-            lock: () => this.bridge?.rotationLock(!this.status?.desired.rotation_lock),
+            lock: () => this.bridge?.rotationLock(!this.rotation?.locked),
             settings: () => Gio.AppInfo.create_from_commandline('convertibled-settings',null,Gio.AppInfoCreateFlags.NONE).launch([],null),
         });
         this.home.actor.add_child(this.widgets.actor);
@@ -84,11 +87,17 @@ export default class TabletExtension extends Extension {
             this.dock?.actor.show();
         } else if (!allowed && this.active) {
             this.active = false; this.touch?.cancel(); this.splitController?.clear(); this.hideSurfaces(); this.dock?.actor.hide(); this.windows.restore();
+            this.rotation?.restore();
         } else if (allowed) this.position();
-        const report = {tablet_workspace:this.active,rotation_lock:false,
+        if (allowed && this.status?.desired.rotation_lock_requested) this.rotation?.apply(this.status.desired.rotation_lock);
+        this.reportApplied();
+    }
+    private reportApplied(): void {
+        const report = {tablet_workspace:this.active,rotation_lock:this.rotation?.locked ?? false,
             status:this.active ? 'applied' : this.status?.desired.tablet_workspace ? 'unsupported' : 'applied',
-            error:this.status?.desired.tablet_workspace && !this.active ? 'Internal display or unlocked GNOME session unavailable' : null,
-            capabilities:{tablet_workspace:Boolean(this.monitor),rotation_lock:false,osk:true,split_view:true}};
+            error:this.rotation?.error ?? (this.status?.desired.tablet_workspace && !this.active ? 'Internal display or unlocked GNOME session unavailable' : null),
+            capabilities:{tablet_workspace:Boolean(this.monitor),rotation_lock:this.rotation?.available ?? false,osk:true,split_view:true}};
+        if (this.rotation?.error && this.status?.desired.rotation_lock_requested) report.status = 'unsupported';
         const json = JSON.stringify(report);
         if (this.status && this.bridge && json !== this.reported) { this.reported = json; this.bridge.report(report); }
     }
@@ -127,6 +136,7 @@ export default class TabletExtension extends Extension {
     }
     disable(): void {
         this.active = false; this.touch?.cancel(); this.splitController?.clear(); this.windows.restore();
+        this.rotation?.destroy(); this.rotation = undefined;
         this.bridge?.destroy(); this.display?.destroy(); this.cleanup?.clear();
         this.widgets?.destroy(); this.home?.destroy(); this.dock?.destroy(); this.overview?.destroy();
         this.bridge = undefined; this.display = undefined; this.cleanup = undefined;
