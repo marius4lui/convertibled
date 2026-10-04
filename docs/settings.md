@@ -34,7 +34,7 @@ native lock state rather than treating the default desired value as a request.
 
 Hardware presents service capability support and its explanation independently
 for the workspace, rotation, rotation lock, native OSK, split view, input
-suppression and scaling. Missing support is
+suppression, explicitly approved touchscreen gestures and scaling. Missing support is
 never promoted to available merely because an input sensor was discovered.
 
 Tablet preferences use the extension's GSettings schema, loaded from the
@@ -42,6 +42,10 @@ installed bundle if not registered globally. Gestures, dock visibility, split
 ratio and ordered local widgets are configurable. Hidden widgets stay hidden
 when their reorder button is pressed. The application never changes GNOME's
 global theme or external-input preferences.
+Touchscreen gestures require physically touching the Shell setup target on the
+built-in display after login or device reconnect. Settings explains this source
+approval; no raw input-node path is required for normal setup. Visible navigation
+remains available without approval, and software does not infer physical identity.
 
 Updates reads the helper's public status without privileges. Check and prepare
 invoke the fixed installed helper through Polkit asynchronously. The UI does

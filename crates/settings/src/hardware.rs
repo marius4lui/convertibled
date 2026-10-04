@@ -30,6 +30,10 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
         ),
         ("split_view", text.text("Split view", "Geteilte Ansicht")),
         (
+            "touchscreen_gestures",
+            text.text("Touchscreen gestures", "Touchscreen-Gesten"),
+        ),
+        (
             "internal_input_suppression",
             text.text(
                 "Internal input suppression",

@@ -27,6 +27,10 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
         .build();
     let group = adw::PreferencesGroup::builder()
         .title(text.text("Workspace preferences", "Arbeitsfläche anpassen"))
+        .description(text.text(
+            "To enable gestures, touch the setup target on the built-in display after login. Reconnects require confirmation again. Home and Overview remain available without gestures.",
+            "Berühre nach der Anmeldung das Einrichtungsfeld am eingebauten Bildschirm, um Gesten freizugeben. Nach erneutem Anschließen ist die Bestätigung wieder nötig. Start und Übersicht bleiben ohne Gesten verfügbar.",
+        ))
         .build();
     page.add(&group);
     let settings = match preferences() {
