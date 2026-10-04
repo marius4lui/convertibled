@@ -12,3 +12,5 @@ fn main() {
     eprintln!("convertibled requires Linux evdev and system D-Bus");
     std::process::exit(3);
 }
+#[cfg(target_os = "linux")]
+mod health;

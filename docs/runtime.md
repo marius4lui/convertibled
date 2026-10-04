@@ -42,3 +42,9 @@ no devices are disabled. Only the service owns the system bus name. User service
 follow graphical-session.target; installer links units into their target wants.
 Hardening preserves AF_UNIX D-Bus and read-only evdev access. Receipt writes are
 confined to StateDirectory=convertibled/health. Units require Linux verification.
+
+An authenticated active local user may report matching-version shell health to
+the daemon. The session relays actual extension outcomes. The daemon writes an
+atomic private receipt under /var/lib/convertibled/health for recovery checking.
+This authenticates session ownership, not cryptographic shell-code attestation;
+version mismatch, locked/ambiguous sessions and authorization timeout fail.

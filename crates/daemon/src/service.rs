@@ -26,6 +26,20 @@ impl Api {
     fn get_capabilities(&self) -> String {
         serde_json::to_string(&Capabilities::default()).unwrap_or_default()
     }
+    async fn report_shell_health(
+        &self,
+        version: &str,
+        healthy: bool,
+        #[zbus(connection)] connection: &Connection,
+        #[zbus(header)] header: zbus::message::Header<'_>,
+    ) -> zbus::fdo::Result<()> {
+        tokio::time::timeout(
+            Duration::from_secs(3),
+            crate::health::record(connection, &header, version, healthy),
+        )
+        .await
+        .map_err(|_| zbus::fdo::Error::Failed("Authorization timed out".into()))?
+    }
     #[zbus(signal)]
     async fn changed(emitter: &SignalEmitter<'_>, status: &str) -> zbus::Result<()>;
 }
