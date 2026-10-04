@@ -332,3 +332,7 @@ Native Overview retains its own rounded Meta.BackgroundContent and application
 previews. Only internal-output workspace backgrounds temporarily receive the
 Home gradient. The GNOME 50 adapter restores only backgrounds still owned and
 leaves wallpaper preferences and external displays untouched.
+
+On narrow or short desktop viewports, application launch sections precede local
+widgets. Wider app cells leave room for localized captions without compressing
+the icon grid. The widget preference order is preserved within its section.

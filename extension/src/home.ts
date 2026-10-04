@@ -29,6 +29,7 @@ export class Home {
     private editing = false;
     private compact = false;
     private textScale = 1;
+    private widgetsLast = false;
     constructor(private launch: (app: any) => void) {
         this.header.add_child(this.title);
         this.header.add_child(this.search); this.actor.add_child(this.header);
@@ -49,13 +50,23 @@ export class Home {
         this.cleanup.signal(Favorites.getAppFavorites(), 'changed', () => this.refresh());
         this.readApps(); this.resize(800);
     }
-    addWidgets(actor: any): void { this.widgets = actor; this.content.insert_child_at_index(actor,0); }
+    addWidgets(actor: any): void {
+        this.widgets = actor; this.content.insert_child_at_index(actor,this.widgetsLast ? this.content.get_n_children() : 0);
+    }
     private readApps(): void {
         this.appInfos = Shell.AppSystem.get_default().get_installed().filter((info: any) => info.should_show())
             .map((info: any) => ({id:info.get_id(),name:info.get_name(),description:info.get_description() ?? '',
                 keywords:info.get_keywords?.() ?? []}));
     }
     resize(width: number,height = 800,textScale = 1): void {
+        const widgetsLast = width < 700 || height < 600;
+        if (widgetsLast !== this.widgetsLast) {
+            this.widgetsLast = widgetsLast;
+            if (this.widgets) {
+                this.content.remove_child(this.widgets);
+                this.content.insert_child_at_index(this.widgets,widgetsLast ? this.content.get_n_children() : 0);
+            }
+        }
         const padding = width < 600 ? 20 : 40;
         const contentWidth = Math.min(1040,Math.max(160,width - padding * 2));
         const compact = height < 460, vertical = width < 900 * textScale, scale = Math.max(1,textScale);
@@ -73,7 +84,7 @@ export class Home {
         this.header.width = this.width; this.content.width = this.width; this.refresh();
     }
     private appButton(app: any, editable = false): any {
-        const columns = gridColumns(this.width + 32,128 * this.textScale);
+        const columns = gridColumns(this.width + 32,152 * this.textScale);
         const tile = new St.BoxLayout({vertical:true,style_class:'convertibled-app-tile',width:Math.floor((this.width - (columns - 1) * 12) / columns)});
         const result = new St.Button({style_class:editable ? 'convertibled-app' : 'convertibled-app convertibled-favorite-app',can_focus:true,
             accessible_name:app.get_name(),reactive:true,x_expand:true});
@@ -109,7 +120,7 @@ export class Home {
         this.editButton.checked = this.editing;
         const system = Shell.AppSystem.get_default();
         const filtered = searchApps(this.appInfos,query);
-        const columns = gridColumns(this.width + 32,128 * this.textScale);
+        const columns = gridColumns(this.width + 32,152 * this.textScale);
         let row: any;
         filtered.slice(0,this.limit).forEach((info, index) => {
             if (index % columns === 0) { row = new St.BoxLayout({style_class:'convertibled-app-row'}); this.grid.add_child(row); }

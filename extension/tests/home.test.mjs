@@ -73,6 +73,8 @@ test('keyboard-height Home preserves search and apps while removing ancillary se
     home.resize(1280,300);assert.equal(home.title.visible,false);assert.equal(widgets.visible,false);
     assert.equal(home.favoriteSection.visible,false);assert.equal(home.search.visible,true);
     home.resize(1280,700);assert.equal(home.title.visible,true);assert.equal(widgets.visible,true);
+    home.resize(480,720);assert.equal(home.content.children.at(-1),widgets);
+    home.resize(1280,700);assert.equal(home.content.children[0],widgets);
     const child=home.grid.children[0];home.resize(1280,700);assert.equal(home.grid.children[0],child);
     home.destroy();
 });
