@@ -37,3 +37,8 @@ installed bundle if not registered globally. Gestures, dock visibility, split
 ratio and ordered local widgets are configurable. Hidden widgets stay hidden
 when their reorder button is pressed. The application never changes GNOME's
 global theme or external-input preferences.
+
+Updates reads the helper's public status without privileges. Check and prepare
+invoke the fixed installed helper through Polkit asynchronously. The UI does
+not claim a prepared version is installed and does not force logout or terminate
+critical helper operations when the settings window closes.

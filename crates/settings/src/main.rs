@@ -8,6 +8,8 @@ mod client;
 #[cfg(target_os = "linux")]
 mod hardware;
 #[cfg(target_os = "linux")]
+mod operations;
+#[cfg(target_os = "linux")]
 mod overview;
 #[cfg(target_os = "linux")]
 mod profiles;
@@ -15,6 +17,8 @@ mod profiles;
 mod tablet;
 #[cfg(target_os = "linux")]
 mod ui;
+#[cfg(target_os = "linux")]
+mod updates;
 
 #[cfg(target_os = "linux")]
 fn main() -> gtk::glib::ExitCode {

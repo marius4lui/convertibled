@@ -26,10 +26,8 @@ fn build_window(app: &adw::Application) {
     window.add(&crate::profiles::page(&window, text));
     window.add(&crate::hardware::page(text));
     window.add(&crate::tablet::page(text));
-    for (title, icon) in [
-        ("Updates", "software-update-available-symbolic"),
-        ("Diagnostics", "dialog-information-symbolic"),
-    ] {
+    window.add(&crate::updates::page(text));
+    for (title, icon) in [("Diagnostics", "dialog-information-symbolic")] {
         let page = adw::PreferencesPage::builder()
             .title(title)
             .icon_name(icon)
