@@ -48,6 +48,22 @@ def refresh_policy(layout, target, source, destination=None):
     sync_directory(target.parent)
 
 
+def integration_parent(layout, parent):
+    # The updater deliberately uses umask 0077 for private state. Public host
+    # integration directories must be traversable at the instant of creation.
+    # Never repair an existing directory whose ownership we cannot establish.
+    previous = os.umask(0o022)
+    try:
+        parent.mkdir(parents=True, exist_ok=True, mode=0o755)
+    finally:
+        os.umask(previous)
+    current = parent
+    while current != layout.root:
+        if current.stat().st_mode & 0o005 != 0o005:
+            raise UpdateError("Integration directory is not publicly readable/traversable; review existing permissions: " + str(current))
+        current = current.parent
+
+
 def install(layout, admission_only=False, candidate=None):
     from .admission_control import provision
     from .admission_control import STABLE
@@ -74,7 +90,7 @@ def install(layout, admission_only=False, candidate=None):
     remove_direct_aliases(aliases)
     for destination, source in links.items():
         target = layout.root / destination
-        target.parent.mkdir(parents=True, exist_ok=True)
+        integration_parent(layout, target.parent)
         if target in aliases and (not target.is_symlink() or target.readlink() != aliases[target]):
             raise UpdateError("System-unit alias changed during migration")
         if destination == "usr/share/polkit-1/actions/org.convertibled.installer.policy" or destination in WANTS:

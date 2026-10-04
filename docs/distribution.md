@@ -396,3 +396,14 @@ or replaced directories cause refusal without deleting retained evidence. Only
 empty directories at the journaled creation gap can be removed without a recorded
 inode. Tests kill a real subprocess during extraction and immediately after
 publication, then verify successful recovery and preservation of foreign files.
+
+## Public integration directory permissions
+
+The privileged updater keeps its private state umask. Missing host integration
+directories are created as `0755` under a narrowly scoped umask `022`, restored even
+when creation fails. Existing directory modes remain unchanged. An existing
+parent without public read/traversal permission causes an actionable error with
+its exact path instead of silently installing unreadable user units. Review that
+directory's ownership and intended permissions; do not recursively chmod system
+directories. Previously created directories have no recorded ownership proof,
+so the installer does not automatically widen their permissions.
