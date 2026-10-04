@@ -24,8 +24,8 @@ fn build_window(app: &adw::Application) {
         .build();
     window.add(&crate::overview::page(&window, text));
     window.add(&crate::profiles::page(&window, text));
+    window.add(&crate::hardware::page(text));
     for (title, icon) in [
-        ("Hardware", "input-tablet-symbolic"),
         ("Tablet", "view-grid-symbolic"),
         ("Updates", "software-update-available-symbolic"),
         ("Diagnostics", "dialog-information-symbolic"),

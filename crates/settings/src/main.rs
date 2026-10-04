@@ -11,6 +11,8 @@ mod client;
 mod overview;
 #[cfg(target_os = "linux")]
 mod profiles;
+#[cfg(target_os = "linux")]
+mod hardware;
 
 #[cfg(target_os = "linux")]
 fn main() -> gtk::glib::ExitCode {
