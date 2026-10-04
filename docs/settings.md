@@ -108,6 +108,11 @@ The separate **Desktop check** row distinguishes a pending desktop check,
 actual enabled-workspace health, and a workspace that was not
 requested. A services-only success never claims Shell health.
 
+Desktop-check status is exposed only while awaiting Shell acceptance or after a
+completed transaction. Rollback, removal and other transaction phases clear that
+public row, so a retired candidate cannot appear to be awaiting a desktop check.
+The private transaction journal retains its original acceptance evidence.
+
 A waiting or failed maintenance request does not suspend the installed version's
 desktop acceptance check. Successful health can settle while a user is logged in;
 failed health can recover after logout. The failed requested action itself is

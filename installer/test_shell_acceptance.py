@@ -197,6 +197,20 @@ class ShellAcceptanceTests(unittest.TestCase):
             self.assertNotIn("observed_sessions", result)
             self.assertNotIn("boot_id", result)
             self.assertNotIn("uid", result)
+
+    def test_public_acceptance_hides_retired_trials_without_changing_journal(self):
+        from .status import publish
+        for phase in ("awaiting_shell", "complete", "rolled_back", "removed", "backup", "prepared", "quiescing", "switching", "selected", "rolling_back", "removing"):
+            for acceptance in ("pending_intent", "verified", "not_requested"):
+                with self.subTest(phase=phase, acceptance=acceptance):
+                    self.value.update(phase=phase, shell_acceptance=acceptance)
+                    journal = self.layout.state / "transaction.json"
+                    atomic(journal, self.value)
+                    before = journal.read_bytes()
+                    result = publish(self.layout)
+                    self.assertEqual(result["shell_acceptance"], acceptance if phase in ("awaiting_shell", "complete") else None)
+                    self.assertEqual(journal.read_bytes(), before)
+
     def test_online_failure_waits_for_logout_before_rollback(self):
         self.write("expected", True)
         self.write("healthy", False)
