@@ -115,3 +115,7 @@ are bounded too. Profile actions become unchanged for inactive/locked sessions.
 All Rust bus services explicitly use zbus's Tokio executor, matching their timers
 and blocking workers. The private-bus contract test is internally bounded to
 15 seconds so an absent reply fails rather than hanging the integration job.
+
+Sensor claim recovery tracks the actual SensorProxy bus owner. Restarted owners
+are reclaimed; canceled/failed claims are released before retry because the remote
+service may already have received the request. Loss never creates valid orientation.
