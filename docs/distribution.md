@@ -116,3 +116,8 @@ Ownership intent is persisted before host links are created. Configuration backu
 files and containing directories are fsynced. Interruption before selection
 does not stop/restart the unchanged previous service during recovery.
 Backup fsync uses a writable descriptor so the same tests run on Windows.
+
+Configuration/state directories are root-owned and traversable (0755); private
+atomic trust/state files are 0600 and backups 0700. The daemon/session can read
+an administrator's public `config.toml` or obtain defaults when absent. Native
+desktop entry, scalable icon and AppStream metadata are manifest-owned links.

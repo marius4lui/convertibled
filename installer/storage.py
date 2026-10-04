@@ -54,7 +54,10 @@ class Layout:
         for path in (self.base, self.versions, self.config, self.state):
             if path.is_symlink():
                 raise UpdateError("Installation directory is a symlink")
-            path.mkdir(parents=True, exist_ok=True, mode=0o755 if path in (self.base, self.versions) else 0o700)
+            path.mkdir(parents=True, exist_ok=True, mode=0o755)
+            # The unprivileged daemon/session must traverse config even when
+            # config.toml is absent. Individual trust/state files remain private.
+            path.chmod(0o755)
 
     @contextlib.contextmanager
     def lock(self):

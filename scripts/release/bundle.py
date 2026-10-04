@@ -35,12 +35,12 @@ def collect(binary_directory, extension_directory):
             result["share/gnome-shell/extensions/convertibled@convertibled.org/" + path.relative_to(extension_directory).as_posix()] = (path.read_bytes(), False)
     if not any(name.endswith("/gschemas.compiled") for name in result):
         raise UpdateError("Compile extension GSettings schemas before bundling")
-    desktop = ROOT / "crates/settings/data/org.convertibled.Settings.desktop"
-    if not desktop.is_file():
-        desktop = ROOT / "data/org.convertibled.Settings.desktop"
-    if not desktop.is_file():
-        raise UpdateError("Missing native settings desktop entry")
-    result["share/applications/org.convertibled.Settings.desktop"] = (desktop.read_bytes(), False)
+    assets = {"data/applications/org.convertibled.Settings.desktop": "share/applications/org.convertibled.Settings.desktop", "data/icons/org.convertibled.Settings.svg": "share/icons/hicolor/scalable/apps/org.convertibled.Settings.svg", "data/metainfo/org.convertibled.Settings.metainfo.xml": "share/metainfo/org.convertibled.Settings.metainfo.xml"}
+    for source, destination in assets.items():
+        path = ROOT / source
+        if not path.is_file():
+            raise UpdateError("Missing native settings integration: " + source)
+        result[destination] = (path.read_bytes().replace(b"\r\n", b"\n"), False)
     return result
 
 

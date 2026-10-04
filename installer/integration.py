@@ -15,6 +15,8 @@ LINKS = {
     "usr/lib/systemd/system/convertibled-update.timer": "data/systemd/convertibled-update.timer",
     "usr/share/polkit-1/actions/org.convertibled.installer.policy": "data/polkit/org.convertibled.installer.policy",
     "usr/share/applications/org.convertibled.Settings.desktop": "share/applications/org.convertibled.Settings.desktop",
+    "usr/share/icons/hicolor/scalable/apps/org.convertibled.Settings.svg": "share/icons/hicolor/scalable/apps/org.convertibled.Settings.svg",
+    "usr/share/metainfo/org.convertibled.Settings.metainfo.xml": "share/metainfo/org.convertibled.Settings.metainfo.xml",
 }
 
 
