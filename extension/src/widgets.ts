@@ -3,6 +3,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import {Cleanup} from './ownership.js';
 import {button, clear} from './ui.js';
+import {_} from './localized.js';
 export const widgetIds = ['clock','battery','actions'];
 export function validWidgets(ids: string[]): string[] { return [...new Set(ids.filter(id => widgetIds.includes(id)))]; }
 export class Widgets {
@@ -47,7 +48,7 @@ export class Widgets {
         if (battery) {
             const present = this.battery?.get_cached_property('IsPresent')?.deep_unpack();
             const percentage = this.battery?.get_cached_property('Percentage')?.deep_unpack();
-            battery.text = present && Number.isFinite(percentage) ? `Battery ${Math.round(percentage)}%` : 'Battery status unavailable';
+            battery.text = present && Number.isFinite(percentage) ? `${_('Battery')} ${Math.round(percentage)}%` : _('Battery status unavailable');
         }
     }
     destroy(): void { this.cancel.cancel(); this.cleanup.clear(); this.actor.destroy(); }

@@ -50,7 +50,7 @@ globalThis.__native={
         InputDeviceType:{TOUCHSCREEN_DEVICE:1},EventType:{TOUCH_BEGIN:1,TOUCH_UPDATE:2,TOUCH_END:3,TOUCH_CANCEL:4}},
     Shell:{AppSystem:{get_default:()=>system},AppState:{RUNNING:1}},
     Meta:{WindowType:{NORMAL:0},MaximizeFlags:{BOTH:3}},
-    GLib:{PRIORITY_DEFAULT:0,SOURCE_CONTINUE:true,timeout_add_seconds(_p,_s,callback){timers.set(++timerId,callback);return timerId;},
+    GLib:{get_language_names:()=>['en_US'],PRIORITY_DEFAULT:0,SOURCE_CONTINUE:true,timeout_add_seconds(_p,_s,callback){timers.set(++timerId,callback);return timerId;},
         Source:{remove:id=>timers.delete(id)},DateTime:{new_now_local:()=>({format:()=> 'Sunday 12:00'})},
         Variant:class {constructor(type,values){this.type=type;this.values=values;}}},
     Gio:{Settings,SettingsSchemaSource:{get_default:()=>({lookup:()=>({has_key:()=>true})})},

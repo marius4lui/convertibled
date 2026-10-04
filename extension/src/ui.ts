@@ -1,6 +1,6 @@
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
-import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
+import {_} from './localized.js';
 export function button(label: string, action: () => void, icon?: string): any {
     const result = new St.Button({style_class: 'button convertibled-button',
         can_focus: true, reactive: true, accessible_name: _(label)});

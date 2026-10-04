@@ -5,9 +5,10 @@ import * as Favorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import {searchApps, gridColumns, type AppInfo} from './apps.js';
 import {Cleanup} from './ownership.js';
 import {button, clear, scroll} from './ui.js';
+import {_} from './localized.js';
 export class Home {
     readonly actor = new St.BoxLayout({vertical:true,style_class:'convertibled-surface',reactive:true});
-    private search = new St.Entry({hint_text:'Search apps',can_focus:true,accessible_name:'Search apps'});
+    private search = new St.Entry({hint_text:_('Search apps'),can_focus:true,accessible_name:_('Search apps')});
     private favorites = new St.BoxLayout({style_class:'convertibled-grid'});
     private grid = new St.BoxLayout({vertical:true,style_class:'convertibled-grid'});
     private cleanup = new Cleanup();
@@ -52,7 +53,7 @@ export class Home {
             if (index % columns === 0) { row = new St.BoxLayout({style_class:'convertibled-grid'}); this.grid.add_child(row); }
             const app = system.lookup_app(info.id); if (app) row.add_child(this.appButton(app,true));
         });
-        if (!filtered.length) this.grid.add_child(new St.Label({text:'No matching apps'}));
+        if (!filtered.length) this.grid.add_child(new St.Label({text:_('No matching apps')}));
     }
     focusSearch(): void { this.search.grab_key_focus(); }
     destroy(): void { this.cleanup.clear(); this.actor.destroy(); }

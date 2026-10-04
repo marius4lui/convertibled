@@ -2,6 +2,7 @@ import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import {Cleanup} from './ownership.js';
 import {button, clear, scroll} from './ui.js';
+import {_} from './localized.js';
 export class WindowOverview {
     readonly actor = new St.BoxLayout({vertical:true,style_class:'convertibled-surface',reactive:true});
     private content = new St.BoxLayout({vertical:true,style_class:'convertibled-grid'});
@@ -32,16 +33,16 @@ export class WindowOverview {
             preview.set_size(320,180); preview.set_child(clone);
             preview.connect('clicked', () => this.activate(window));
             card.add_child(preview);
-            const title = new St.Label({text:window.get_title() ?? 'Application'}); card.add_child(title);
+            const title = new St.Label({text:window.get_title() ?? _('Application')}); card.add_child(title);
             const select = button('Select for split', () => {
                 if (this.selection.includes(window)) { this.selection = this.selection.filter(w => w !== window); select.remove_style_pseudo_class('checked'); }
                 else if (this.selection.length < 2) { this.selection.push(window); select.add_style_pseudo_class('checked'); }
             });
             card.add_child(select); this.content.add_child(card);
             this.windowCleanup.signal(window, 'unmanaged', () => this.refresh());
-            this.windowCleanup.signal(window, 'notify::title', () => { title.text = window.get_title() ?? 'Application'; });
+            this.windowCleanup.signal(window, 'notify::title', () => { title.text = window.get_title() ?? _('Application'); });
         }
-        if (!this.content.get_n_children()) this.content.add_child(new St.Label({text:'No windows on this display'}));
+        if (!this.content.get_n_children()) this.content.add_child(new St.Label({text:_('No windows on this display')}));
     }
     destroy(): void { this.windowCleanup.clear(); this.cleanup.clear(); this.actor.destroy(); }
 }

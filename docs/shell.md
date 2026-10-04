@@ -152,3 +152,7 @@ requested action, actual native preference, status and error. Missing native
 preferences never turn successful workspace activation into an action success.
 Optional action fields are validated before any desktop preference is touched.
 Delayed notifications matching the owned write retain ownership.
+
+Built-in interaction text is available in German and English according to
+GLib's language preferences. Installed application names remain their native
+localized names and diagnostics retain stable English descriptions.

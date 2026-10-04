@@ -4,6 +4,7 @@ import {Cleanup} from './ownership.js';
 import {splitLayout, nextRatio, ratios, type Ratio, type Rect} from './split.js';
 import {WindowController} from './windows.js';
 import {button} from './ui.js';
+import {_} from './localized.js';
 export class SplitController {
     private first: any;
     private second: any;
@@ -14,12 +15,12 @@ export class SplitController {
     apply(first: any, second: any, area: Rect, monitor: number): boolean {
         if (first === second || !this.windows.eligible(first,monitor) ||
             !this.windows.eligible(second,monitor) || !first.allows_resize() || !second.allows_resize()) {
-            Main.notify('convertibled','Choose two resizable main windows on the internal display'); return false;
+            Main.notify('convertibled',_('Choose two resizable main windows on the internal display')); return false;
         }
         const stored = this.settings.get_string('split-ratio') as Ratio;
         const ratio = ratios.includes(stored) ? stored : 'half';
         const layout = splitLayout(area,ratio,this.windows.minimum(first),this.windows.minimum(second));
-        if ('error' in layout) { Main.notify('convertibled',layout.error); return false; }
+        if ('error' in layout) { Main.notify('convertibled',_(layout.error)); return false; }
         this.clear(); this.first = first; this.second = second; this.area = area;
         this.windows.place(first,layout.first); this.windows.place(second,layout.second);
         this.divider = button('Change split', () => {
