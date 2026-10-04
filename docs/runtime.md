@@ -32,3 +32,7 @@ explicit doctor exports, manual profiles, rotation requests, schema validation,
 reload, and fixed updater commands. Updates use the installed isolated Python
 helper and pkexec for mutations. Exit 0 means the request/client check completed;
 applied status must still be inspected. Linux connection/backend errors exit 3.
+
+Rotation lock has an explicit requested flag. An absent configuration property
+leaves GNOME's existing lock unchanged; explicit true/false requests distinguish
+locking from unlocking. Reported actual native lock remains applied state.

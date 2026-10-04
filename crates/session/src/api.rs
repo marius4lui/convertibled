@@ -70,6 +70,7 @@ impl Api {
             ));
         }
         state.desired.rotation_lock = locked;
+        state.desired.rotation_lock_requested = true;
         state.reconcile();
         let json = serde_json::to_string(&*state).map_err(failed)?;
         drop(state);
@@ -144,7 +145,8 @@ impl Api {
                 "Session is inactive or locked".into(),
             ));
         }
-        state.desired.rotation_lock = candidate.rotation_lock;
+        state.desired.rotation_lock = candidate.rotation_lock.unwrap_or(false);
+        state.desired.rotation_lock_requested = candidate.rotation_lock.is_some();
         state.reconcile();
         let json = serde_json::to_string(&*state).map_err(failed)?;
         drop(state);

@@ -58,6 +58,7 @@ impl Default for Observation {
 pub struct Desired {
     pub tablet_workspace: bool,
     pub rotation_lock: bool,
+    pub rotation_lock_requested: bool,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Applied {

@@ -80,7 +80,8 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let system = Connection::system().await?;
     let config = crate::config::load()?;
     let mut initial = Status::default();
-    initial.desired.rotation_lock = config.rotation_lock;
+    initial.desired.rotation_lock = config.rotation_lock.unwrap_or(false);
+    initial.desired.rotation_lock_requested = config.rotation_lock.is_some();
     let state = Arc::new(RwLock::new(initial));
     let capabilities = Arc::new(RwLock::new(Capabilities::default()));
     let connection = zbus::connection::Builder::session()?

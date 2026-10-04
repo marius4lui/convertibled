@@ -17,7 +17,9 @@ pub fn load() -> Result<Config, String> {
         Ok(text) => {
             let user = Config::parse(&text)?;
             let mut merged = system;
-            merged.rotation_lock = user.rotation_lock;
+            if user.rotation_lock.is_some() {
+                merged.rotation_lock = user.rotation_lock;
+            }
             merged.profiles.extend(user.profiles);
             // System debounce and authorization are not weakened by user settings.
             merged.validate()?;

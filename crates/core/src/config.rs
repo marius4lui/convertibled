@@ -32,7 +32,7 @@ pub struct Config {
     #[serde(default)]
     pub profiles: BTreeMap<String, ProfileConfig>,
     #[serde(default)]
-    pub rotation_lock: bool,
+    pub rotation_lock: Option<bool>,
 }
 fn default_debounce() -> u64 {
     300
@@ -43,7 +43,7 @@ impl Default for Config {
             schema_version: 1,
             debounce_ms: 300,
             profiles: BTreeMap::new(),
-            rotation_lock: false,
+            rotation_lock: None,
         }
     }
 }
@@ -100,6 +100,19 @@ mod tests {
         );
         assert!(
             Config::parse("schema_version = 1\n[profiles.tablet]\nrotation = 'enabled'").is_ok()
+        );
+    }
+    #[test]
+    fn absent_rotation_lock_preserves_native_preference() {
+        assert_eq!(
+            Config::parse("schema_version = 1").unwrap().rotation_lock,
+            None
+        );
+        assert_eq!(
+            Config::parse("schema_version = 1\nrotation_lock = false")
+                .unwrap()
+                .rotation_lock,
+            Some(false)
         );
     }
 }
