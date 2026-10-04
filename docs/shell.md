@@ -141,3 +141,8 @@ Profile `rotation` and `osk` tri-state actions update native preferences only
 when configured. Explicit rotation lock takes precedence over profile rotation.
 OSK coordination uses `org.gnome.desktop.a11y.applications.screen-keyboard-enabled`
 and restores only owned values; it does not repeatedly show or dismiss keyboards.
+
+A later native user preference edit relinquishes ownership and blocks repeated
+reconciliation of the same request. Changing the requested action or leaving
+the mode resets that block. Adapter tests verify that D-Bus feedback cannot
+silently reapply a preference after a user has deliberately changed it.
