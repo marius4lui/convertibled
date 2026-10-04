@@ -16,6 +16,7 @@ import {WindowController} from './windows.js';
 import {SplitController} from './split-controller.js';
 import {TouchNavigation} from './touch.js';
 import {RotationLock} from './rotation.js';
+import {NativePreference} from './native-preference.js';
 export default class TabletExtension extends Extension {
     private cleanup?: Cleanup;
     private bridge?: SessionBridge;
@@ -34,6 +35,7 @@ export default class TabletExtension extends Extension {
     private splitController?: SplitController;
     private touch?: TouchNavigation;
     private rotation?: RotationLock;
+    private osk?: NativePreference;
     enable(): void {
         try { this.start(); }
         catch (error) {
@@ -52,6 +54,7 @@ export default class TabletExtension extends Extension {
         this.cleanup.signal(global.stage,'captured-event', (_stage: any,event: any) => this.touch?.handle(event));
         this.animations = new Gio.Settings({schema_id:'org.gnome.desktop.interface'});
         this.rotation = new RotationLock(() => this.reportApplied());
+        this.osk = new NativePreference('org.gnome.desktop.a11y.applications','screen-keyboard-enabled', () => this.reportApplied());
         this.home = new Home(app => this.activateApp(app));
         this.dock = new Dock(surface => this.navigate(surface), app => this.activateApp(app));
         this.cleanup.signal(this.settings,'changed::dock-autohide', () => this.dock?.showApps(!this.settings.get_boolean('dock-autohide')));
@@ -111,8 +114,15 @@ export default class TabletExtension extends Extension {
         } else if (!allowed && this.active) {
             this.active = false; this.touch?.cancel(); this.splitController?.clear(); this.hideSurfaces(); this.dock?.actor.hide(); this.windows.restore();
             this.rotation?.restore();
+            this.osk?.restore();
         } else if (allowed) this.position();
-        if (allowed && this.status?.desired.rotation_lock_requested) this.rotation?.apply(this.status.desired.rotation_lock);
+        if (allowed && this.status) {
+            if (this.status.desired.rotation_lock_requested) this.rotation?.apply(this.status.desired.rotation_lock);
+            else if (this.status.desired.rotation && this.status.desired.rotation !== 'unchanged')
+                this.rotation?.apply(this.status.desired.rotation === 'disabled');
+            else this.rotation?.restore();
+            this.osk?.apply(this.status.desired.osk ?? 'unchanged');
+        }
         this.reportApplied();
     }
     private reportApplied(): void {
@@ -170,6 +180,7 @@ export default class TabletExtension extends Extension {
     disable(): void {
         this.active = false; this.touch?.cancel(); this.splitController?.clear(); this.windows.restore();
         this.rotation?.destroy(); this.rotation = undefined;
+        this.osk?.destroy(); this.osk = undefined;
         this.bridge?.destroy(); this.display?.destroy(); this.cleanup?.clear();
         this.widgets?.destroy(); this.home?.destroy(); this.dock?.destroy(); this.overview?.destroy();
         this.bridge = undefined; this.display = undefined; this.cleanup = undefined;

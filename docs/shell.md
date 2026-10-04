@@ -136,3 +136,8 @@ It compiles schemas and requires enable/disable/re-enable extension states.
 Software rendering and the virtual output prove startup/lifecycle only, never
 physical tablet behavior. The script was prepared from GNOME 50 CLI/extension
 contracts on Windows; its first Linux execution remains a CI requirement.
+
+Profile `rotation` and `osk` tri-state actions update native preferences only
+when configured. Explicit rotation lock takes precedence over profile rotation.
+OSK coordination uses `org.gnome.desktop.a11y.applications.screen-keyboard-enabled`
+and restores only owned values; it does not repeatedly show or dismiss keyboards.
