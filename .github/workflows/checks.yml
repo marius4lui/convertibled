@@ -29,8 +29,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - run: python3 -m unittest discover -s updater -v
-      - run: python3 -m unittest discover -s installer -v
+      - run: python3 -m unittest discover -s updater -t . -v
+      - run: python3 -m unittest discover -s installer -t . -v
   shell:
     name: Extension build and behavior
     runs-on: ubuntu-24.04

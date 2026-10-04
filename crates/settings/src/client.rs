@@ -1,3 +1,4 @@
+use gio::prelude::*;
 use glib::variant::ToVariant;
 use gtk::{gio, glib};
 

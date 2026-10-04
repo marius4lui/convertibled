@@ -83,7 +83,7 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
         .build();
     let message = adw::ActionRow::builder()
         .title(text.text("Widget order", "Widget-Reihenfolge"))
-        .subtitle(settings.strv("widgets").join(" → "))
+        .subtitle(settings.strv("widgets").join(Some(" → ")))
         .build();
     for (key, title) in [
         ("clock", text.text("Clock and date", "Uhr und Datum")),
@@ -119,7 +119,7 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
             if control.is_active() {
                 current.push(key.to_owned());
             }
-            if let Err(error) = prefs.set_strv("widgets", &current) {
+            if let Err(error) = prefs.set_strv("widgets", current.as_slice()) {
                 message_copy.set_subtitle(&error.to_string());
             }
         });
@@ -137,13 +137,13 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
                 .collect();
             current.retain(|v| v != key);
             current.insert(0, key.to_owned());
-            let _ = prefs.set_strv("widgets", &current);
+            let _ = prefs.set_strv("widgets", current.as_slice());
         });
         widgets.add(&row);
     }
     let message_copy = message.clone();
     settings.connect_changed(Some("widgets"), move |prefs, _| {
-        message_copy.set_subtitle(&prefs.strv("widgets").join(" → "));
+        message_copy.set_subtitle(&prefs.strv("widgets").join(Some(" → ")));
     });
     widgets.add(&message);
     page.add(&widgets);
