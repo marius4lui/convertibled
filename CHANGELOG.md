@@ -13,6 +13,11 @@ Changes are grouped by release. Planned work belongs in `ROADMAP.md`.
 
 ### Experimental implementation
 
+- Windows WSLg preview runs the actual GNOME extension and GTK settings with
+  isolated scenario controls, virtual monitor resizing and native smoke captures.
+- Native boxed geometry and maximized-window split eligibility fixes found by
+  exercising the real compositor; the separate WPF imitation was removed.
+
 - Fedora 44 / GNOME 50 / Wayland reference-platform contract.
 - Rust observation/policy, session authorization, versioned D-Bus and CLI.
 - Native Shell Home/search/favorites, dock, live overview, split view, local

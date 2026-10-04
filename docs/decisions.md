@@ -29,6 +29,13 @@ within its Shell; a separate replacement desktop is outside this decision.
 
 ## Technical consequences
 
+The Windows preview runs the actual GNOME Shell extension in an isolated Fedora
+44 / GNOME 50 WSLg session. A demo-only wrapper supplies a virtual internal
+monitor and scenario controls; production UI modules and stylesheet are reused
+unchanged. This replaces the illustrative WPF replica. Virtual input, sensors,
+session state and device performance remain separate from physical acceptance.
+Demo wrappers are never included in production release bundles.
+
 Split view supports 50/50, 1/3-2/3 and 2/3-1/3, vertically stacked in portrait
 with minimum sizes enforced. Home is opened by navigation, never forced by
 folding. Normal primary windows maximize while dialogs/floating windows keep
