@@ -33,3 +33,13 @@ Agents must follow the complete mandatory list in `../AGENTS.md`.
 Update the relevant specification in the same batch as behavior changes.
 Document new decisions before dependent implementation. Avoid duplicating
 the same detailed policy across documents; link to its owner instead.
+
+## Implemented components (experimental)
+
+Read these with the task-specific specifications above:
+
+- [Runtime](runtime.md): Rust services, versioned D-Bus, CLI and configuration
+- [Shell](shell.md): native tablet actors, gestures, windows and lifecycle
+- [Settings](settings.md): GTK/libadwaita profiles, updates and diagnostics
+- [Distribution](distribution.md): signatures, transactions and installer usage
+- [Acceptance](acceptance/README.md): exact-artifact physical release gate

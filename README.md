@@ -2,7 +2,7 @@
 
 Native-feeling tablet experiences for Linux convertibles.
 
-convertibled is a planned open-source convertible mode manager: a hardware
+convertibled is an experimental open-source convertible workspace: a hardware
 daemon, desktop integration, a settings application, a diagnostic CLI, and a
 project-owned installer and updater.
 
@@ -20,7 +20,7 @@ The complete product and recovery paths must pass acceptance before publication.
 The selected first target is Fedora 44, GNOME 50 and Wayland on ThinkPad X1
 Yoga Gen 8 (x86_64). This is an acceptance target, not tested hardware support.
 
-## Planned components
+## Components
 
 | Component | Responsibility |
 | --- | --- |
@@ -56,7 +56,7 @@ evidence. Screen orientation alone is not sufficient.
 ## Installation and updates
 
 There are no public release binaries yet.
-The intended distribution is a project-owned release bundle, installer, and
+Distribution uses a project-owned release bundle, installer, and
 updater. RPM, COPR, DEB, and distro repositories are not the planned delivery
 path. Updates will verify signatures, preserve configuration, and support
 recovery to a previous version. Updates automatically check and prepare by default, with an explained opt-out.
@@ -88,3 +88,15 @@ batches and truthful validation reports are required.
 
 See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
 Licensed under [MIT](LICENSE).
+
+## Implementation guides
+
+- [Rust runtime and CLI](docs/runtime.md)
+- [GNOME Shell workspace](docs/shell.md)
+- [Native settings](docs/settings.md)
+- [Installer, updater and bootstrap](docs/distribution.md)
+- [Physical acceptance records](docs/acceptance/README.md)
+
+See the single implementation PR and its CI for current integration evidence.
+Local Windows tests cover portable models; Fedora/GNOME checks and physical
+reference-device acceptance are separate evidence layers.
