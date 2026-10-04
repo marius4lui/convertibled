@@ -100,5 +100,16 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
         });
     });
     refresh.emit_clicked();
+    let weak_refresh = refresh.downgrade();
+    let weak_window = window.downgrade();
+    glib::timeout_add_local(std::time::Duration::from_secs(2), move || {
+        let (Some(window), Some(refresh)) = (weak_window.upgrade(), weak_refresh.upgrade()) else {
+            return glib::ControlFlow::Break;
+        };
+        if window.is_active() && refresh.is_sensitive() {
+            refresh.emit_clicked();
+        }
+        glib::ControlFlow::Continue
+    });
     page
 }

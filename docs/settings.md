@@ -68,3 +68,7 @@ rotation and OSK tri-state preferences for a single profile, loading the latest
 configuration before saving so unrelated profiles are retained. Reset explicitly
 sets that profile's actions to unchanged. Configuration saves are authorized by
 the active unlocked session service and use its atomic persistence path.
+
+While the settings window has focus, Overview refreshes every two seconds.
+Only one request runs at a time; the timer holds weak widget references and
+stops when the window is destroyed. Inactive windows do not poll the service.
