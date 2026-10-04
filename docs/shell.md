@@ -208,3 +208,9 @@ The battery/system widget includes the selected native mode and an explicit
 session-service-unavailable state. Rotation quick action exposes actual native
 checked state. Widget adapter tests cover ordered visibility, unavailable/live
 battery updates and clock timer cleanup. Split space also excludes visible OSK.
+
+GNOME's extension gettext domain `convertibled` now owns translations. The
+bundle contains `locale/de/LC_MESSAGES/convertibled.mo` compiled from `po/de.po`
+with a deterministic Node compiler; the English source strings are the fallback.
+Catalog tests inspect real GNU MO tables and UTF-8 translations. Linux CI can
+independently validate the PO using `msgfmt --check -o /dev/null extension/po/de.po`.

@@ -1,3 +1,2 @@
-import GLib from 'gi://GLib';
-import {translate} from './i18n.js';
-export const _ = (text: string): string => translate(text,GLib.get_language_names());
+import {gettext} from 'resource:///org/gnome/shell/extensions/extension.js';
+export const _ = (text: string): string => gettext(text);
