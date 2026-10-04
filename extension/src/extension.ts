@@ -21,6 +21,7 @@ import {NativePreference} from './native-preference.js';
 import {beforeDock} from './work-area.js';
 import {TouchSource} from './touch-source.js';
 import {DesktopController, desktopEligible} from './desktop.js';
+import {OverviewBackdrop} from './overview-backdrop.js';
 export default class TabletExtension extends Extension {
     private cleanup?: Cleanup;
     private bridge?: SessionBridge;
@@ -44,6 +45,7 @@ export default class TabletExtension extends Extension {
     private touchSource?: TouchSource;
     private desktop = new DesktopController();
     private dockStrut = false;
+    private backdrop = new OverviewBackdrop();
     enable(): void {
         try { this.start(); }
         catch (error) {
@@ -113,8 +115,11 @@ export default class TabletExtension extends Extension {
         this.cleanup.signal(Main.overview,'showing', () => {
             this.touch?.cancel(); this.hideSurfaces(); this.dock?.setSuspended(true);
             this.splitController?.setVisible(false);
+            if (this.active && this.monitor) this.backdrop.show(this.monitor.index,
+                this.animations.get_string('color-scheme') === 'prefer-light');
         });
         this.cleanup.signal(Main.overview,'hidden', () => {
+            this.backdrop.hide();
             const fullscreen = this.monitor && Main.layoutManager.monitors[this.monitor.index]?.inFullscreen;
             this.dock?.setSuspended(false);
             if (this.active && !fullscreen) {
@@ -153,6 +158,10 @@ export default class TabletExtension extends Extension {
         this.cleanup.signal(global.workspace_manager,'active-workspace-changed', () => {
             this.overview?.actor.hide(); this.showDesktop();
         });
+        this.cleanup.signal(global.workspace_manager,'notify::n-workspaces', () => {
+            if (this.active && this.monitor && Main.overview.visible)
+                this.backdrop.show(this.monitor.index,this.animations.get_string('color-scheme') === 'prefer-light');
+        });
         this.display = new DisplayObserver(() => Main.layoutManager.monitors,
             monitor => { this.monitor = monitor; this.reconcile(); });
         this.bridge = new SessionBridge(status => {
@@ -180,6 +189,7 @@ export default class TabletExtension extends Extension {
             const base = actor.style_class.replace(/\s*convertibled-light/g,'');
             actor.style_class = base + (light ? ' convertibled-light' : '');
         }
+        if (this.active && this.monitor && Main.overview.visible) this.backdrop.show(this.monitor.index,light);
     }
     private setDockStrut(enabled: boolean): void {
         if (!this.dock || this.dockStrut === enabled) return;
@@ -205,6 +215,7 @@ export default class TabletExtension extends Extension {
             // Do not open Home or take focus from the application during folding.
             this.dock?.setSuspended(Main.overview.visible); this.dock?.actor.show(); this.showDesktop();
         } else if (!allowed && this.active) {
+            this.backdrop.hide();
             this.active = false; this.touch?.cancel(); this.splitController?.clear(); this.hideSurfaces();
             this.dock?.actor.hide(); this.setDockStrut(false); this.desktop.restore(); this.windows.restore();
         } else if (allowed) this.position();
@@ -320,6 +331,7 @@ export default class TabletExtension extends Extension {
         }
     }
     disable(): void {
+        this.backdrop.hide();
         this.active = false; this.touch?.cancel(); this.splitController?.clear(); this.desktop.restore(); this.windows.restore();
         this.rotation?.destroy(); this.rotation = undefined;
         this.osk?.destroy(); this.osk = undefined;

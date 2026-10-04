@@ -327,3 +327,8 @@ Narrow layouts reduce side padding, stack section controls and wrap bounded
 app captions. Widget rows adapt between three columns, two-plus-one and a single
 column. The window picker scrolls its header together with its cards, so short
 viewports do not leave unreachable actions. Actual allocations size previews.
+
+Native Overview retains its own rounded Meta.BackgroundContent and application
+previews. Only internal-output workspace backgrounds temporarily receive the
+Home gradient. The GNOME 50 adapter restores only backgrounds still owned and
+leaves wallpaper preferences and external displays untouched.
