@@ -133,3 +133,8 @@ Status names the component version/backend and automatic versus session-manual
 override origin. Debounced direct switch confidence is separate from unknown;
 manual profiles never change observation confidence. Session observation parsing
 accepts daemon schema 1 only and falls back conservatively for other schemas.
+
+The sensor private-bus test verifies one claim across repeated samples, release
+on unneeded monitoring, unknown on loss and reclamation after service-owner
+replacement. Run dbus-run-session -- cargo test -p convertibled -- --ignored;
+its 15-second bound and fake transport do not establish hardware acceptance.

@@ -74,3 +74,71 @@ impl Sensor {
         let _ = self.sample(connection, false).await;
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::{
+        Arc,
+        atomic::{AtomicU32, Ordering},
+    };
+    struct Proxy {
+        claims: Arc<AtomicU32>,
+        releases: Arc<AtomicU32>,
+    }
+    #[zbus::interface(name = "net.hadess.SensorProxy")]
+    impl Proxy {
+        fn claim_accelerometer(&self) {
+            self.claims.fetch_add(1, Ordering::SeqCst);
+        }
+        fn release_accelerometer(&self) {
+            self.releases.fetch_add(1, Ordering::SeqCst);
+        }
+        #[zbus(property)]
+        fn has_accelerometer(&self) -> bool {
+            true
+        }
+        #[zbus(property)]
+        fn accelerometer_orientation(&self) -> String {
+            "left-up".into()
+        }
+    }
+    async fn proxy(claims: Arc<AtomicU32>, releases: Arc<AtomicU32>) -> Connection {
+        zbus::connection::Builder::session()
+            .unwrap()
+            .name("net.hadess.SensorProxy")
+            .unwrap()
+            .serve_at("/net/hadess/SensorProxy", Proxy { claims, releases })
+            .unwrap()
+            .build()
+            .await
+            .unwrap()
+    }
+    #[tokio::test]
+    #[ignore = "requires dbus-run-session; no physical sensor"]
+    async fn claims_release_and_reconnect_follow_actual_bus_owner() {
+        tokio::time::timeout(Duration::from_secs(15), async {
+            let claims = Arc::new(AtomicU32::new(0));
+            let releases = Arc::new(AtomicU32::new(0));
+            let service = proxy(claims.clone(), releases.clone()).await;
+            let client = Connection::session().await.unwrap();
+            let mut sensor = Sensor::default();
+            assert_eq!(sensor.sample(&client, true).await, Orientation::LeftUp);
+            assert_eq!(sensor.sample(&client, true).await, Orientation::LeftUp);
+            assert_eq!(claims.load(Ordering::SeqCst), 1);
+            assert_eq!(sensor.sample(&client, false).await, Orientation::Unknown);
+            assert_eq!(releases.load(Ordering::SeqCst), 1);
+            assert_eq!(sensor.sample(&client, true).await, Orientation::LeftUp);
+            assert_eq!(claims.load(Ordering::SeqCst), 2);
+            service.close().await.unwrap();
+            assert_eq!(sensor.sample(&client, true).await, Orientation::Unknown);
+            let replacement = proxy(claims.clone(), releases.clone()).await;
+            assert_eq!(sensor.sample(&client, true).await, Orientation::LeftUp);
+            assert_eq!(claims.load(Ordering::SeqCst), 3);
+            sensor.release(&client).await;
+            assert_eq!(releases.load(Ordering::SeqCst), 2);
+            replacement.close().await.unwrap();
+        })
+        .await
+        .expect("Sensor private-bus integration exceeded 15 seconds");
+    }
+}
