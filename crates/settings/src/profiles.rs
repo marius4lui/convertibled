@@ -113,5 +113,6 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
             );
         }
     });
+    page.add(&crate::profile_editor::group(text));
     page
 }

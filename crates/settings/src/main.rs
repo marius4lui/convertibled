@@ -14,6 +14,8 @@ mod operations;
 #[cfg(target_os = "linux")]
 mod overview;
 #[cfg(target_os = "linux")]
+mod profile_editor;
+#[cfg(target_os = "linux")]
 mod profiles;
 #[cfg(target_os = "linux")]
 mod recovery;

@@ -56,4 +56,25 @@ impl Client {
             .ok_or("Invalid capabilities reply")?;
         crate::model::parse_status(&json)
     }
+
+    pub async fn config(&self) -> Result<convertibled_core::config::Config, String> {
+        let result = self.call("GetConfig", ().to_variant()).await?;
+        let (toml,) = result
+            .get::<(String,)>()
+            .ok_or("Invalid configuration reply")?;
+        if toml.len() > 65536 {
+            return Err("Configuration exceeds supported size".into());
+        }
+        convertibled_core::config::Config::parse(&toml)
+    }
+
+    pub async fn save_config(
+        &self,
+        config: &convertibled_core::config::Config,
+    ) -> Result<(), String> {
+        config.validate()?;
+        self.call("SaveConfig", (config.to_toml()?,).to_variant())
+            .await?;
+        Ok(())
+    }
 }

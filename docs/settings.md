@@ -62,3 +62,9 @@ in the user's desktop by writing files when launched.
 Unsupported status schema versions are rejected. Common state values are
 translated for German users while detailed service errors retain their original
 diagnostic text, so the UI cannot misrepresent a failure as successful.
+
+The profile editor uses validated core configuration types. It edits native
+rotation and OSK tri-state preferences for a single profile, loading the latest
+configuration before saving so unrelated profiles are retained. Reset explicitly
+sets that profile's actions to unchanged. Configuration saves are authorized by
+the active unlocked session service and use its atomic persistence path.
