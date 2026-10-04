@@ -27,7 +27,7 @@ jobs:
       CARGO_BUILD_JOBS: '2'
     steps:
       - name: Install reference-platform build and nested-shell dependencies
-        run: dnf -y install git gcc gcc-c++ pkgconf-pkg-config gtk4-devel libadwaita-devel python3 openssl nodejs npm gnome-shell glib2 dbus-daemon mesa-dri-drivers tar gzip findutils which
+        run: dnf -y install git gcc gcc-c++ pkgconf-pkg-config gtk4-devel libadwaita-devel python3 openssl nodejs npm gnome-shell glib2 dbus-daemon mesa-dri-drivers tar gzip findutils which systemd
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d
         with:
@@ -79,6 +79,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Ensure offline systemd unit verification is available
+        run: sudo apt-get update && sudo apt-get install -y systemd
       - run: python3 -m unittest discover -s updater -t . -v
       - run: python3 -m unittest discover -s installer -t . -v
   shell:
