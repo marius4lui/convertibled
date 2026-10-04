@@ -9,6 +9,11 @@ configuration schema and bounded release notes. Stable rejects preview versions.
 No production trust key is committed. Without provisioned trust, updates fail
 closed. Physical installation and GNOME activation remain acceptance gates.
 
+**Open implementation blocker:** no GNOME login admission interlock exists.
+Repeated logout checks are snapshots, not a race-free guarantee; login can begin
+during version selection/restart. Public release requires resolving this contract,
+not merely recording physical acceptance of the current checks.
+
 Signed envelopes contain `key_id`, `payload`, `signature` (base64). Signatures
 cover canonical UTF-8 JSON (sorted keys, compact separators). The offline root
 signs a release-keyring with an independent monotonic sequence and UTC lifetime.
@@ -225,3 +230,12 @@ If login arrives after daemon stop while phase remains quiescing and `current`
 still selects the unchanged previous version, recovery directly resumes that
 daemon even with the session present. It does not select a version, restore
 configuration or edit integration. Recovery after selection still requires logout.
+
+Admission feasibility was checked against GNOME 50's
+[Shell service template](https://github.com/GNOME/gnome-shell/blob/50.0/data/org.gnome.Shell%40.service.in)
+and [session targets](https://github.com/GNOME/gnome-session/blob/50.0/data/gnome-session.target).
+The current project session unit starts from `graphical-session.target`, after
+Shell startup, so adding a shared lock there cannot gate extension code loading.
+A reliable design would need a root-owned stable lock plus a verified pre-Shell
+admission contract for every supported startup path. No GNOME service drop-ins
+or speculative startup ordering are installed by this implementation.
