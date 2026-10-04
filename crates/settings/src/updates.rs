@@ -63,7 +63,7 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
                 match helper(command, None).await {
                     Ok(status) => {
                         for (key, row) in &rows {
-                            row.set_subtitle(&field(&status, &[*key]));
+                            row.set_subtitle(&text.value(&field(&status, &[*key])));
                         }
                     }
                     Err(error) => {

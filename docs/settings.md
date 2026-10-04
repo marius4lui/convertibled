@@ -58,3 +58,7 @@ is displayed instead of forcing the user's current graphical session to stop.
 Desktop launch metadata and a project-owned scalable icon live under `data/`.
 The installer owns their installation/removal; settings does not register itself
 in the user's desktop by writing files when launched.
+
+Unsupported status schema versions are rejected. Common state values are
+translated for German users while detailed service errors retain their original
+diagnostic text, so the UI cannot misrepresent a failure as successful.

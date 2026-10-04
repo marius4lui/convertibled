@@ -81,7 +81,7 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
             match result {
                 Ok(status) => {
                     for (row, path) in &rows {
-                        row.set_subtitle(&field(&status, path));
+                        row.set_subtitle(&text.value(&field(&status, path)));
                     }
                     health.set_subtitle(text.text("Connected", "Verbunden"));
                 }
