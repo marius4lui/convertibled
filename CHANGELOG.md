@@ -13,6 +13,11 @@ Changes are grouped by release. Planned work belongs in `ROADMAP.md`.
 
 ### Experimental implementation
 
+- Home now prioritizes apps over widgets at every size, with bounded search and
+  quieter editing controls. The dock fits its content and separates navigation,
+  running apps and contextual actions. Standalone settings are nonmodal so Home
+  can minimize them alongside other applications.
+
 - Refined shared native UI: centered Home with deliberate favorite editing,
   compact local widgets and navigation shelf, proportional live previews, and
   coordinated light/dark styling. Search remains reachable above the native OSK.

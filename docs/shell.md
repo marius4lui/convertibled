@@ -55,7 +55,7 @@ excluded. Window geometry and maximize flags are restored only while their
 last applied state still matches. GNOME runtime must verify Wayland clients'
 asynchronous geometry acknowledgements before release acceptance.
 
-Home is a native St surface with editable app search, GNOME favorites and an
+Home is a native St surface with editable app search, favorite editing and an
 adaptive installed-app grid. AppSystem/favorite changes refresh it live; GNOME
 application icons and keyboard-focusable buttons provide native app launching.
 Search uses GNOME's text widget so the native OSK follows editable focus.
@@ -181,7 +181,7 @@ adapter test covers that distinction with realistic nonempty app metadata.
 Smoke checks use the versioned extension D-Bus numeric state (ACTIVE=1,
 INACTIVE=2), avoiding translated CLI labels and renamed GNOME 50 states.
 
-Home keeps search outside one scrollable body containing favorites, widgets and
+Home keeps search outside one scrollable body containing widgets and
 the app grid. Narrow displays, large fonts and the OSK therefore cannot make
 the bottom widgets unreachable through fixed-height content accumulation.
 
@@ -301,7 +301,7 @@ The original failing test status is retained; persistent cleanup failure also
 fails an otherwise successful test. Cleanup refuses unexpected root names.
 
 Home now uses a centered canvas with 64-pixel app icons, explicit favorite
-editing, a bounded favorite strip and compact local widgets. Search hides
+editing and compact local widgets. Favorites live in the shared dock. Search hides
 nonmatching sections. Unknown battery state remains visible without a fake
 percentage. Light/dark palettes retain the same focus and touch geometry.
 
@@ -314,10 +314,10 @@ work-area reservation. Home/Overview selection reflects the visible surface;
 apps and secondary actions remain horizontally scrollable. System color-scheme
 changes update all three surfaces without rebuilding product state.
 
-Short allocations (including the native OSK) hide Home's ancillary cards and
-favorites while keeping search and app results reachable. Opening a navigation
+Short allocations (including the native OSK) hide Home's ancillary cards
+while keeping search and app results reachable. Opening a navigation
 surface does not request text entry; search focus explicitly opens the native
-keyboard. Escape dismisses Home and Overview. Wide headers use a single row.
+keyboard. Escape dismisses Overview and returns focus to the desktop. Wide headers use a single row.
 
 App columns adapt to the native text scale. Repeated status/geometry updates
 with unchanged layout retain existing app actors and their keyboard focus.
@@ -333,6 +333,10 @@ previews. Only internal-output workspace backgrounds temporarily receive the
 Home gradient. The GNOME 50 adapter restores only backgrounds still owned and
 leaves wallpaper preferences and external displays untouched.
 
-On narrow or short desktop viewports, application launch sections precede local
-widgets. Wider app cells leave room for localized captions without compressing
-the icon grid. The widget preference order is preserved within its section.
+Application launch sections precede local widgets at every viewport size.
+Search has a bounded desktop width; a single app grid avoids duplicate launchers.
+A touch-sized edit icon replaces the oversized editing action. Wider app cells
+leave room for localized captions without compressing the icon grid. The widget
+preference order is preserved within its section. Navigation, running apps and
+contextual actions form distinct groups in a dock sized to its content; running
+indicators remain separate from pressed and selected states.

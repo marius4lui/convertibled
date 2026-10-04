@@ -13,6 +13,13 @@ remain requirements. This supersedes the initial unstyled popup presentation.
 Review covers Home, overview, settings, failures, portrait and keyboard
 occlusion in the actual shared native demo; physical acceptance remains separate.
 
+Home prioritizes application launch at every viewport size. A bounded search
+field, evenly spaced application icons, and a quiet editing action
+keep navigation ahead of secondary information. Favorites live in the dock,
+with editing in Home's app grid instead of a duplicate launcher section.
+Optional local widgets follow the apps. The dock groups navigation, apps and contextual
+actions without stretching a short app list across an oversized shelf.
+
 Use GNOME typography, symbolic icons, system colors, dialogs and dark mode.
 Settings use GTK4/libadwaita; the tablet workspace uses native Shell actors.
 Home is the persistent desktop behind applications in tablet mode. Navigation
