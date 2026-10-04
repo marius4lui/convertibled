@@ -1,140 +1,118 @@
-﻿# Runtime implementation
+﻿# Rust runtime and wire contract
 
-The Rust workspace separates pure policy (`convertibled-core`), the read-only
-system observer, active-user session coordination, and the diagnostic CLI.
-Status schema 1 keeps observation, manual selection, desired action and applied
-result distinct. Unknown posture defaults to laptop; stand/tent are manual.
-Inactive or locked sessions never request the tablet workspace. Input suppression
-and automatic scaling remain unavailable pending their required evidence.
+The workspace uses Rust 1.99 and pinned dependencies. `convertibled-core` is pure
+policy/configuration/report code; `convertibled` observes hardware;
+`convertibled-session` owns user-session coordination; `convertiblectl` is a client.
+Rust services use the Tokio executor for D-Bus dispatch, timers and blocking work.
+GTK settings and the GJS extension remain separate unprivileged clients.
 
-Host unit checks prove policy only; Linux buses, evdev and physical UX require
-Linux integration and the reference-device acceptance procedure.
+## Status and policy
 
-The system observer rediscovers tablet-switch devices and queries EVIOCGSW every
-250 ms without reading event streams. Failed/conflicting switches become unknown.
-SensorProxy orientation is read without competing claims; GNOME retains rotation
-ownership. Linux cross compilation checks validate D-Bus and ioctl code, but do
-not establish hardware access or physical detection.
+Schema 1 keeps observation, selected profile, desired actions and applied outcomes
+separate. Observations contain posture (`laptop`, `folded`, `unknown`), orientation,
+source and confidence. A debounced direct switch is direct-switch confidence;
+manual tablet/stand/tent selection never manufactures sensor evidence. Unknown
+posture automatically falls back to laptop. Manual overrides are session-local
+and reset on session-service restart; profile configuration persists on disk.
 
-The user session service enumerates logind sessions for its UID, requires exactly
-one active local Wayland seat, and denies mutations while locked or ambiguous.
-D-Bus caller credentials are checked against the service UID. Extension reports
-are bounded, validated, and never inferred from desired state. Manual choices
-are currently session-local and reset when the service restarts.
+Status includes revision, component version/backend, override origin, active and
+locked flags. Desired workspace requires an active unlocked local session. Native
+rotation and OSK actions are tri-state (`enabled`, `disabled`, `unchanged`) and
+resolved from the selected profile. Inactive/locked sessions request unchanged
+native actions. Explicit rotation lock has a requested flag: absent means retain
+the existing GNOME preference; explicit false is an unlock request.
 
-Session reload validates both whole configuration candidates before changing
-rotation preferences. User profile entries override system defaults; debounce
-and session authorization retain system ownership. Missing files use defaults;
-invalid startup configurations fail explicitly instead of silently accepting them.
+Applied reports contain actual workspace/lock values, status/error and optional
+per-action rotation/OSK outcomes. Workspace success can coexist with an unsupported
+native preference. Reports are limited to 8192 bytes and 2048-byte errors; unknown
+actions/status values fail validation. Reporter-owner disconnect resets applied
+state/capabilities to unavailable. Extension disable reports explicit cleanup.
 
-convertiblectl supports status/devices/capabilities, bounded watch, sanitized
-explicit doctor exports, manual profiles, rotation requests, schema validation,
-reload, and fixed updater commands. Updates use the installed isolated Python
-helper and pkexec for mutations. Exit 0 means the request/client check completed;
-applied status must still be inspected. Linux connection/backend errors exit 3.
+## Hardware and lifecycle
 
-Rotation lock has an explicit requested flag. An absent configuration property
-leaves GNOME's existing lock unchanged; explicit true/false requests distinguish
-locking from unlocking. Reported actual native lock remains applied state.
+The system daemon discovers tablet switches through `/sys/class/input` and queries
+`EVIOCGSW` every 250 ms. It never reads event streams or key data, disables no input
+device and exports no serials/physical identifiers. Fresh discovery covers startup,
+hotplug and reconnect. Debounce is configurable (50..5000 ms); missing, failed or
+conflicting switches become unknown immediately.
 
-Services use a static convertibled identity with read-only input group access;
-no devices are disabled. Only the service owns the system bus name. User services
-follow graphical-session.target; installer links units into their target wants.
-Hardening preserves AF_UNIX D-Bus and read-only evdev access. Receipt writes are
-confined to StateDirectory=convertibled/health. Units require Linux verification.
+SensorProxy accelerometer claims exist only during folded monitoring. Laptop,
+unknown, suspend and orderly shutdown release claims. GNOME retains rotation/touch
+mapping ownership. Each sensor operation has a two-second deadline. Service-owner
+changes trigger a new claim; canceled/failed claims are released before retry.
+No sensor/service failure creates valid orientation evidence.
 
-An authenticated active local user may report matching-version shell health to
-the daemon. The session relays actual extension outcomes. The daemon writes an
-atomic private receipt under /var/lib/convertibled/health for recovery checking.
-This authenticates session ownership, not cryptographic shell-code attestation;
-version mismatch, locked/ambiguous sessions and authorization timeout fail.
+logind PrepareForSleep invalidates posture and pauses sampling until wake, then
+fresh samples must debounce again. A closed signal stream fails for systemd restart.
+SIGTERM and Ctrl-C perform orderly shutdown. The static convertibled service identity
+uses read-only input-group access; hardened units retain AF_UNIX for D-Bus and allow
+writes only to the private health StateDirectory. Units are owned by the installer.
 
-convertibled --check is a bounded candidate preflight: Linux x86_64 input subsystem
-and whole system configuration validation. It starts no bus name, writes no
-receipt and cannot prove switch hardware or desktop acceptance.
+## Buses and authorization
 
-SensorProxy accelerometer claims are limited to folded monitoring and released
-when laptop/unknown returns and on orderly shutdown. Shared claims preserve GNOME
-as rotation controller. Missing service, property/call failures and a two-second
-timeout return unknown orientation; the next sample retries after reconnection.
+System service: `org.convertibled.Daemon1`, `/org/convertibled/Daemon1`.
+User service: `org.convertibled.Session1`, `/org/convertibled/Session1`.
+The matching versioned interfaces and signals are in `../data/dbus/`.
 
-Startup shell health now uses explicit Session1.ReportShellHealth(version,healthy),
-separate from action reports: normal laptop mode does not imply failed startup
-or prove a successful startup. Extension-provided matching metadata version is
-validated before the bounded relay to the system daemon.
+Session coordination requires exactly one active local Wayland seat for the user
+service UID. Locked, remote, absent and ambiguous sessions are conservative fallbacks.
+Hardware/logind polling runs concurrently with two-second deadlines; timeout replaces
+cached observation with unknown or cached authorization with inactive/locked.
+Profile, rotation and configuration mutations validate the actual bus sender UID
+and re-query authoritative logind ownership with a bounded deadline.
 
-Selected profile TOML actions now resolve to desired rotation/osk tri-state fields.
-Defaults remain unchanged; switching profiles recomputes actions and never infers
-applied success. Unsupported input/scaling directives still fail validation.
+GetStatus/GetCapabilities/GetConfig expose snapshots. SetProfile, SetRotationLock,
+SaveConfig and Reload are authorized mutations; ReportApplied supplies actual outcomes.
+ReportShellHealth separately relays explicit matching-version extension startup health
+to the daemon. The daemon revalidates active local ownership and atomically writes
+`/var/lib/convertibled/health/shell-health.json` for update recovery. This authenticates
+session ownership and matching version, not cryptographic shell-code attestation.
 
-GetConfig exposes the merged TOML; authorized SaveConfig validates up to 64 KiB,
-backs up the previous user file and writes atomically with private permissions.
-System debounce is retained during merge. Reset a profile to unchanged actions
-explicitly to override system defaults; failed saves leave state unchanged.
+## Configuration and CLI
 
-Applied action_outcomes retain separate rotation and OSK request/result/status/error
-records. Bounded report parsing rejects unknown actions/status values and oversized
-errors. A supported workspace can coexist with a failed native preference action;
-diagnostics must show the per-action outcome rather than assuming all succeeded.
+Built-in defaults merge `/etc/convertibled/config.toml`, then allowed user preferences
+in `$XDG_CONFIG_HOME/convertibled/config.toml` (otherwise `~/.config/convertibled`).
+Unknown keys, unsupported schemas and invalid types fail. User preferences cannot
+replace system debounce or session authorization. Input suppression and automatic
+scaling directives must remain unchanged until their required acceptance gates.
 
-logind PrepareForSleep invalidates posture before sleep and on wake, releasing
-accelerometer claims before fresh switch sampling. Both services handle SIGTERM
-for systemd orderly stop in addition to Ctrl-C; the daemon releases sensor claims.
-Suspend/reconnect behavior remains subject to Linux and device integration checks.
+GetConfig returns merged schema-1 TOML. SaveConfig validates up to 64 KiB before
+writing a private atomic user file with `config.toml.previous` backup. Failed saves
+retain prior applied configuration. Explicit unchanged profile actions reset user
+behavior even where system defaults exist. Reload validates complete candidates
+before replacing state.
 
-A private-bus integration test exercises the actual Session1 wire contract,
-inactive/locked denials, invalid profile/config rejection and bounded reports.
-Run dbus-run-session -- cargo test -p convertibled-session -- --ignored on Linux;
-Windows cross checks compile this test but cannot execute its D-Bus assertions.
+CLI: status, devices, capabilities, watch (`--count` positive), doctor, mode,
+rotation-lock, profiles, config validate/show/save, reload and update controls.
+Diagnostic commands support JSON. Doctor collects services independently and uses
+a typed export allowlist, omitting identifiers/source strings/arbitrary backend
+errors. Export is explicit. Update check/prepare/status/activate/recover/rollback,
+automatic on/off and channel stable/preview use fixed arguments to the isolated
+installed helper; mutations request pkexec authorization. Exit codes: 0 completed
+request, 2 usage/configuration error, 3 unavailable runtime, 4 denied authorization,
+5 updater failure. Request completion never proves desktop action success.
 
-Capabilities separately expose native rotation lock, focus-owned OSK preference
-and split view. Validated extension reports update each capability independently;
-sensor support is not mistaken for a supported display action.
+`convertibled --check` validates Linux x86_64, the input subsystem and system config
+without claiming a bus name, modifying hardware or creating health receipts.
 
-The session records the unique D-Bus sender of applied reports and checks that
-owner's lifetime. Disconnect resets applied state and capabilities to unavailable,
-then emits a new status; an old successful report cannot survive a dead reporter.
-Extension disable separately submits an explicit unavailable cleanup report.
+## Evidence and acceptance
 
-Doctor now collects services independently so missing session/hardware services
-still produce a versioned report. Export uses a typed allowlist, omitting device
-identifiers, source strings and arbitrary backend errors while retaining action
-status and supported booleans. File export is explicit and created privately.
+Pure policy/configuration/report and CLI parser tests run on Windows. Linux cross
+Clippy validates Linux source/types; it does not execute hardware or bus behavior.
+Private-bus tests use real transport with fake peers, each internally bounded to
+15 seconds:
 
-CLI configuration show/save use GetConfig/SaveConfig; profiles and validation have
-versioned JSON output. Mode names and positive watch counts are validated before
-connecting. Update recover/automatic/channel commands use fixed argument arrays.
-Exit codes: 0 completed request, 2 usage/configuration error, 3 unavailable runtime,
-4 denied authorization, 5 failed updater operation. Desired is never applied.
+```sh
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --locked
+dbus-run-session -- cargo test -p convertibled-session -- --ignored
+dbus-run-session -- cargo test -p convertibled -- --ignored
+```
 
-Hardware and logind reconciliation run concurrently with two-second deadlines.
-Timeouts immediately substitute unknown observation or inactive/locked session,
-so a stalled backend cannot retain cached authorization. Applied owner queries
-are bounded too. Profile actions become unchanged for inactive/locked sessions.
-
-All Rust bus services explicitly use zbus's Tokio executor, matching their timers
-and blocking workers. The private-bus contract test is internally bounded to
-15 seconds so an absent reply fails rather than hanging the integration job.
-
-Sensor claim recovery tracks the actual SensorProxy bus owner. Restarted owners
-are reclaimed; canceled/failed claims are released before retry because the remote
-service may already have received the request. Loss never creates valid orientation.
-
-Switch sampling pauses throughout PrepareForSleep(true)..false; stale folded state
-cannot return during suspend preparation. A closed logind stream fails for systemd
-restart rather than spinning. Successful sensor release clears local claim state.
-
-Profile/rotation/config mutations now re-query authoritative logind ownership with
-a two-second deadline in addition to sender UID and cached-state checks. A session
-locked or deactivated since the last poll cannot mutate. Private-bus tests use a
-separate fake logind state to prove cached active/lock values cannot authorize.
-
-Status names the component version/backend and automatic versus session-manual
-override origin. Debounced direct switch confidence is separate from unknown;
-manual profiles never change observation confidence. Session observation parsing
-accepts daemon schema 1 only and falls back conservatively for other schemas.
-
-The sensor private-bus test verifies one claim across repeated samples, release
-on unneeded monitoring, unknown on loss and reclamation after service-owner
-replacement. Run dbus-run-session -- cargo test -p convertibled -- --ignored;
-its 15-second bound and fake transport do not establish hardware acceptance.
+The session test covers active/locked authoritative ownership, denied mutations,
+invalid configuration/profile/report and desired/applied separation. The sensor
+test covers idempotent claim, release, loss and service-owner replacement. These
+checks do not establish physical ThinkPad fold, rotation/touch mapping, input
+recovery, focus, GNOME interaction quality or installer acceptance. Input suppression
+and automatic scaling remain disabled; production signing keys are not in this repo.
