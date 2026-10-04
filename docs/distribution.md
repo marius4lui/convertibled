@@ -105,3 +105,9 @@ Integration includes the daemon's system-bus policy and the session unit's
 `graphical-session.target.wants` link. Conflict preflight checks system extensions
 and the authenticated installing user's extension directory, without altering
 other extensions or accounts.
+
+`offline-prepare` reads only administrator-provisioned `offline/keyring.json`,
+`offline/channel.json` and `offline/artifact.tar.gz` under the transaction state
+directory. It uses the identical signature/freshness/replay/platform/hash/archive
+pipeline. It grants no arbitrary local file-read or extraction path arguments.
+`rollback` recovers a retained installed version without any network request.

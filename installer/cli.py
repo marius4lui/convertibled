@@ -20,7 +20,7 @@ from updater.model import UpdateError
 
 def parser():
     result = argparse.ArgumentParser(description="convertibled installation and verified updates")
-    result.add_argument("command", choices=("status", "check", "prepare", "install", "activate", "recover", "rollback", "uninstall", "automatic", "channel", "scheduled"))
+    result.add_argument("command", choices=("status", "check", "prepare", "offline-prepare", "install", "activate", "recover", "rollback", "uninstall", "automatic", "channel", "scheduled"))
     result.add_argument("value", nargs="?", choices=("on", "off", "stable", "preview"))
     return result
 
@@ -47,6 +47,9 @@ def execute(args, layout):
             manager.check()
         elif args.command == "prepare":
             manager.prepare()
+        elif args.command == "offline-prepare":
+            from updater.offline import Offline
+            Manager(layout, network=Offline(layout)).prepare()
         elif args.command == "install":
             metadata = manager.prepare()
             transaction.activate(metadata["version"])
