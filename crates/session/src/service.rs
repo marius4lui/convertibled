@@ -4,7 +4,7 @@ use std::{sync::Arc, time::Duration};
 use tokio::sync::RwLock;
 use zbus::{Connection, object_server::SignalEmitter};
 
-async fn session_state(connection: &Connection) -> (bool, bool) {
+pub(crate) async fn session_state(connection: &Connection) -> (bool, bool) {
     use convertibled_core::authorization::{SessionCandidate, select_session};
     let Ok(manager) = zbus::Proxy::new(
         connection,
@@ -105,13 +105,21 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut terminate = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
     loop {
         tokio::select! { _ = tokio::signal::ctrl_c() => break, _=terminate.recv()=>break, _ = interval.tick() => {} }
-        let observed = observation(&system).await;
-        let (active, locked) = session_state(&system).await;
+        let (observed, session) = tokio::join!(
+            tokio::time::timeout(Duration::from_secs(2), observation(&system)),
+            tokio::time::timeout(Duration::from_secs(2), session_state(&system))
+        );
+        let observed = observed.unwrap_or_default();
+        let (active, locked) = session.unwrap_or((false, true));
         let owner = report_owner.read().await.clone();
         let disconnected = if let Some(owner) = owner.as_deref() {
-            let bus = zbus::fdo::DBusProxy::new(&connection).await?;
-            let name = zbus::names::BusName::try_from(owner)?;
-            !bus.name_has_owner(name).await.unwrap_or(false)
+            let result = tokio::time::timeout(Duration::from_secs(2), async {
+                let bus = zbus::fdo::DBusProxy::new(&connection).await?;
+                let name = zbus::names::BusName::try_from(owner).map_err(zbus::Error::from)?;
+                bus.name_has_owner(name).await.map_err(zbus::Error::from)
+            })
+            .await;
+            !matches!(result, Ok(Ok(true)))
         } else {
             false
         };

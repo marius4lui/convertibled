@@ -106,3 +106,8 @@ versioned JSON output. Mode names and positive watch counts are validated before
 connecting. Update recover/automatic/channel commands use fixed argument arrays.
 Exit codes: 0 completed request, 2 usage/configuration error, 3 unavailable runtime,
 4 denied authorization, 5 failed updater operation. Desired is never applied.
+
+Hardware and logind reconciliation run concurrently with two-second deadlines.
+Timeouts immediately substitute unknown observation or inactive/locked session,
+so a stalled backend cannot retain cached authorization. Applied owner queries
+are bounded too. Profile actions become unchanged for inactive/locked sessions.

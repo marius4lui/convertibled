@@ -136,7 +136,11 @@ impl Status {
             Profile::Stand => "stand",
             Profile::Tent => "tent",
         };
-        let profile = config.profiles.get(key).cloned().unwrap_or_default();
+        let profile = if self.active && !self.locked {
+            config.profiles.get(key).cloned().unwrap_or_default()
+        } else {
+            crate::config::ProfileConfig::default()
+        };
         self.desired.rotation = profile.rotation;
         self.desired.osk = profile.osk;
     }
