@@ -21,8 +21,8 @@ export class WindowOverview {
         header.add_child(this.splitButton);
         this.actor.add_child(header); this.actor.add_child(scroll(this.content));
         this.content.add_child(new St.Label({text:_('Select two apps for split')}));
-        this.cleanup.signal(global.display, 'window-created', () => this.refresh());
-        this.cleanup.signal(global.workspace_manager, 'active-workspace-changed', () => this.refresh());
+        this.cleanup.signal(global.display, 'window-created', () => { if (this.actor.visible) this.refresh(); });
+        this.cleanup.signal(global.workspace_manager, 'active-workspace-changed', () => { if (this.actor.visible) this.refresh(); });
     }
     refresh(): void {
         this.windowCleanup.clear(); clear(this.content); this.selection = [];
@@ -32,9 +32,12 @@ export class WindowOverview {
             const card = new St.BoxLayout({vertical:true,style_class:'convertibled-widget'});
             const preview = new St.Button({can_focus:true,reactive:true,accessible_name:window.get_title()});
             const clone = new Clutter.Clone({source,reactive:false});
-            const rect = window.get_frame_rect();
-            const factor = Math.min(320 / Math.max(rect.width,1), 180 / Math.max(rect.height,1));
-            clone.set_size(rect.width,rect.height); clone.set_scale(factor,factor);
+            const updatePreview = () => {
+                const rect = window.get_frame_rect();
+                const factor = Math.min(320 / Math.max(rect.width,1),180 / Math.max(rect.height,1));
+                clone.set_size(rect.width,rect.height); clone.set_scale(factor,factor);
+            };
+            updatePreview(); this.windowCleanup.signal(window,'size-changed',updatePreview);
             preview.set_size(320,180); preview.set_child(clone);
             preview.connect('clicked', () => this.activate(window));
             card.add_child(preview);

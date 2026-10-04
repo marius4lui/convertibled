@@ -214,3 +214,9 @@ bundle contains `locale/de/LC_MESSAGES/convertibled.mo` compiled from `po/de.po`
 with a deterministic Node compiler; the English source strings are the fallback.
 Catalog tests inspect real GNU MO tables and UTF-8 translations. Linux CI can
 independently validate the PO using `msgfmt --check -o /dev/null extension/po/de.po`.
+
+Home caches installed metadata until AppSystem changes and initially constructs
+at most 40 app tiles per query. An explicit Show more action keeps every match
+reachable without building hundreds of actors on each edit. Live window clones
+update scale when source geometry changes; hidden overview ignores unrelated
+new-window/workspace refreshes. Frame-budget acceptance still requires hardware.

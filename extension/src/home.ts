@@ -14,17 +14,24 @@ export class Home {
     private content = new St.BoxLayout({vertical:true,style_class:'convertibled-grid'});
     private cleanup = new Cleanup();
     private width = 800;
+    private appInfos: AppInfo[] = [];
+    private limit = 40;
     constructor(private launch: (app: any) => void) {
         this.actor.add_child(this.search);
         const favoriteScroll = scroll(this.favorites); favoriteScroll.y_expand = false;
         this.content.add_child(favoriteScroll); this.content.add_child(this.grid);
         this.actor.add_child(scroll(this.content));
-        this.cleanup.signal(this.search.clutter_text, 'text-changed', () => this.refresh());
-        this.cleanup.signal(Shell.AppSystem.get_default(), 'installed-changed', () => this.refresh());
+        this.cleanup.signal(this.search.clutter_text, 'text-changed', () => { this.limit = 40; this.refresh(); });
+        this.cleanup.signal(Shell.AppSystem.get_default(), 'installed-changed', () => { this.readApps(); this.refresh(); });
         this.cleanup.signal(Favorites.getAppFavorites(), 'changed', () => this.refresh());
-        this.refresh();
+        this.readApps(); this.refresh();
     }
     addWidgets(actor: any): void { this.content.insert_child_at_index(actor,1); }
+    private readApps(): void {
+        this.appInfos = Shell.AppSystem.get_default().get_installed().filter((info: any) => info.should_show())
+            .map((info: any) => ({id:info.get_id(),name:info.get_name(),description:info.get_description() ?? '',
+                keywords:info.get_keywords?.() ?? []}));
+    }
     resize(width: number): void { this.width = width; this.refresh(); }
     private appButton(app: any, editable = false): any {
         const result = new St.Button({style_class:'button convertibled-app',can_focus:true,
@@ -47,16 +54,14 @@ export class Home {
         clear(this.favorites); clear(this.grid);
         for (const app of Favorites.getAppFavorites().getFavorites()) this.favorites.add_child(this.appButton(app));
         const system = Shell.AppSystem.get_default();
-        const apps: AppInfo[] = system.get_installed().filter((info: any) => info.should_show())
-            .map((info: any) => ({id:info.get_id(),name:info.get_name(),
-                description:info.get_description() ?? '',keywords:info.get_keywords?.() ?? []}));
-        const filtered = searchApps(apps, this.search.get_text());
+        const filtered = searchApps(this.appInfos,this.search.get_text());
         const columns = gridColumns(this.width,176);
         let row: any;
-        filtered.forEach((info, index) => {
+        filtered.slice(0,this.limit).forEach((info, index) => {
             if (index % columns === 0) { row = new St.BoxLayout({style_class:'convertibled-grid'}); this.grid.add_child(row); }
             const app = system.lookup_app(info.id); if (app) row.add_child(this.appButton(app,true));
         });
+        if (filtered.length > this.limit) this.grid.add_child(button('Show more apps', () => { this.limit += 40; this.refresh(); }));
         if (!filtered.length) this.grid.add_child(new St.Label({text:_('No matching apps')}));
     }
     focusSearch(): void { this.search.grab_key_focus(); }

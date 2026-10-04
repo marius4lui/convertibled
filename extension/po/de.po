@@ -81,3 +81,6 @@ msgstr "Zwei anpassbare Hauptfenster auf dem internen Bildschirm auswählen"
 
 msgid "Invalid window constraints"
 msgstr "Ungültige Fenstergrößen"
+
+msgid "Show more apps"
+msgstr "Weitere Apps anzeigen"
