@@ -315,3 +315,15 @@ GDM or prove the distribution's physical session lifecycle. Guard failure or an
 unrecovered marker intentionally prevents a new supported Shell start; recovery
 from a TTY remains available. Direct GNOME Shell processes, custom user units and
 other startup paths can bypass this gate and are outside the supported contract.
+
+## Preparation across filesystem boundaries
+
+Verified archives download into exclusive temporary storage beneath the state
+directory. Extraction uses a separate exclusive temporary directory directly
+under `versions`, so the final candidate rename stays on the destination
+filesystem even when Fedora places `/var` and `/opt` on different mounts or
+btrfs subvolumes. Preparation never changes the active version reference.
+Normal success/failure removes only this invocation's temporary directories;
+unrelated staging entries, symlink destinations and late version collisions are
+preserved or rejected. A real POSIX test prepares a signed bundle with state and
+versions on different device IDs, alongside corruption and collision cases.
