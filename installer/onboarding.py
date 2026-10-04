@@ -4,6 +4,7 @@ import os
 import secrets
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -44,7 +45,21 @@ def decline(layout, user):
     target.chmod(0o644)
 
 
-def onboarding(layout, user_state, uid, environment, run=subprocess.run):
+def wait_for_extension(run, pause):
+    # XDG autostart has no obsolete GNOME phase ordering. Wait for Shell's
+    # extension registry, not a guessed fixed startup delay. Never enable or
+    # consume consent when the registry remains unavailable.
+    for attempt in range(15):
+        try:
+            run(["gnome-extensions", "info", UUID], capture_output=True, timeout=2, check=True)
+            return
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+            if attempt == 14:
+                raise UpdateError("GNOME extension registry did not become ready; retry setup after login") from exc
+            pause(1)
+
+
+def onboarding(layout, user_state, uid, environment, run=subprocess.run, pause=time.sleep):
     if uid == 0 or environment.get("XDG_SESSION_TYPE") != "wayland":
         return False
     record = read(layout.state / "onboarding.json", {})
@@ -54,7 +69,7 @@ def onboarding(layout, user_state, uid, environment, run=subprocess.run):
     shell = run(["gnome-shell", "--version"], capture_output=True, text=True, timeout=15, check=True)
     if not shell.stdout.strip().startswith("GNOME Shell 50"):
         raise UpdateError("First-login setup requires GNOME Shell 50")
-    run(["gnome-extensions", "info", UUID], capture_output=True, timeout=15, check=True)
+    wait_for_extension(run, pause)
     run(["gnome-extensions", "enable", UUID], capture_output=True, timeout=15, check=True)
     atomic(user_state, {"schema": 1, "consent": token})
     return True

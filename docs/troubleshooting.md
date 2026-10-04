@@ -11,6 +11,15 @@ Verify that the session uses GNOME 50 and Wayland and that your user enabled
 running the [first-login step](getting-started.md#first-login). Other users do
 not inherit your opt-in.
 
+First-login setup uses ordinary XDG autostart. It waits briefly for GNOME's
+extension registry before enabling the workspace, so session startup ordering
+does not consume your consent before the extension is available. If readiness
+or enabling fails, consent remains pending for a later login; the manual
+`finish-user.sh` command remains available. GNOME's obsolete
+`X-GNOME-Autostart-Phase` key must not be added to the desktop entry: the
+[systemd autostart generator](https://github.com/systemd/systemd/blob/main/src/xdg-autostart-generator/xdg-autostart-service.c)
+skips entries containing it.
+
 ```sh
 convertiblectl status
 convertiblectl capabilities
