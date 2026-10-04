@@ -229,3 +229,8 @@ diagonal/multitouch/disable. Source filtering currently proves touchscreen type
 and internal-output coordinates, not physical built-in-device provenance: an
 externally connected touchscreen deliberately mapped there is not distinguished.
 This limitation requires device-assignment acceptance before claiming exclusivity.
+
+Bundle metadata reads `workspace.package.version` from canonical Cargo.toml
+during every build. Startup health therefore uses the installed product version,
+including future upgrades. Build cleanup removes only the resolved extension
+`dist` directory and prevents deleted source modules surviving in release bundles.

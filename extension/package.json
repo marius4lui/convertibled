@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build": "tsc && node tools/package.mjs",
+    "build": "node tools/clean.mjs && tsc && node tools/package.mjs",
     "test": "npm run build && node --test tests/*.test.mjs"
   },
   "devDependencies": { "typescript": "5.9.3" }
