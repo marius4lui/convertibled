@@ -13,6 +13,26 @@ Changes are grouped by release. Planned work belongs in `ROADMAP.md`.
 
 ### Experimental implementation
 
+- Authenticated shell installer with one bootstrap authorization, verified
+  preparation and automatic completion after ordinary graphical logout.
+- Per-user first-login consent enables the workspace and opens native Settings
+  once. Explicitly declined setup preserves service-only installation; later
+  disabling and other users' preferences are respected.
+- Native Settings and CLI schedule manual activation, recovery, previous-version
+  restoration and removal after logout, including when automatic updates are off.
+  Requests bind their targets, expose waiting/running/failed states and support
+  cancellation before critical work begins.
+- Independent native GNOME preference observation separates disabled workspace
+  intent from actual Shell health, with version/UID/session/boot-bound receipts.
+  Successful acceptance can complete online; recovery still waits for logout.
+- Stable owned systemd boot links, synchronous system-bus policy reload and
+  traversable installation directories support first login and version changes.
+  Busy timers preserve the owning transaction's status and retry normally.
+- Guarded release draft, publication, atomic channel promotion and metadata
+  renewal workflows preserve accepted bytes. Interactive key-setup tooling keeps
+  the offline root separate from the release key; production custody is not
+  provisioned by the repository.
+
 - Home now prioritizes apps over widgets at every size, with bounded search and
   quieter editing controls. The dock fits its content and separates navigation,
   running apps and contextual actions. Standalone settings are nonmodal so Home

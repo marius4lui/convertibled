@@ -21,9 +21,17 @@ mod tests {
             )]
         }
     }
-    struct Session(Arc<RwLock<Status>>);
+    struct Session(Arc<RwLock<Status>>, Arc<RwLock<Option<String>>>);
     #[zbus::interface(name = "org.freedesktop.login1.Session")]
     impl Session {
+        #[zbus(property)]
+        async fn class(&self) -> zbus::fdo::Result<String> {
+            self.1
+                .read()
+                .await
+                .clone()
+                .ok_or_else(|| zbus::fdo::Error::UnknownProperty("Class".into()))
+        }
         #[zbus(property)]
         async fn active(&self) -> bool {
             self.0.read().await.active
@@ -47,6 +55,7 @@ mod tests {
         tokio::time::timeout(std::time::Duration::from_secs(15), async {
             let state = Arc::new(RwLock::new(Status::default()));
             let authoritative = Arc::new(RwLock::new(Status::default()));
+            let class = Arc::new(RwLock::new(Some("user".to_owned())));
             let system = zbus::connection::Builder::session()
                 .unwrap()
                 .name("org.freedesktop.login1")
@@ -55,7 +64,7 @@ mod tests {
                 .unwrap()
                 .serve_at(
                     "/org/freedesktop/login1/session/test",
-                    Session(authoritative.clone()),
+                    Session(authoritative.clone(), class.clone()),
                 )
                 .unwrap()
                 .build()
@@ -103,6 +112,12 @@ mod tests {
                     .is_err()
             );
             authoritative.write().await.active = true;
+            for excluded in [Some("greeter"), Some("manager"), Some("background"), Some("user-early"), None] {
+                *class.write().await = excluded.map(str::to_owned);
+                assert!(proxy.call::<_, _, ()>("SetProfile", &("tablet",)).await.is_err());
+                assert!(!state.read().await.desired.tablet_workspace);
+            }
+            *class.write().await = Some("user".to_owned());
             assert!(
                 proxy
                     .call::<_, _, ()>("SetProfile", &("invalid",))

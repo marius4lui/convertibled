@@ -55,9 +55,20 @@ pub enum UpdateCommand {
     Check,
     Prepare,
     Status,
+    /// Install the prepared version after all graphical users log out.
+    #[command(alias = "request-activate")]
     Activate,
+    /// Queue recovery after all graphical users log out.
+    #[command(alias = "request-recover")]
     Recover,
+    /// Queue the retained previous version after graphical logout.
+    #[command(alias = "request-rollback")]
     Rollback,
+    /// Queue removal after graphical logout, retaining configuration and data.
+    #[command(alias = "request-uninstall")]
+    Uninstall,
+    /// Cancel waiting or failed maintenance; never interrupt a running switch.
+    CancelPending,
     Automatic {
         #[arg(value_parser=["on","off"])]
         value: String,
@@ -73,9 +84,11 @@ impl UpdateCommand {
             Self::Check => vec!["check"],
             Self::Prepare => vec!["prepare"],
             Self::Status => vec!["status"],
-            Self::Activate => vec!["activate"],
-            Self::Recover => vec!["recover"],
-            Self::Rollback => vec!["rollback"],
+            Self::Activate => vec!["request-activate"],
+            Self::Recover => vec!["request-recover"],
+            Self::Rollback => vec!["request-rollback"],
+            Self::Uninstall => vec!["request-uninstall"],
+            Self::CancelPending => vec!["cancel-pending"],
             Self::Automatic { value } => vec!["automatic", value],
             Self::Channel { value } => vec!["channel", value],
         }
@@ -94,6 +107,29 @@ mod tests {
     #[test]
     fn rejects_arbitrary_update_commands() {
         assert!(Args::try_parse_from(["convertiblectl", "update", "shell"]).is_err());
+    }
+    #[test]
+    fn maintenance_queues_only_fixed_verbs_without_arguments() {
+        for (verb, expected) in [
+            ("activate", "request-activate"),
+            ("request-activate", "request-activate"),
+            ("recover", "request-recover"),
+            ("request-recover", "request-recover"),
+            ("rollback", "request-rollback"),
+            ("request-rollback", "request-rollback"),
+            ("uninstall", "request-uninstall"),
+            ("request-uninstall", "request-uninstall"),
+            ("cancel-pending", "cancel-pending"),
+        ] {
+            let args = Args::try_parse_from(["convertiblectl", "update", verb]).unwrap();
+            let Command::Update { command } = args.command else {
+                panic!("Expected update")
+            };
+            assert_eq!(command.arguments(), [expected]);
+            assert!(
+                Args::try_parse_from(["convertiblectl", "update", verb, "/tmp/other"]).is_err()
+            );
+        }
     }
     #[test]
     fn rejects_zero_watch_and_invalid_profiles() {

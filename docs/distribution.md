@@ -23,6 +23,12 @@ State writes fsync content and parent directory before proceeding. A nonblocking
 flock serializes mutations on Linux. The active symlink may point only to a direct
 child of the versions directory; directory/state symlinks are rejected.
 
+Lock contention is a typed busy result. Scheduled update and deferred-install
+runs leave the owner's progress untouched and retry at the next timer tick.
+Interactive operations still report that another transaction is running.
+Neither path writes public status without owning the transaction lock; actual
+operation failures remain errors and are never classified by matching text.
+
 Bundles contain only regular files, a bounded schema-1 `manifest.json`, and the
 exact manifest file set. Extraction rejects links, traversal, duplicate names,
 unexpected roots, oversized expansion and digest/size mismatches. Required four
@@ -39,9 +45,27 @@ activation regardless of active/locked state; greeters do not count.
 
 Host integration uses an explicit fixed destination map. Links resolve through
 `current` and are journaled in `owned.json`; conflicting files are never replaced.
+Daemon/timer boot wants links are also manifest-owned and point to the fixed
+`/usr/lib/systemd/system` unit entries. Activation and explicit queued requests
+start the units without generating canonical version-pinned enable aliases.
+Legacy `/etc` aliases migrate only after their exact installed unit bytes match
+the version manifest; foreign or modified aliases stop activation before daemon
+quiescence. Wants links are replaced atomically after ownership is journaled.
+An administrator's manually removed boot link remains their choice when merely
+requesting a queued operation; that operation starts the timer for this boot.
+
+Activation and rollback synchronously reload `dbus.service` after installing or
+restoring system-bus policy, before starting the daemon. Fedora's notify-reload
+contract confirms policy loading; the system bus is never restarted. Removal
+reloads policy after deleting the owned entry. A reload failure fails activation
+and follows the existing recovery transaction.
+
 Removal checks original link ownership and retains later user modifications.
-The extension is installed system-wide but must be explicitly enabled by the
-installing user's GNOME session. The helper never changes another user's settings.
+The extension is installed system-wide. Explicit installer consent records the
+authenticated installing user's UID; a GNOME autostart enables the extension
+unprivileged at that user's next Wayland login and opens Settings once. A per-user
+completion token preserves subsequent disabling. Declining setup revokes only
+that user's pending consent. Other users opt in separately.
 
 `updates.json` defaults to explained automatic checking/preparation with an
 opt-out and explicit stable/preview channel. Schema-1 configuration is backed up
@@ -52,8 +76,10 @@ Activation journals backup/prepared/switching/selected/awaiting-shell phases,
 stops the daemon, selects the candidate, registers integration, restarts and
 checks service health. Failures roll back the binary reference and configuration.
 Interrupted nonterminal transactions recover conservatively at the next safe
-logout boundary. A first-login shell health receipt completes the transaction;
-missing/failed shell health causes a subsequent safe rollback.
+logout boundary. Requested workspace activation needs real authenticated Shell
+health. Explicitly declined or currently disabled workspaces use service-only
+acceptance; unknown update intent stays pending. Successful acceptance changes
+only the journal and can finish online. Binary recovery always waits for logout.
 
 Preparation loads only root-provisioned `trust.json`, verifies offline root
 keyring then channel metadata, persists monotonic counters, downloads/hashes and
@@ -62,9 +88,11 @@ Published version bytes are immutable: reuse with different metadata is rejected
 Normal settings never supply URLs, keys, destination paths or executable hooks.
 
 The isolated Python helper exposes fixed verbs: `status`, `check`, `prepare`,
-`install`, `activate`, `recover`, `rollback`, `automatic on|off`, `channel
-stable|preview`, and systemd-only `scheduled`. All mutations require effective
-root and a transaction lock. `status` reads a sanitized root-owned public JSON
+`offline-prepare`, `install`, `activate`, `recover`, `rollback`, `uninstall`,
+`request-activate`, `request-recover`, `request-rollback`, `request-uninstall`,
+`cancel-pending`, `automatic on|off`, `channel stable|preview`, and `scheduled`
+(normally invoked by systemd). All mutations require effective root and a
+transaction lock. `status` reads a sanitized root-owned public JSON
 snapshot; update keys, internal sessions and private logs are excluded.
 
 Polkit restricts the fixed helper to active-session administrator authentication.
@@ -77,14 +105,23 @@ not cryptographic attestation of GNOME extension code.
 Activation creates/verifies the fixed non-login `convertibled` service account
 and runs candidate `convertibled --check` before selecting it. Awaiting-shell
 transactions wait for the first observed graphical login; absence of a login
-alone does not roll back. Missing health after that session logs out triggers
-recovery, preserving normal GNOME while activation failure is investigated.
+alone does not roll back. A session that expects the workspace but lacks matching
+healthy evidence triggers safe recovery after logout. A user's explicit choice
+to disable the workspace is distinct from an enabled workspace failing to start.
 
 `uninstall` requires logout, validates every installed version against its owned
 manifest, stops/disables only project services, removes owned links and verified
 version files, and retains configuration/state by default. Added/modified files
 abort removal before service shutdown. No broad `/opt` or home-directory deletion
 is performed. The dedicated service account is retained for safe reinstall.
+
+Removal also handles verified preparation before successful activation and
+repeated removal. Each project unit is skipped only when a successful systemd
+query proves `not-found`, `inactive`, and an empty fragment path; query errors and
+failed stops of present units remain fatal. Canonical enable aliases and wants
+links are removed only when they target a fixed managed unit/current path or an
+exact manifest-validated installed version. Foreign links and regular files are
+retained with an error, including after a failed first installation.
 
 `scripts/release/bundle.py --bin-dir ... --extension-dir ... --output ...`
 assembles all four ELF binaries, compiled GNOME extension schemas, Python
@@ -136,7 +173,8 @@ The timer checks logout/recovery every two minutes while background network
 preparation is throttled to six hours; explicit check/prepare remains immediate.
 Activation revalidates prepared channel, accepted release and metadata freshness.
 Stale shell receipts are cleared before selecting a candidate; explicit failure
-receipts trigger safe rollback even if a short first session escaped polling.
+receipts for an expected workspace trigger safe rollback even if a short first
+session escaped polling. Unknown intent cannot be promoted to healthy acceptance.
 
 Disposable pipeline tests perform real Ed25519 verification, offline bounded
 reads, deterministic archive extraction and immutable candidate preparation.
@@ -148,7 +186,45 @@ owned integration, configuration backups and removal, with simulated service
 commands. They cover clean install/health/remove, failed-service rollback and
 preserving added user files. Windows explicitly skips POSIX-only cases.
 
+## Desktop activation, recovery and removal requests
+
+The privileged helper accepts fixed `request-activate`, `request-recover`,
+`request-rollback`, and `request-uninstall` verbs. These persist a request bound
+to the currently selected version, then start the existing update timer.
+Activation additionally binds the prepared candidate and channel and rechecks
+signatures, freshness and candidate identity at execution. **Install after logout**
+and `convertiblectl update activate` provide this explicit operation while
+automatic updates remain off. `cancel-pending` cancels a waiting
+or failed request; an interrupted critical transaction must recover first.
+Immediate `activate`, `recover`, `rollback`, and `uninstall` remain available
+for offline administrator recovery after logout.
+
+The timer processes explicit requests before automatic preparation, even when
+automatic updates are disabled. Graphical sessions, including locked sessions,
+block version changes and removal. A login/admission race defers safely. Failures
+remain visible without retry loops; repeating the same request explicitly retries
+it. Existing admission-marker crash recovery still runs without retrying the
+failed requested action. A different selected version invalidates the request
+and requires review. Waiting or failed requests continue observing an already
+activated version's acceptance; they cannot prevent its first-login check or
+safe recovery. A changed prepared candidate or channel also requires review.
+Public status includes `pending_action` (`activate`, `recover`, `rollback`,
+`uninstall`, or null) and `pending_state`; queued phases are
+`waiting_for_logout` or `action_failed`, with a bounded failure explanation.
+Removal consumes the request after its durable recovery journal is written,
+preventing a later reinstall from inheriting an old removal request.
+
 ## Trust bootstrap and installation
+
+The reviewed `sh installer/install` entry point requests one administrator
+authorization for bootstrap when started by a normal user. Deferred activation
+uses root-owned scheduling and first-login setup runs unprivileged; neither
+requires another interactive authorization. Release packaging supplies
+`installer/bootstrap-trust.json` containing public trust only. Bootstrap validates it through the updater's
+existing key and HTTPS URL rules, provisions only absent host trust, and never
+replaces existing administrator trust. Failed release preparation leaves update
+preferences unchanged. This removes manual JSON authoring from a provisioned
+installer; authenticating the initial installer distribution remains required.
 
 There is no production release key or downloadable supported release yet.
 An administrator must independently authenticate the initial reviewed installer
@@ -159,16 +235,56 @@ the repository; only public PEM keys belong in `/etc/convertibled/trust.json`.
 placeholders. Review actual immutable artifact/channel URLs before provisioning
 that root-owned 0600 file. Never use curl-pipe-to-root installation.
 
-From a TTY after every graphical user logs out, run the independently verified
-source's `sudo sh installer/install` (or `--no-automatic-updates`). It explains
-the automatic default, prepares only authenticated assets, then activates the
-version. First login loads the installed session unit. Enable
-`convertibled@convertibled.org` for that user through GNOME Extensions or run
+Run `sh installer/install` from the independently authenticated installer
+distribution (or pass `--no-automatic-updates`). It requests administrator
+authorization, explains the automatic default, prepares authenticated assets
+and schedules activation after ordinary graphical logout or reboot. A fixed
+root-owned timer executes only the verified candidate's bootstrap code. It
+reauthenticates the prepared version and uses the existing admission interlock;
+no session is forcibly closed. First login loads the installed session unit.
+Accept the installer's workspace question or pass `--enable-workspace` to enable
+the workspace automatically for your account at that login. `--no-workspace`
+leaves it disabled. For later manual opt-in, use GNOME Extensions or run
 `sh /opt/convertibled/current/installer/finish-user.sh`. This explicit unprivileged
 onboarding verifies GNOME 50/Wayland and changes only the current user's project
 extension. Other users' settings are untouched. Reference-device first-login
 acceptance is still required. Before logout/removal, use the same script with
 `--disable`; the root remover never edits unrelated user preferences.
+
+The first installation waits for the consenting user's graphical login and
+matching per-UID daemon health receipt. Another user's session or receipt cannot
+prematurely complete or fail that acceptance. Explicitly declining first-login
+workspace setup instead completes installation after the real daemon checks,
+recording `shell_acceptance: not_requested`; it does not claim Shell acceptance.
+An absent legacy consent record is not an explicit decline. Manual opt-in remains
+available later. A matching healthy receipt can complete first-login acceptance
+while the user works; it does not require a second logout.
+
+Updates obtain current per-user enablement from the independent native session
+observer, not from old onboarding consent. A bounded, strictly typed intent
+receipt used for acceptance must match the candidate version, UID, logind session
+and current kernel boot ID.
+Enabled intent requires actual matching healthy Shell evidence; missing or failed
+health triggers recovery only after graphical logout. Explicitly disabled intent
+completes service-only acceptance with `shell_acceptance: not_requested`; no
+healthy receipt is fabricated. Unknown or legacy unbound current-session intent
+stays pending. Current-boot observed users are evaluated separately, so one
+disabled user cannot hide another user's enabled failure. Later authenticated
+sessions can supersede the same user's earlier trial; other users' unresolved
+current-boot trials remain. Reboot retires old observations without accepting old
+positive health; explicit matched failure remains actionable until fresh intent.
+See [runtime acceptance](runtime.md) for stale and missed-session handling.
+Successful journal-only acceptance
+can complete online, while rollback and binary changes always require logout.
+
+The temporary `convertibled-install`
+service/timer are journaled before creation and removed only while their contents
+still match project ownership. Logout or
+admission contention keeps the timer waiting; actual activation errors publish
+status and stop retries. An explicit installer rerun can authorize one retry of
+a previously rolled-back candidate. `bootstrap.py --cancel-install`, run with
+administrator privileges, cancels owned scheduling and retains verified files
+and configuration. Uninstall also removes owned pending bootstrap scheduling.
 
 Subsequent fixed helper commands use
 `pkexec /opt/convertibled/current/installer/cli.py COMMAND`. Status is unprivileged:
@@ -248,6 +364,29 @@ private journals/trust remain0600. They import no versioned project code. Change
 stable guard bytes require an explicit future migration; updates cannot silently
 replace the admission contract. First installation establishes the gate before
 selection. Active, numerically validated user managers receive daemon-reload.
+The unprivileged admission unit retains `NoNewPrivileges` but deliberately avoids
+`ProtectSystem`/`ProtectHome`: user-manager filesystem sandboxing implicitly creates
+a user namespace that maps host root to overflow UID65534 on Fedora44. The guard
+must see and verify actual host UID0; treating overflow ownership as trusted
+would also trust unrelated unmapped owners. Its read-only descriptor still
+rejects foreign owners, symlinks, nonregular files and group/world-writable locks.
+Local user-manager calls resolve each validated UID through the account database
+and use `runuser` with a fixed, cleared environment and that UID's runtime D-Bus
+socket. No user shell runs, including for the greeter's non-login account. A
+failed reload is ignored only after systemd confirms that manager is stopped or
+failed; errors from a still-active or ambiguous manager remain failures.
+The root updater uses `ProtectHome=tmpfs` with only `/run/user` bound read-only
+back into its filesystem namespace. This keeps `/home` and `/root` hidden while
+allowing connections to existing user-manager sockets; `ProtectHome=yes` would
+hide those sockets too. The runtime binding permits socket communication, not
+filesystem writes. Private state keeps umask `0077`, and the remaining updater
+sandbox restrictions remain in force.
+
+Logind snapshots restart at most three times when the exact C-locale error proves
+a listed session vanished before property lookup. Every retry re-enumerates the
+whole inventory, so a concurrent new login is retained. Repeated churn produces
+a conservative blocking observation and the next scheduled check retries;
+unrelated command failures never count as logout.
 
 A persistent root-owned admission.pending marker survives updater interruption.
 The guard releases SH and retries while this marker exists, so recovery can take
@@ -267,3 +406,36 @@ GDM or prove the distribution's physical session lifecycle. Guard failure or an
 unrecovered marker intentionally prevents a new supported Shell start; recovery
 from a TTY remains available. Direct GNOME Shell processes, custom user units and
 other startup paths can bypass this gate and are outside the supported contract.
+
+## Preparation across filesystem boundaries
+
+Verified archives download into exclusive temporary storage beneath the state
+directory. Extraction uses a separate exclusive temporary directory directly
+under `versions`, so the final candidate rename stays on the destination
+filesystem even when Fedora places `/var` and `/opt` on different mounts or
+btrfs subvolumes. Preparation never changes the active version reference.
+Normal success/failure removes only this invocation's temporary directories;
+unrelated staging entries, symlink destinations and late version collisions are
+preserved or rejected. A real POSIX test prepares a signed bundle with state and
+versions on different device IDs, alongside corruption and collision cases.
+
+Preparation journals creation intent and each temporary directory's device/inode
+identity before extraction. A following preparation or removal first validates
+and cleans that exact workspace. A retained archive must match the authenticated
+release hash before partial extracted files can be compared with its exact byte
+prefixes. Unknown entries, symlinks, hard links, modified bytes, changed ownership
+or replaced directories cause refusal without deleting retained evidence. Only
+empty directories at the journaled creation gap can be removed without a recorded
+inode. Tests kill a real subprocess during extraction and immediately after
+publication, then verify successful recovery and preservation of foreign files.
+
+## Public integration directory permissions
+
+The privileged updater keeps its private state umask. Missing host integration
+directories are created as `0755` under a narrowly scoped umask `022`, restored even
+when creation fails. Existing directory modes remain unchanged. An existing
+parent without public read/traversal permission causes an actionable error with
+its exact path instead of silently installing unreadable user units. Review that
+directory's ownership and intended permissions; do not recursively chmod system
+directories. Previously created directories have no recorded ownership proof,
+so the installer does not automatically widen their permissions.

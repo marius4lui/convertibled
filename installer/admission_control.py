@@ -18,6 +18,26 @@ STABLE = {
 }
 
 
+def user_name(uid):
+    import pwd
+    try:
+        return pwd.getpwuid(uid).pw_name
+    except KeyError as exc:
+        raise UpdateError("User-manager account no longer exists") from exc
+
+
+def user_manager(uid, arguments):
+    if type(uid) is not int or not 0 <= uid < 4294967295:
+        raise UpdateError("Unexpected user-manager identity")
+    name = user_name(uid)
+    if not isinstance(name, str) or not name:
+        raise UpdateError("Unexpected user-manager account")
+    return ["/usr/bin/runuser", "-u", name, "--", "/usr/bin/env", "-i",
+            "PATH=/usr/bin:/usr/sbin", f"XDG_RUNTIME_DIR=/run/user/{uid}",
+            f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus",
+            "/usr/bin/systemctl", "--user", *arguments]
+
+
 def reload_users(run):
     result = run(["loginctl", "list-users", "--json=short", "--no-pager"])
     if result is None:  # Injectable service fake; command() always returns text.
@@ -34,7 +54,13 @@ def reload_users(run):
             continue
         seen.add(uid)
         if run(["systemctl", "show", f"user@{uid}.service", "-p", "ActiveState", "--value"]) == "active":
-            run(["systemctl", "--user", f"--machine={uid}@.host", "daemon-reload"])
+            try:
+                run(user_manager(uid, ["daemon-reload"]))
+            except UpdateError:
+                # A manager may exit after logind enumeration. Only a confirmed
+                # stopped/failed manager may be skipped; active errors stay fatal.
+                if run(["systemctl", "show", f"user@{uid}.service", "-p", "ActiveState", "--value"]) not in ("inactive", "failed"):
+                    raise
 
 
 def guard_process(pid, uid):
@@ -54,8 +80,8 @@ def waiting_at_gate(layout, session, run):
     if not uid.isascii() or not uid.isdecimal() or not 0 <= int(uid) < 4294967295:
         return False
     def properties(unit):
-        text = run(["systemctl", "--user", f"--machine={uid}@.host", "show", unit,
-                    "-p", "ActiveState", "-p", "SubState", "-p", "MainPID", "-p", "FragmentPath", "-p", "DropInPaths", "-p", "Job"])
+        text = run(user_manager(int(uid), ["show", unit,
+                    "-p", "ActiveState", "-p", "SubState", "-p", "MainPID", "-p", "FragmentPath", "-p", "DropInPaths", "-p", "Job"]))
         return dict(line.split("=", 1) for line in text.splitlines() if "=" in line)
     try:
         shell = properties("org.gnome.Shell@user.service")

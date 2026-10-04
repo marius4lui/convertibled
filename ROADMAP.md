@@ -25,10 +25,16 @@ project-owned installer/updater. See [decisions](docs/decisions.md).
 - [x] Validated per-profile native rotation/OSK configuration and reset
 - [x] Ed25519 release metadata and independently root-signed release keyring
 - [x] Bounded verified downloads/extraction and immutable version directories
+- [x] Authenticated shell bootstrap with one administrator authorization and deferred completion
+- [x] Explicit per-user first-login setup, declined-workspace installation and later opt-in
 - [x] Logout-safe activation, journal recovery, previous version and owned removal
 - [x] Configurable automatic preparation and explicit stable/preview choice
+- [x] Native Settings and CLI manual activation after logout with automatic updates off
+- [x] Queued recovery, rollback and removal with explicit confirmation and safe cancellation
+- [x] Independent GNOME workspace intent, session/boot-bound health and online acceptance
 - [x] Linux/Fedora CI, dependency review and isolated native startup checks
 - [x] Internal candidate bundles and guarded manual signing/draft workflow
+- [x] Guarded publication, atomic channel promotion, metadata renewal and offline key-setup tooling
 
 Implementation details and current caveats live in [runtime](docs/runtime.md),
 [shell](docs/shell.md), [settings](docs/settings.md) and

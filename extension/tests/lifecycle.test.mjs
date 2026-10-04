@@ -1,4 +1,4 @@
-import {main,timers,seat,settings} from './native-env.mjs';
+import {main,timers,seat,settings,Emitter} from './native-env.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 const {default:Extension}=await import('../dist/extension.js');
@@ -87,4 +87,55 @@ test('tablet desktop stays in the window scene and yields chrome to native Overv
     extension.status.desired.tablet_workspace=false;extension.reconcile();
     assert.equal(extension.dockStrut,false);assert.equal(extension.home.actor.visible,false);
     extension.disable();assert.equal(main.overview.signals.size,0);
+});
+
+test('autohide keeps Home favorites through synchronous and delayed focus loss until app focus returns', () => {
+    const extension=new Extension();extension.enable();extension.monitor=main.layoutManager.monitors[0];
+    const workspace=global.workspace_manager.get_active_workspace();
+    const applications=[];
+    const makeApp=()=>Object.assign(new Emitter(),{
+        minimized:false,get_monitor:()=>0,get_window_type:()=>0,get_transient_for:()=>null,
+        is_override_redirect:()=>false,is_skip_taskbar:()=>false,is_above:()=>false,
+        get_workspace:()=>workspace,can_minimize:()=>true,
+        minimize(){this.minimized=true;this.emit('notify::minimized');
+            global.display.focus_window=applications.find(window=>!window.minimized)??null;
+            global.display.emit('notify::focus-window');},
+        unminimize(){this.minimized=false;this.emit('notify::minimized');},
+    });
+    const app=makeApp(),second=makeApp();applications.push(app,second);
+    extension.desktopWindows=()=>applications;
+    // Keep workspace identity stable for the real DesktopController boundary.
+    const previousWorkspace=global.workspace_manager.get_active_workspace;
+    global.workspace_manager.get_active_workspace=()=>workspace;
+    try {
+        global.display.focus_window=app;
+        settings.set_boolean('dock-autohide',true);
+        extension.status={schema_version:1,profile:'tablet',desired:{tablet_workspace:true,rotation_lock:false}};
+        extension.reconcile();assert.equal(extension.dock.strip.visible,false);
+        extension.navigate('home');
+        assert.equal(app.minimized,true);assert.equal(second.minimized,true);
+        assert.equal(extension.dock.strip.visible,true);
+        // Mutter may notify after navigation returns as well as during minimize.
+        global.display.emit('notify::focus-window');
+        assert.equal(extension.dock.strip.visible,true);
+        settings.set_boolean('dock-autohide',false);settings.set_boolean('dock-autohide',true);
+        assert.equal(extension.dock.strip.visible,true);
+        // A stale reference to the now-minimized app is not new app focus.
+        global.display.focus_window=app;global.display.emit('notify::focus-window');
+        assert.equal(extension.dock.strip.visible,true);
+        global.display.focus_window={minimized:false,get_monitor:()=>1};
+        global.display.emit('notify::focus-window');
+        assert.equal(extension.dock.strip.visible,true);
+        assert.equal(extension.dock.navigation.get('home').checked,true);
+        global.display.focus_window=app;
+        app.unminimize();global.display.emit('notify::focus-window');
+        assert.equal(extension.dock.strip.visible,false);
+        assert.equal(extension.dock.navigation.get('home').checked,false);
+        settings.set_boolean('dock-autohide',false);
+        global.display.emit('notify::focus-window');
+        assert.equal(extension.dock.strip.visible,true);
+    } finally {
+        extension.disable();global.workspace_manager.get_active_workspace=previousWorkspace;
+        global.display.focus_window=null;settings.set_boolean('dock-autohide',false);
+    }
 });

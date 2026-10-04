@@ -86,10 +86,23 @@ def extract(archive, destination, expected_version):
                 while block := source.read(65536):
                     digest.update(block)
                     target.write(block)
+                if digest.hexdigest() != info["sha256"]:
+                    raise UpdateError("Bundle file hash mismatch")
+                path.chmod(0o755 if info["executable"] else 0o644)
                 target.flush()
                 os.fsync(target.fileno())
-            if digest.hexdigest() != info["sha256"]:
-                raise UpdateError("Bundle file hash mismatch")
-            path.chmod(0o755 if info["executable"] else 0o644)
-        (destination / "manifest.json").write_bytes(__import__('json').dumps(contract).encode())
+        index_path = destination / "manifest.json"
+        with index_path.open("xb") as target:
+            target.write(__import__('json').dumps(contract).encode())
+            index_path.chmod(0o644)
+            target.flush()
+            os.fsync(target.fileno())
+        # systemd prepares updates with UMask=0077. Published code must still
+        # be traversable by the service account and GNOME users. Keep the outer
+        # private staging directory private until Manager publishes this tree.
+        from installer.storage import sync_directory
+        directories = [destination] + [path for path in destination.rglob("*") if path.is_dir()]
+        for directory in sorted(directories, key=lambda path: len(path.parts), reverse=True):
+            directory.chmod(0o755)
+            sync_directory(directory)
         return contract

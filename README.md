@@ -1,103 +1,102 @@
 # convertibled
 
-Native-feeling tablet experiences for Linux convertibles.
+A native tablet workspace for Linux convertibles.
 
-convertibled is an experimental open-source convertible workspace: a hardware
-daemon, desktop integration, a settings application, a diagnostic CLI, and a
-project-owned installer and updater.
+Fold your laptop and keep working: Home, application search, a floating dock,
+live window previews and portrait-aware split view, integrated into GNOME Shell.
+Native settings, hardware status and a project-owned installer and updater
+complete the product.
 
-**Status: active implementation; no public release or physical acceptance.**
-The complete product and recovery paths must pass acceptance before publication.
+![convertibled Home with application grid, local widgets and floating dock](docs/images/home.png)
 
-## Product goals
+*The actual GNOME Shell extension in the isolated native demo, shown in German.
+Virtual hardware does not establish physical device support.*
 
-- Move naturally between laptop and folded use without interrupting work.
-- Preserve focus, window placement, user preferences, and external inputs.
-- Provide touch-friendly controls that belong to the target desktop.
-- Explain detected hardware, requested behavior, actual behavior, and failures.
-- Own installation, updates, recovery, and removal end to end.
+**Experimental implementation. No supported public release is available yet.**
+The first acceptance target is **Fedora 44 · GNOME 50 · Wayland · x86_64** on
+**ThinkPad X1 Yoga Gen 8**. Other systems are not supported by the installer.
+See [release gates](ROADMAP.md) for the remaining device and recovery checks.
 
-The selected first target is Fedora 44, GNOME 50 and Wayland on ThinkPad X1
-Yoga Gen 8 (x86_64). This is an acceptance target, not tested hardware support.
+## A desktop that fits folded use
 
-## Components
+- **Home and search:** launch applications, edit favorites and arrange local
+  clock, battery and quick-action widgets.
+- **Touch navigation:** a floating dock, visible Home/Overview controls and
+  bottom-edge gestures after explicit touchscreen setup.
+- **Your windows:** live previews and half/third/two-thirds split layouts,
+  stacked vertically in portrait with application minimum sizes respected.
+- **Native GNOME:** GTK4/libadwaita settings, light/dark appearance and
+  German/English text. GNOME continues to own login, locking, notifications,
+  the on-screen keyboard and display rotation.
+- **Clear controls:** automatic or manual profiles, rotation lock, hardware
+  capabilities and separate requested/applied status.
+- **Owned lifecycle:** signed updates, preparation in the background,
+  activation after logout, previous-version recovery and careful removal.
 
-| Component | Responsibility |
+Home lives behind application windows. Folding preserves the focused app;
+the Home button returns you to the workspace. External displays retain their
+desktop behavior. Internal input suppression and automatic scaling remain off.
+Automatic detection distinguishes laptop, folded and unknown; stand and tent
+are manual profiles.
+
+![Native live window overview with two demonstration applications](docs/images/overview.png)
+
+*Native demo overview with sample windows; appearance evidence, not touch or
+performance acceptance. [Run the native demo](demo/README.md).*
+
+## Get started
+
+There is no public download to install today. Internal CI candidates are for
+development and acceptance, and do not carry production release trust.
+
+The project ships its own installer and signed release bundles. Start with
+the [installation and first-run guide](docs/getting-started.md) for the
+verified-installer procedure, platform requirements and onboarding. Production
+trust must be established before installation; a development checkout alone
+is not an installable trusted release.
+
+Once installed, open **convertibled Settings**, or inspect your session:
+
+```sh
+convertiblectl status
+convertiblectl capabilities
+convertiblectl mode auto
+```
+
+Updates check and prepare automatically by default. **Settings → Updates**
+shows the actual status and lets you change that preference. A prepared version
+activates only after all affected graphical users log out; locking is not logout.
+See [updates and removal](docs/getting-started.md#updates-and-removal) and
+[troubleshooting](docs/troubleshooting.md).
+
+## Build and contribute
+
+The product uses Rust, GTK4/libadwaita and TypeScript/GJS. On a Linux development
+host with the [required tools](docs/development.md#executable-development-checks):
+
+```sh
+cargo build --workspace --release --locked
+cd extension
+npm ci
+npm run build
+```
+
+Building creates local artifacts; it does not install services or change GNOME.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for checks, focused changes and useful
+bug reports. [CI and releases](docs/releases.md) explains candidate artifacts,
+signing and publication gates.
+
+## Learn more
+
+| Topic | Guide |
 | --- | --- |
-| `convertibled` | Hardware discovery, observations, mode policy, authorized hardware actions |
-| `convertibled-session` | Active-session coordination and desktop-specific actions |
-| Settings app | Native settings, profiles, hardware diagnostics, update experience |
-| `convertiblectl` | Status, manual modes, configuration validation, diagnostics |
-| Installer/updater | Versioned installation, verified updates, rollback, removal |
+| Install, first login, updates and removal | [Getting started](docs/getting-started.md) |
+| Missing sensors, workspace or updates | [Troubleshooting](docs/troubleshooting.md) |
+| Profiles, configuration and CLI | [Configuration](docs/configuration.md) |
+| Hardware and desktop acceptance | [Support](docs/support.md) |
+| Product scope and remaining work | [Product](docs/product.md) · [Roadmap](ROADMAP.md) |
+| Implementation and trust model | [Architecture](docs/architecture.md) · [Distribution](docs/distribution.md) |
+| All specifications and implementation guides | [Documentation index](docs/README.md) |
 
-Rust implements the daemon, session service, CLI and GTK4/libadwaita settings.
-A TypeScript/GJS GNOME Shell extension adds Home, dock, application search, live
-window overview, split view, local widgets and touchscreen navigation.
-
-## Tablet experience
-
-Tablet behavior is a core product feature. It includes large touch targets,
-accessible controls, predictable rotation, on-screen keyboard coordination,
-and a quick way back to automatic or laptop mode. Desktop changes require
-explicit backend capabilities. convertibled cannot make every third-party
-application touch-friendly.
-
-The tablet workspace is integrated directly into GNOME without an extra
-fullscreen app. GNOME retains OSK, login, locking, authentication and notifications.
-External displays retain desktop behavior. Automatic scaling stays disabled.
-
-## Detection model
-
-Hardware observations and user profiles are separate. The initial automatic
-postures are `laptop`, `folded`, and `unknown`. `tablet`, `stand`, and `tent`
-are intended profiles; automatic differentiation requires validated sensor
-evidence. Screen orientation alone is not sufficient.
-
-## Installation and updates
-
-There are no public release binaries yet.
-Distribution uses a project-owned release bundle, installer, and
-updater. RPM, COPR, DEB, and distro repositories are not the planned delivery
-path. Updates will verify signatures, preserve configuration, and support
-recovery to a previous version. Updates automatically check and prepare by default, with an explained opt-out.
-Activation waits for affected graphical sessions to log out; locking is not logout.
-
-## Documentation
-
-Start with [the documentation index](docs/README.md).
-
-- [Product scope](docs/product.md)
-- [Architecture](docs/architecture.md)
-- [Tablet UX](docs/tablet-ux.md)
-- [Hardware and desktop support](docs/support.md)
-- [Configuration and CLI](docs/configuration.md)
-- [Installation and updates](docs/install-updates.md)
-- [Release process](docs/releases.md)
-- [Verification strategy](docs/testing.md)
-- [Development and batch rules](docs/development.md)
-- [Decisions and open questions](docs/decisions.md)
-- [Roadmap](ROADMAP.md)
-
-## Contributing
-
-Read [CONTRIBUTING.md](CONTRIBUTING.md). Coding agents must first read
-[AGENTS.md](AGENTS.md) and its mandatory documentation. Small, reviewable
-batches and truthful validation reports are required.
-
-## Security and license
-
-See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
+Report vulnerabilities through [SECURITY.md](SECURITY.md).
 Licensed under [MIT](LICENSE).
-
-## Implementation guides
-
-- [Rust runtime and CLI](docs/runtime.md)
-- [GNOME Shell workspace](docs/shell.md)
-- [Native settings](docs/settings.md)
-- [Installer, updater and bootstrap](docs/distribution.md)
-- [Physical acceptance records](docs/acceptance/README.md)
-- [Interactive Windows scenario demo](demo/README.md)
-
-See the single implementation PR and its CI for current integration evidence.
-Local Windows tests cover portable models; Fedora/GNOME checks and physical
-reference-device acceptance are separate evidence layers.

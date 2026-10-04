@@ -50,6 +50,42 @@ impl Strings {
             "disabled" => self.text("Disabled", "Deaktiviert"),
             "unchanged" => self.text("Unchanged", "Unverändert"),
             "awaiting_shell" => self.text("Waiting for next login", "Wartet auf nächste Anmeldung"),
+            "waiting_for_logout" | "waiting" => self.text(
+                "Waiting for all graphical users to log out",
+                "Wartet auf die Abmeldung aller grafischen Benutzer",
+            ),
+            "action_failed" => self.text(
+                "Scheduled action failed — review details",
+                "Geplante Aktion fehlgeschlagen — Details prüfen",
+            ),
+            "running" => self.text(
+                "Applying scheduled action",
+                "Geplante Aktion wird ausgeführt",
+            ),
+            "uninstall" => self.text("Remove convertibled", "convertibled entfernen"),
+            "pending_intent" => {
+                self.text("Waiting for desktop check", "Desktop-Prüfung ausstehend")
+            }
+            "verified" => self.text(
+                "Enabled workspace reported healthy",
+                "Aktivierter Workspace hat Bereitschaft bestätigt",
+            ),
+            "not_requested" => self.text(
+                "Workspace not requested; services checked",
+                "Workspace nicht angefordert; Dienste geprüft",
+            ),
+            "activate" => self.text(
+                "Install prepared version",
+                "Vorbereitete Version installieren",
+            ),
+            "rollback" => self.text(
+                "Restore previous version",
+                "Vorherige Version wiederherstellen",
+            ),
+            "recover" => self.text(
+                "Recover interrupted transaction",
+                "Unterbrochene Transaktion wiederherstellen",
+            ),
             "complete" => self.text("Complete", "Abgeschlossen"),
             "rolled_back" => self.text(
                 "Previous version restored",
@@ -109,6 +145,9 @@ mod tests {
         let de = Strings::for_locale("de_DE");
         assert_eq!(de.value("failed"), "Fehlgeschlagen");
         assert_eq!(de.value("true"), "Ja");
+        assert_eq!(de.value("activate"), "Vorbereitete Version installieren");
+        assert_eq!(de.value("pending_intent"), "Desktop-Prüfung ausstehend");
+        assert!(de.value("not_requested").contains("nicht angefordert"));
         assert_eq!(de.value("specific device error"), "specific device error");
     }
 

@@ -25,6 +25,17 @@ Use disposable Linux environments for integration. Avoid live host mutation
 as a substitute for an isolated test. Rust host checks on Windows do not prove
 Linux device and desktop behavior.
 
+Archive permission tests use the update service's actual private `0077` umask.
+The verified candidate has traversable 0755 directories, executable 0755 binaries
+and readable 0644 assets/manifest while its outer staging directory stays private.
+File content, modes and directory entries are synced before atomic publication.
+
+Icon integration tests rebuild a disposable hicolor cache with the actual GTK
+utility under the updater's private umask, retaining unrelated icons and public
+cache readability. Where PyGObject/GTK4 are available, fresh headless icon-theme
+lookups reproduce the stale-cache miss and verify discovery after refresh.
+These tests do not modify the host icon cache or replace rendered desktop review.
+
 ## Physical acceptance checklist
 
 - [ ] Laptop → folded → laptop; desired/applied state agrees
@@ -54,6 +65,10 @@ Reference-platform CI builds on Fedora 44 and starts a nested GNOME 50 Shell
 with software rendering to exercise extension enable/disable lifecycle. A
 virtual monitor deliberately does not impersonate the integrated touchscreen;
 this cannot mark physical gestures, display assignment or performance accepted.
+
+The [full Fedora VM lifecycle record](testing-vm.md) separately documents real
+systemd/GDM installation, logout, update and next-login evidence, fixture hashes,
+and its remaining physical limitations.
 
 ## Documentation checks
 

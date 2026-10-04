@@ -64,9 +64,12 @@ Update opt-out and stable/preview selection require an explicit save. Existing
 system values load before saving is enabled; partial save failures re-read the
 actual preferences rather than pretending the entire change was applied.
 
-Recovery and previous-version requests use native confirmation dialogs with
-Cancel as the default. The helper still enforces logout requirements; an error
-is displayed instead of forcing the user's current graphical session to stop.
+Recovery, previous-version restoration and removal use native confirmation
+dialogs with Cancel as the default. The helper queues the confirmed action for
+all graphical users' logout, even when automatic updates are off. Settings shows
+the pending action and distinguishes waiting from failure; a waiting or failed
+request can be cancelled before a critical transaction starts. Removal retains
+configuration and personal data. No action forcibly closes a session.
 
 Desktop launch metadata and a project-owned scalable icon live under `data/`.
 The installer owns their installation/removal; settings does not register itself
@@ -94,3 +97,24 @@ Overview places the selected profile and confirmed workspace summary first,
 then groups device observations, workspace state and expandable rotation/OSK
 outcomes. Unavailable sessions hide stale detail groups and retain retry.
 Actions use native suggested-action styling and at least 44-pixel height.
+
+Updates includes **Install after logout**, with a native confirmation and fixed
+`request-activate` helper verb. It explicitly schedules the authenticated prepared
+version even when automatic updates are off, without changing that preference.
+All graphical users must log out themselves. The public scheduled action is
+translated separately from the transaction result; changed candidates/channels,
+expired metadata and failed activation require review rather than silent retry.
+The separate **Desktop check** row distinguishes a pending desktop check,
+actual enabled-workspace health, and a workspace that was not
+requested. A services-only success never claims Shell health.
+
+Desktop-check status is exposed only while awaiting Shell acceptance or after a
+completed transaction. Rollback, removal and other transaction phases clear that
+public row, so a retired candidate cannot appear to be awaiting a desktop check.
+The private transaction journal retains its original acceptance evidence.
+
+A waiting or failed maintenance request does not suspend the installed version's
+desktop acceptance check. Successful health can settle while a user is logged in;
+failed health can recover after logout. The failed requested action itself is
+never retried automatically. A recovery that changes the installed version makes
+an older activation request require review again.
