@@ -8,6 +8,7 @@ from .storage import read, atomic, sync_directory
 from updater.archive import manifest
 from updater.model import UpdateError, version
 from .admission_control import exclusive, reload_users, pending
+from .desktop_cache import refresh_icons
 
 UNITS = {
     "convertibled-update.timer": "timers.target.wants",
@@ -124,6 +125,7 @@ def _uninstall(layout, run, sessions):
     clear_pending(layout)
     stop_units(layout, run, verified_versions)
     remove(layout, preserve_admission=True)
+    refresh_icons(layout, run)
     run(["systemctl", "reload", "dbus.service"])
     reload_users(run)
     layout.current.unlink(missing_ok=True)

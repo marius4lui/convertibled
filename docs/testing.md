@@ -30,6 +30,12 @@ The verified candidate has traversable 0755 directories, executable 0755 binarie
 and readable 0644 assets/manifest while its outer staging directory stays private.
 File content, modes and directory entries are synced before atomic publication.
 
+Icon integration tests rebuild a disposable hicolor cache with the actual GTK
+utility under the updater's private umask, retaining unrelated icons and public
+cache readability. Where PyGObject/GTK4 are available, fresh headless icon-theme
+lookups reproduce the stale-cache miss and verify discovery after refresh.
+These tests do not modify the host icon cache or replace rendered desktop review.
+
 ## Physical acceptance checklist
 
 - [ ] Laptop → folded → laptop; desired/applied state agrees

@@ -71,3 +71,12 @@ class SessionTests(unittest.TestCase):
                 with self.assertRaisesRegex(UpdateError, "disk space"):
                     preflight(layout, 1024)
             self.assertEqual(list(layout.versions.iterdir()), [])
+
+    def test_icon_cache_tool_is_required_before_preparation(self):
+        with tempfile.TemporaryDirectory() as root:
+            layout = Layout(root)
+            layout.initialize()
+            with patch("installer.platform.platform.freedesktop_os_release", return_value={"ID": "fedora", "VERSION_ID": "44"}), patch("installer.platform.platform.system", return_value="Linux"), patch("installer.platform.platform.machine", return_value="x86_64"), patch("installer.platform.command", return_value="GNOME Shell 50.0"), patch("installer.platform.shutil.which", side_effect=lambda tool: None if tool == "/usr/bin/gtk-update-icon-cache" else "/usr/bin/tool"):
+                with self.assertRaisesRegex(UpdateError, "gtk-update-icon-cache"):
+                    preflight(layout, 1024)
+            self.assertEqual(list(layout.versions.iterdir()), [])

@@ -60,7 +60,7 @@ def preflight(layout, required_space):
         raise UpdateError("Requires Fedora 44 x86_64")
     if not command(["gnome-shell", "--version"]).startswith("GNOME Shell 50"):
         raise UpdateError("Requires GNOME Shell 50")
-    for tool in ("python3", "openssl", "systemctl", "loginctl", "pkexec", "glib-compile-schemas", "/usr/bin/runuser", "/usr/bin/env", "/usr/bin/systemctl"):
+    for tool in ("python3", "openssl", "systemctl", "loginctl", "pkexec", "glib-compile-schemas", "/usr/bin/runuser", "/usr/bin/env", "/usr/bin/systemctl", "/usr/bin/gtk-update-icon-cache"):
         if shutil.which(tool) is None:
             raise UpdateError("Missing prerequisite: " + tool)
     if shutil.disk_usage(layout.versions).free < required_space + 128 * 1024 * 1024:

@@ -5,6 +5,7 @@ from .integration import install, remove
 from .platform import command, graphical_sessions
 from updater.model import UpdateError, version
 from .admission_control import admitted, reload_users, pending, waiting_at_gate
+from .desktop_cache import refresh_icons
 
 
 class Transaction:
@@ -70,6 +71,7 @@ class Transaction:
             self.layout.select(candidate)
             self.record(value, "selected")
             install(self.layout)
+            refresh_icons(self.layout, self.run)
             self.run(["systemctl", "daemon-reload"])
             self.run(["systemctl", "reload", "dbus.service"])
             reload_users(self.run)
@@ -113,6 +115,7 @@ class Transaction:
             self.layout.select(previous)
             restore(self.layout)
             install(self.layout)
+            refresh_icons(self.layout, self.run)
             self.run(["systemctl", "daemon-reload"])
             self.run(["systemctl", "reload", "dbus.service"])
             reload_users(self.run)
@@ -120,6 +123,7 @@ class Transaction:
             self.run(["systemctl", "is-active", "--quiet", "convertibled.service"])
         else:
             remove(self.layout, preserve_admission=True)
+            refresh_icons(self.layout, self.run)
             self.layout.current.unlink(missing_ok=True)
             self.run(["systemctl", "daemon-reload"])
             self.run(["systemctl", "reload", "dbus.service"])

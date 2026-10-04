@@ -8,6 +8,7 @@ from .integration import LINKS
 from .storage import Layout, atomic, read
 from .transaction import Transaction
 from .uninstall import uninstall
+from .desktop_cache import TOOL, THEME
 from updater.archive import extract
 from updater.model import UpdateError
 from scripts.release.bundle import build
@@ -120,6 +121,7 @@ class LifecycleTests(unittest.TestCase):
             self.transaction.activate("0.1.0")
         self.assertIsNone(self.layout.active())
         self.assertEqual(read(self.transaction.journal)["phase"], "rolled_back")
+        self.assertEqual(self.calls.count([TOOL, "--force", str(self.layout.root / THEME)]), 2)
         self.assertFalse(any(args[:2] == ["systemctl", "start"] for args in self.calls))
 
     @patch("installer.identity.ensure")
@@ -144,12 +146,16 @@ class LifecycleTests(unittest.TestCase):
     def test_clean_install_health_and_uninstall(self, identity):
         self.candidate("0.1.0")
         self.assertEqual(self.transaction.activate("0.1.0")["phase"], "awaiting_shell")
+        cache_command = [TOOL, "--force", str(self.layout.root / THEME)]
+        self.assertEqual(self.calls.count(cache_command), 1)
+        self.assertLess(self.calls.index(cache_command), self.calls.index(["systemctl", "start", "convertibled.service", "convertibled-update.timer"]))
         self.assertLess(self.calls.index(["systemctl", "reload", "dbus.service"]), self.calls.index(["systemctl", "start", "convertibled.service", "convertibled-update.timer"]))
         self.assertEqual(self.layout.active(), "0.1.0")
         atomic(self.layout.state / "health/shell-health.json", {"version": "0.1.0", "healthy": True})
         self.assertEqual(self.transaction.recover()["phase"], "complete")
         atomic(self.layout.state / "pending-action.json", {"schema": 1, "action": "uninstall", "version": "0.1.0", "state": "running"})
         uninstall(self.layout, run=lambda args: self.calls.append(args), sessions=lambda: [])
+        self.assertEqual(self.calls.count(cache_command), 2)
         self.assertFalse((self.layout.state / "pending-action.json").exists())
         self.assertIsNone(self.layout.active())
         self.assertEqual(list(self.layout.versions.iterdir()), [])
@@ -174,6 +180,7 @@ class LifecycleTests(unittest.TestCase):
             self.transaction.activate("0.2.0")
         self.assertEqual(self.layout.active(), "0.1.0")
         self.assertEqual(read(self.transaction.journal)["phase"], "rolled_back")
+        self.assertEqual(self.calls.count([TOOL, "--force", str(self.layout.root / THEME)]), 3)
 
     @patch("installer.identity.ensure")
     def test_modified_user_file_blocks_uninstall_before_services(self, identity):
