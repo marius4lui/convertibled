@@ -60,6 +60,15 @@ at least 95 percent of measured 60 Hz frames must meet the frame budget.
 
 ## Remaining release decisions and evidence
 
+The product-delivery refinement starts installation from the user's existing
+desktop with one administrator authorization. Preparation authenticates the
+candidate before a fixed, root-owned scheduler can activate it after ordinary
+graphical logout. It never forces logout or weakens the admission interlock.
+First-login onboarding is scoped to the explicitly consenting installing user;
+other users keep control of their own extension enablement. Public root trust
+is supplied with the independently authenticated installer, never created from
+an unauthenticated downloaded key. Offline root custody stays separate from CI.
+
 No physical reference-device result, production trust key, protected release
 environment, or published supported version is provided by this repository.
 Maintainers must establish key custody/revocation operations and record actual

@@ -150,6 +150,14 @@ preserving added user files. Windows explicitly skips POSIX-only cases.
 
 ## Trust bootstrap and installation
 
+The reviewed installer now requests administrator authentication when started
+by a normal user. Release packaging supplies `installer/bootstrap-trust.json`
+containing public trust only. Bootstrap validates it through the updater's
+existing key and HTTPS URL rules, provisions only absent host trust, and never
+replaces existing administrator trust. Failed release preparation leaves update
+preferences unchanged. This removes manual JSON authoring from a provisioned
+installer; authenticating the initial installer distribution remains required.
+
 There is no production release key or downloadable supported release yet.
 An administrator must independently authenticate the initial reviewed installer
 source and the offline Ed25519 root fingerprint. A key downloaded beside an
