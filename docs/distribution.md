@@ -76,8 +76,10 @@ Activation journals backup/prepared/switching/selected/awaiting-shell phases,
 stops the daemon, selects the candidate, registers integration, restarts and
 checks service health. Failures roll back the binary reference and configuration.
 Interrupted nonterminal transactions recover conservatively at the next safe
-logout boundary. A first-login shell health receipt completes the transaction;
-missing/failed shell health causes a subsequent safe rollback.
+logout boundary. Requested workspace activation needs real authenticated Shell
+health. Explicitly declined or currently disabled workspaces use service-only
+acceptance; unknown update intent stays pending. Successful acceptance changes
+only the journal and can finish online. Binary recovery always waits for logout.
 
 Preparation loads only root-provisioned `trust.json`, verifies offline root
 keyring then channel metadata, persists monotonic counters, downloads/hashes and
@@ -86,9 +88,11 @@ Published version bytes are immutable: reuse with different metadata is rejected
 Normal settings never supply URLs, keys, destination paths or executable hooks.
 
 The isolated Python helper exposes fixed verbs: `status`, `check`, `prepare`,
-`install`, `activate`, `recover`, `rollback`, `automatic on|off`, `channel
-stable|preview`, and systemd-only `scheduled`. All mutations require effective
-root and a transaction lock. `status` reads a sanitized root-owned public JSON
+`offline-prepare`, `install`, `activate`, `recover`, `rollback`, `uninstall`,
+`request-activate`, `request-recover`, `request-rollback`, `request-uninstall`,
+`cancel-pending`, `automatic on|off`, `channel stable|preview`, and `scheduled`
+(normally invoked by systemd). All mutations require effective root and a
+transaction lock. `status` reads a sanitized root-owned public JSON
 snapshot; update keys, internal sessions and private logs are excluded.
 
 Polkit restricts the fixed helper to active-session administrator authentication.
@@ -101,8 +105,9 @@ not cryptographic attestation of GNOME extension code.
 Activation creates/verifies the fixed non-login `convertibled` service account
 and runs candidate `convertibled --check` before selecting it. Awaiting-shell
 transactions wait for the first observed graphical login; absence of a login
-alone does not roll back. Missing health after that session logs out triggers
-recovery, preserving normal GNOME while activation failure is investigated.
+alone does not roll back. A session that expects the workspace but lacks matching
+healthy evidence triggers safe recovery after logout. A user's explicit choice
+to disable the workspace is distinct from an enabled workspace failing to start.
 
 `uninstall` requires logout, validates every installed version against its owned
 manifest, stops/disables only project services, removes owned links and verified
@@ -168,7 +173,8 @@ The timer checks logout/recovery every two minutes while background network
 preparation is throttled to six hours; explicit check/prepare remains immediate.
 Activation revalidates prepared channel, accepted release and metadata freshness.
 Stale shell receipts are cleared before selecting a candidate; explicit failure
-receipts trigger safe rollback even if a short first session escaped polling.
+receipts for an expected workspace trigger safe rollback even if a short first
+session escaped polling. Unknown intent cannot be promoted to healthy acceptance.
 
 Disposable pipeline tests perform real Ed25519 verification, offline bounded
 reads, deterministic archive extraction and immutable candidate preparation.
@@ -180,14 +186,18 @@ owned integration, configuration backups and removal, with simulated service
 commands. They cover clean install/health/remove, failed-service rollback and
 preserving added user files. Windows explicitly skips POSIX-only cases.
 
-## Desktop recovery and removal requests
+## Desktop activation, recovery and removal requests
 
-The privileged helper accepts fixed `request-recover`, `request-rollback`, and
-`request-uninstall` verbs. These persist a request bound to the currently selected
-version, then arm the existing update timer. `cancel-pending` cancels a waiting
+The privileged helper accepts fixed `request-activate`, `request-recover`,
+`request-rollback`, and `request-uninstall` verbs. These persist a request bound
+to the currently selected version, then start the existing update timer.
+Activation additionally binds the prepared candidate and channel and rechecks
+signatures, freshness and candidate identity at execution. **Install after logout**
+and `convertiblectl update activate` provide this explicit operation while
+automatic updates remain off. `cancel-pending` cancels a waiting
 or failed request; an interrupted critical transaction must recover first.
-Immediate `recover`, `rollback`, and `uninstall` remain available for offline
-administrator recovery after logout.
+Immediate `activate`, `recover`, `rollback`, and `uninstall` remain available
+for offline administrator recovery after logout.
 
 The timer processes explicit requests before automatic preparation, even when
 automatic updates are disabled. Graphical sessions, including locked sessions,
@@ -195,17 +205,22 @@ block version changes and removal. A login/admission race defers safely. Failure
 remain visible without retry loops; repeating the same request explicitly retries
 it. Existing admission-marker crash recovery still runs without retrying the
 failed requested action. A different selected version invalidates the request
-and requires review.
-Public status includes `pending_action` and `pending_state`; queued phases are
+and requires review. Waiting or failed requests continue observing an already
+activated version's acceptance; they cannot prevent its first-login check or
+safe recovery. A changed prepared candidate or channel also requires review.
+Public status includes `pending_action` (`activate`, `recover`, `rollback`,
+`uninstall`, or null) and `pending_state`; queued phases are
 `waiting_for_logout` or `action_failed`, with a bounded failure explanation.
 Removal consumes the request after its durable recovery journal is written,
 preventing a later reinstall from inheriting an old removal request.
 
 ## Trust bootstrap and installation
 
-The reviewed installer now requests administrator authentication when started
-by a normal user. Release packaging supplies `installer/bootstrap-trust.json`
-containing public trust only. Bootstrap validates it through the updater's
+The reviewed `sh installer/install` entry point requests one administrator
+authorization for bootstrap when started by a normal user. Deferred activation
+uses root-owned scheduling and first-login setup runs unprivileged; neither
+requires another interactive authorization. Release packaging supplies
+`installer/bootstrap-trust.json` containing public trust only. Bootstrap validates it through the updater's
 existing key and HTTPS URL rules, provisions only absent host trust, and never
 replaces existing administrator trust. Failed release preparation leaves update
 preferences unchanged. This removes manual JSON authoring from a provisioned
