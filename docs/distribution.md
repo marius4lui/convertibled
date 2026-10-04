@@ -100,3 +100,8 @@ malformed signatures. These keys are test fixtures, never production trust.
 
 Public keys must use the exact RFC 8410 Ed25519 SubjectPublicKeyInfo encoding;
 OpenSSL's algorithm-flexible interface cannot silently accept RSA/ECDSA trust.
+
+Integration includes the daemon's system-bus policy and the session unit's
+`graphical-session.target.wants` link. Conflict preflight checks system extensions
+and the authenticated installing user's extension directory, without altering
+other extensions or accounts.

@@ -1,6 +1,4 @@
 """Fixed destination ownership; never accept an arbitrary install path."""
-import hashlib
-from pathlib import Path
 from .storage import atomic, read
 from updater.model import UpdateError
 
@@ -11,6 +9,8 @@ LINKS = {
     "usr/share/gnome-shell/extensions/" + UUID: "share/gnome-shell/extensions/" + UUID,
     "usr/lib/systemd/system/convertibled.service": "data/systemd/convertibled.service",
     "usr/lib/systemd/user/convertibled-session.service": "data/systemd/convertibled-session.service",
+    "usr/lib/systemd/user/graphical-session.target.wants/convertibled-session.service": "data/systemd/convertibled-session.service",
+    "usr/share/dbus-1/system.d/org.convertibled.Daemon1.conf": "data/dbus/org.convertibled.Daemon1.conf",
     "usr/lib/systemd/system/convertibled-update.service": "data/systemd/convertibled-update.service",
     "usr/lib/systemd/system/convertibled-update.timer": "data/systemd/convertibled-update.timer",
     "usr/share/polkit-1/actions/org.convertibled.installer.policy": "data/polkit/org.convertibled.installer.policy",

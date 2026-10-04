@@ -1,5 +1,6 @@
 """Fail-closed Fedora/GNOME preflight and logind session inspection."""
 import json
+import os
 import platform
 import shutil
 import subprocess
@@ -43,6 +44,16 @@ def preflight(layout, required_space):
             raise UpdateError("Missing prerequisite: " + tool)
     if shutil.disk_usage(layout.versions).free < required_space + 128 * 1024 * 1024:
         raise UpdateError("Insufficient disk space (including recovery reserve)")
+    directories = [layout.root / "usr/share/gnome-shell/extensions"]
+    caller = os.environ.get("PKEXEC_UID", "")
+    if caller.isdecimal():
+        import pwd
+        try:
+            home = Path(pwd.getpwuid(int(caller)).pw_dir)
+        except KeyError as exc:
+            raise UpdateError("Installing user does not exist") from exc
+        directories.append(home / ".local/share/gnome-shell/extensions")
+    conflicts(directories)
 
 
 def conflicts(extension_directories, own_uuid="convertibled@convertibled.org"):
