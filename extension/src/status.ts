@@ -1,4 +1,5 @@
 export type Status = {schema_version: number; profile: string;
+    active?: boolean; locked?: boolean;
     desired: {tablet_workspace: boolean; rotation_lock: boolean; rotation_lock_requested?: boolean;
         rotation?: 'enabled' | 'disabled' | 'unchanged'; osk?: 'enabled' | 'disabled' | 'unchanged'};
     applied?: {tablet_workspace: boolean; rotation_lock: boolean; status: string; error: string | null}};

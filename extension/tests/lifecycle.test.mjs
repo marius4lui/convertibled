@@ -28,3 +28,13 @@ test('explicit Home navigation honors reduced motion and OSK allocation', () => 
     assert.equal(extension.home.actor.height,254);assert.equal(extension.dock.actor.y,262);
     extension.disable();main.layoutManager.keyboardBox.visible=false;
 });
+test('explicit laptop native actions apply only in the active unlocked session', () => {
+    const extension=new Extension();extension.enable();
+    extension.status={schema_version:1,profile:'laptop',active:true,locked:false,
+        desired:{tablet_workspace:false,rotation_lock:false,rotation:'disabled',osk:'enabled'}};
+    extension.reconcile();assert.equal(extension.active,false);assert.equal(extension.rotation.locked,true);
+    assert.equal(extension.osk.value,true);
+    extension.status.active=false;extension.reconcile();
+    assert.equal(extension.rotation.locked,false);assert.equal(extension.osk.value,false);
+    extension.disable();
+});

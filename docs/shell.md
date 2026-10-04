@@ -192,3 +192,8 @@ Gesture recognition and explicit navigation defer while GNOME holds a modal
 grab or its native global Overview is open. Authentication/system dialogs keep
 their existing input ownership; the extension creates no modal authentication
 surface and never replaces the lock/login workflow.
+
+Native profile actions are reconciled independently of tablet workspace:
+explicit laptop rotation/OSK actions also apply in an active, unlocked user
+session. Inactive/locked states restore owned preferences. Action reports compare
+the actual preference with the request and never claim success on a mismatch.

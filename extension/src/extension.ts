@@ -131,29 +131,36 @@ export default class TabletExtension extends Extension {
             this.dock?.actor.show();
         } else if (!allowed && this.active) {
             this.active = false; this.touch?.cancel(); this.splitController?.clear(); this.hideSurfaces(); this.dock?.actor.hide(); this.windows.restore();
-            this.rotation?.restore();
-            this.osk?.restore();
         } else if (allowed) this.position();
-        if (allowed && this.status) {
+        const nativeAllowed = Main.sessionMode.currentMode === 'user' && !Main.sessionMode.isLocked &&
+            this.status?.active === true && this.status.locked === false;
+        if (nativeAllowed && this.status) {
             if (this.status.desired.rotation_lock_requested) this.rotation?.apply(this.status.desired.rotation_lock);
             else if (this.status.desired.rotation && this.status.desired.rotation !== 'unchanged')
                 this.rotation?.apply(this.status.desired.rotation === 'disabled');
             else this.rotation?.restore();
             this.osk?.apply(this.status.desired.osk ?? 'unchanged');
-        }
+        } else { this.rotation?.restore(); this.osk?.restore(); }
         this.reportApplied();
     }
     private reportApplied(): void {
+        const rotationRequest = this.status?.desired.rotation_lock_requested
+            ? this.status.desired.rotation_lock ? 'disabled' : 'enabled' : this.status?.desired.rotation ?? 'unchanged';
+        const rotationActual = this.rotation?.locked ? 'disabled' : 'enabled';
+        const oskRequest = this.status?.desired.osk ?? 'unchanged';
+        const oskActual = this.osk?.value ? 'enabled' : 'disabled';
+        const rotationError = this.rotation?.error ??
+            (rotationRequest !== 'unchanged' && rotationRequest !== rotationActual ? 'Native rotation request is not applied' : null);
+        const oskError = this.osk?.error ??
+            (oskRequest !== 'unchanged' && oskRequest !== oskActual ? 'Native keyboard request is not applied' : null);
         const report = {tablet_workspace:this.active,rotation_lock:this.rotation?.locked ?? false,
             status:this.active ? 'applied' : this.status?.desired.tablet_workspace ? 'unsupported' : 'applied',
             error:this.status?.desired.tablet_workspace && !this.active ? 'Internal display or unlocked GNOME session unavailable' : null,
             capabilities:{tablet_workspace:Boolean(this.monitor),rotation_lock:this.rotation?.available ?? false,
                 osk:this.osk?.available ?? false,split_view:true},
-            action_outcomes:{rotation:{requested:this.status?.desired.rotation ?? 'unchanged',
-                applied:this.rotation?.locked ? 'disabled' : 'enabled',
-                status:this.rotation?.error ? 'unsupported' : 'applied',error:this.rotation?.error ?? null},
-            osk:{requested:this.status?.desired.osk ?? 'unchanged',applied:this.osk?.value ? 'enabled' : 'disabled',
-                status:this.osk?.error ? 'unsupported' : 'applied',error:this.osk?.error ?? null}}};
+            action_outcomes:{rotation:{requested:rotationRequest,applied:rotationActual,
+                status:rotationError ? 'unsupported' : 'applied',error:rotationError},
+            osk:{requested:oskRequest,applied:oskActual,status:oskError ? 'unsupported' : 'applied',error:oskError}}};
         const json = JSON.stringify(report);
         if (this.status && this.bridge && json !== this.reported) { this.reported = json; this.bridge.report(report); }
     }
