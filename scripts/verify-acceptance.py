@@ -12,6 +12,7 @@ REQUIRED = {
     "extension_daemon_failure", "portrait_large_text_screenreader_keyboard",
     "reduced_motion", "clean_install", "invalid_signature_corrupt_download",
     "low_disk_interrupted_update", "logout_next_login", "rollback_uninstall",
+    "concurrent_gdm_login_update",
 }
 
 

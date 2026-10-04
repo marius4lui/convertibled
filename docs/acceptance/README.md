@@ -11,6 +11,12 @@ observed result. Include `animation` with refresh_hz=60, measured frame count,
 within_budget count and recurring_stalls. Record unresolved `limitations`.
 Keep private identifiers and raw system logs outside public records.
 
+`concurrent_gdm_login_update` must exercise a real GDM login competing with
+activation, including the pre-Shell admission lease, update interruption and
+subsequent recovery. A locked or inactive existing session must still prevent
+activation. No session may be forcibly terminated. POSIX lock tests alone do
+not establish this complete GNOME/systemd integration result.
+
 The release gate requires all checks passed, no unresolved limitations, at least
 120 measured frames and 95 percent within 16.67 ms without recurring stalls.
 It hashes the artifact and rejects reports for different bytes or commits.

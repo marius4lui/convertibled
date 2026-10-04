@@ -36,6 +36,7 @@ Linux device and desktop behavior.
 - [ ] Lock/unlock, logout/login, session switch, suspend/resume, docking
 - [ ] User changes preserved; owned changes restored
 - [ ] Clean installation, previous-version update, interruption, rollback, removal
+- [ ] GDM login racing with update activation, admission interruption and recovery
 
 For each record: project commit/version, OS/kernel, desktop/version, device,
 procedure, actual result, and unresolved limitations. Never tick a checklist
