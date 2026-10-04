@@ -134,6 +134,16 @@ export default class DemoExtension extends TabletExtension {
                 dockTop:this.dock.actor.y,dockBottom:this.dock.actor.y + this.dock.actor.height,
                 compact:this.home.compact},
             scenario:this.lastScenario, splitCandidates:this.splitCandidates,
+            settingsWindows:global.get_window_actors().map(actor => actor.meta_window)
+                .filter(window => window.get_gtk_application_id() === 'org.convertibled.Settings')
+                .slice(0, 8).map(window => ({
+                    type:window.get_window_type(), minimized:window.minimized,
+                    monitor:window.get_monitor(), workspace:window.get_workspace()?.index(),
+                    currentWorkspace:global.workspace_manager.get_active_workspace().index(),
+                    transient:!!window.get_transient_for(), skipTaskbar:window.is_skip_taskbar(),
+                    overrideRedirect:window.is_override_redirect(), above:window.is_above(),
+                    canMinimize:window.can_minimize(), eligible:this.desktopWindows().includes(window),
+                })),
             frames:this.internalWindows().map(w => {
                 const r = w.get_frame_rect();
                 return {title:w.get_title(),minimized:w.minimized,x:r.x,y:r.y,width:r.width,height:r.height,

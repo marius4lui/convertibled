@@ -1,5 +1,9 @@
 # Native settings implementation
 
+The standalone PreferencesWindow is explicitly nonmodal, so GNOME treats it as
+a regular application and Home can minimize it. Confirmation dialogs retain
+their native modal behavior.
+
 `crates/settings` is a Rust GTK4/libadwaita application targeting Fedora 44 and
 GNOME 50. Its preferences pages use native adaptive widgets, named icons,
 keyboard focus and the system appearance. All six pages connect to actual
