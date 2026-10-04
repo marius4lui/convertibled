@@ -4,7 +4,7 @@ import os
 import shutil
 from pathlib import Path
 from .archive import extract
-from .crypto import envelope, keyring
+from .crypto import ed25519_public, envelope, keyring
 from .model import UpdateError, release
 from .transport import fetch, url
 from installer.configuration import preferences
@@ -18,6 +18,10 @@ def trust(layout):
         raise UpdateError("Administrator must provision trusted offline root and channel URLs")
     if not isinstance(value["roots"], dict) or not 1 <= len(value["roots"]) <= 4:
         raise UpdateError("Invalid offline root set")
+    for identifier, pem in value["roots"].items():
+        if not isinstance(identifier, str) or not 1 <= len(identifier) <= 64:
+            raise UpdateError("Invalid root identifier")
+        ed25519_public(pem)
     if set(value["channels"]) != {"stable", "preview"}:
         raise UpdateError("Both channel endpoints must be explicit")
     for address in [value["keyring_url"], *value["channels"].values()]:

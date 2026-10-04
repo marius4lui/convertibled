@@ -1,12 +1,28 @@
 """Ed25519 signatures use OpenSSL, with no shell interpolation."""
 import base64
+import re
 import subprocess
 import tempfile
 from pathlib import Path
 from .model import UpdateError, canonical, decode, timestamp
 
 
+def ed25519_public(public_pem):
+    if not isinstance(public_pem, str):
+        raise UpdateError("Invalid public key")
+    match = re.fullmatch(r"\s*-----BEGIN PUBLIC KEY-----\s+([A-Za-z0-9+/=\s]+)-----END PUBLIC KEY-----\s*", public_pem)
+    try:
+        der = base64.b64decode(re.sub(r"\s", "", match.group(1)), validate=True) if match else b""
+    except ValueError as exc:
+        raise UpdateError("Invalid public key encoding") from exc
+    # Exact RFC 8410 SubjectPublicKeyInfo: id-Ed25519 with absent parameters.
+    if len(der) != 44 or not der.startswith(bytes.fromhex("302a300506032b6570032100")):
+        raise UpdateError("Trust keys must be Ed25519 public keys")
+    return public_pem
+
+
 def verify(public_pem, payload, signature):
+    ed25519_public(public_pem)
     try:
         signature = base64.b64decode(signature, validate=True)
         if len(signature) != 64 or not isinstance(public_pem, str) or "BEGIN PUBLIC KEY" not in public_pem:
@@ -46,4 +62,5 @@ def keyring(raw, roots, now, minimum=0):
     for key_id, pem in value["keys"].items():
         if not isinstance(key_id, str) or len(key_id) > 64 or not isinstance(pem, str) or len(pem) > 1024:
             raise UpdateError("Invalid signing key")
+        ed25519_public(pem)
     return value

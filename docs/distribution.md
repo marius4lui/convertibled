@@ -97,3 +97,6 @@ and key custody remain maintainer operations; these scripts never publish.
 Crypto tests generate ephemeral temporary Ed25519 keys and execute OpenSSL to
 verify valid/tampered payloads, revoked keys, offline-root sequence rollback and
 malformed signatures. These keys are test fixtures, never production trust.
+
+Public keys must use the exact RFC 8410 Ed25519 SubjectPublicKeyInfo encoding;
+OpenSSL's algorithm-flexible interface cannot silently accept RSA/ECDSA trust.

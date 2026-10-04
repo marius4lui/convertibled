@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from .crypto import envelope, keyring, verify
+from .crypto import envelope, keyring, verify, ed25519_public
 from .model import canonical, UpdateError
 
 
@@ -50,3 +50,10 @@ class CryptoTests(unittest.TestCase):
     def test_wrong_signature_length(self):
         with self.assertRaises(UpdateError):
             verify(self.public, b"payload", "YQ==")
+
+    def test_wrong_public_key_algorithm(self):
+        rsa = self.directory / "rsa.pem"
+        subprocess.run(["openssl", "genpkey", "-algorithm", "RSA", "-pkeyopt", "rsa_keygen_bits:1024", "-out", str(rsa)], check=True, capture_output=True)
+        public = subprocess.check_output(["openssl", "pkey", "-in", str(rsa), "-pubout"], text=True)
+        with self.assertRaises(UpdateError):
+            ed25519_public(public)
