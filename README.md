@@ -2,13 +2,12 @@
 
 Native-feeling tablet experiences for Linux convertibles.
 
-convertibled is a planned open-source convertible mode manager: a hardware
+convertibled is an experimental open-source convertible workspace: a hardware
 daemon, desktop integration, a settings application, a diagnostic CLI, and a
 project-owned installer and updater.
 
-**Status: planning and documentation. No daemon, application, installer, or
-release is implemented yet.** This README describes the intended product,
-not currently available functionality.
+**Status: active implementation; no public release or physical acceptance.**
+The complete product and recovery paths must pass acceptance before publication.
 
 ## Product goals
 
@@ -18,11 +17,10 @@ not currently available functionality.
 - Explain detected hardware, requested behavior, actual behavior, and failures.
 - Own installation, updates, recovery, and removal end to end.
 
-The first desktop and physical reference device still need confirmation.
-GNOME and KDE are candidates, not supported platforms. ThinkPad X1 Yoga Gen 8
-is a proposed reference device, not a tested compatibility claim.
+The selected first target is Fedora 44, GNOME 50 and Wayland on ThinkPad X1
+Yoga Gen 8 (x86_64). This is an acceptance target, not tested hardware support.
 
-## Planned components
+## Components
 
 | Component | Responsibility |
 | --- | --- |
@@ -32,10 +30,9 @@ is a proposed reference device, not a tested compatibility claim.
 | `convertiblectl` | Status, manual modes, configuration validation, diagnostics |
 | Installer/updater | Versioned installation, verified updates, rollback, removal |
 
-Rust is the planned language for the daemon and CLI. The UI toolkit will be
-selected with the target desktop; GTK/libadwaita and Qt/Kirigami are candidate
-native stacks. This project does not promise one toolkit will look native on
-every desktop.
+Rust implements the daemon, session service, CLI and GTK4/libadwaita settings.
+A TypeScript/GJS GNOME Shell extension adds Home, dock, application search, live
+window overview, split view, local widgets and touchscreen navigation.
 
 ## Tablet experience
 
@@ -45,8 +42,9 @@ and a quick way back to automatic or laptop mode. Desktop changes require
 explicit backend capabilities. convertibled cannot make every third-party
 application touch-friendly.
 
-We will first integrate the existing desktop rather than build a replacement
-shell. Automatic scaling is opt-in and must preserve the previous settings.
+The tablet workspace is integrated directly into GNOME without an extra
+fullscreen app. GNOME retains OSK, login, locking, authentication and notifications.
+External displays retain desktop behavior. Automatic scaling stays disabled.
 
 ## Detection model
 
@@ -57,11 +55,12 @@ evidence. Screen orientation alone is not sufficient.
 
 ## Installation and updates
 
-There are no installation commands or downloadable binaries yet.
-The intended distribution is a project-owned release bundle, installer, and
+There are no public release binaries yet.
+Distribution uses a project-owned release bundle, installer, and
 updater. RPM, COPR, DEB, and distro repositories are not the planned delivery
 path. Updates will verify signatures, preserve configuration, and support
-recovery to a previous version. The daemon will not silently replace itself.
+recovery to a previous version. Updates automatically check and prepare by default, with an explained opt-out.
+Activation waits for affected graphical sessions to log out; locking is not logout.
 
 ## Documentation
 
@@ -89,3 +88,16 @@ batches and truthful validation reports are required.
 
 See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
 Licensed under [MIT](LICENSE).
+
+## Implementation guides
+
+- [Rust runtime and CLI](docs/runtime.md)
+- [GNOME Shell workspace](docs/shell.md)
+- [Native settings](docs/settings.md)
+- [Installer, updater and bootstrap](docs/distribution.md)
+- [Physical acceptance records](docs/acceptance/README.md)
+- [Interactive Windows scenario demo](demo/README.md)
+
+See the single implementation PR and its CI for current integration evidence.
+Local Windows tests cover portable models; Fedora/GNOME checks and physical
+reference-device acceptance are separate evidence layers.

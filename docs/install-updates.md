@@ -1,13 +1,14 @@
 # Project-owned installation and updates
 
-No installer exists yet. These requirements define the intended implementation.
+These requirements define the installer/updater implementation and acceptance.
 Distribution uses our own versioned release bundle, installer, and updater;
 RPM/COPR/DEB or distro repositories do not replace this path.
 
 ## Installation
 
-Select and document exact layout before implementation. Prefer immutable
-version directories with one active-version reference. Keep configuration,
+Use immutable `/opt/convertibled/versions/<version>` directories and an atomic
+`/opt/convertibled/current` reference, `/etc/convertibled` configuration and
+`/var/lib/convertibled` transaction state. Keep configuration,
 mutable state, user data, and binaries separate. Installer performs preflight
 for OS/architecture/libc, available space, desktop compatibility, and permissions.
 
@@ -25,8 +26,9 @@ artifact size/hash, and migration requirements. Prevent replay/downgrade unless
 the user explicitly requests a supported recovery version. Specify freshness,
 key rotation/revocation, and trust-bootstrap behavior before production use.
 
-Signing credentials stay outside the repository. Key custody and CI signing
-mechanism are open decisions. Do not treat CI provenance as a substitute for
+Signing credentials stay outside the repository. Ed25519 release keys are separate from an offline trust-root key used for key
+rotation. Production public trust material and protected CI credentials must be
+provisioned by maintainers before a public release. Do not treat CI provenance as a substitute for
 an updater's implemented trust verification.
 
 ## Activation transaction
@@ -46,9 +48,12 @@ activation does not mean migrations and all services change simultaneously.
 ## UX and channels
 
 Stable and preview are explicit channels. Preview does not silently replace
-stable. Default: user-reviewed updates. No network is required for mode switching.
-Background checking, if added, is configurable and does not run inside the
-hardware event loop. Display downloaded, verified, applying, complete, failed,
+stable. Default: automatic checking and preparation, explained during installation with
+an opt-out. No network is required for mode switching. Background work stays
+outside the hardware event loop. Activation waits until no affected graphical
+session remains; a locked session is still active for this purpose. Never force
+logout. New Shell code loads at the next login. Failed Shell activation keeps
+normal GNOME usable and queues previous-version recovery at a safe transaction. Display downloaded, verified, applying, complete, failed,
 and recovered states accurately. Never offer cancellation mid-critical switch
 unless that operation has a defined safe cancellation path.
 

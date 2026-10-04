@@ -1,10 +1,11 @@
 # Configuration and CLI specification
 
-No parser or commands exist yet. Examples below are proposed interfaces.
+Schema-1 validation, profiles, CLI and versioned D-Bus are implemented
+experimentally; see [runtime](runtime.md) for actual interfaces and limitations.
 
 ## Files and precedence
 
-Proposed paths: `/etc/convertibled/config.toml` for system policy and
+Paths: `/etc/convertibled/config.toml` for system policy and
 `~/.config/convertibled/config.toml` for user preferences.
 Built-in defaults → system defaults → allowed user overrides → temporary manual
 override. System security/authorization constraints cannot be weakened by user
@@ -20,7 +21,7 @@ Actions are tri-state where applicable: enabled, disabled, unchanged.
 Defaults preserve desktop settings. Manual profile overrides are distinct from
 observed posture and have documented persistence/reset behavior.
 
-Illustrative schema, not a supported configuration:
+Supported schema-1 example (input/scaling must remain unchanged):
 
 ```toml
 schema_version = 1
@@ -36,7 +37,7 @@ scaling = "unchanged"
 An enabled action requires backend support. Unsupported actions must be
 reported and must not silently change to a different policy.
 
-## Planned CLI
+## CLI
 
 `status`, `devices`, `capabilities`, `watch`, `doctor`, `mode <profile|auto>`,
 `config validate`, and `reload`. Add `--json` to diagnostic/status commands.

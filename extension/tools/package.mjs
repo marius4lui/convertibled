@@ -1,0 +1,10 @@
+import {copyFileSync, mkdirSync, cpSync,readFileSync,writeFileSync} from 'node:fs';
+import {compileMo} from './compile-mo.mjs';
+import {workspaceVersion} from './version.mjs';
+mkdirSync('dist', {recursive: true});
+copyFileSync('stylesheet.css','dist/stylesheet.css');
+const metadata=JSON.parse(readFileSync('metadata.json','utf8'));
+metadata['version-name']=workspaceVersion(readFileSync('../Cargo.toml','utf8'));
+writeFileSync('dist/metadata.json',JSON.stringify(metadata,null,2)+'\n');
+cpSync('schemas', 'dist/schemas', {recursive: true});
+compileMo('po/de.po','dist/locale/de/LC_MESSAGES/convertibled.mo');

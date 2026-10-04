@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.convertibled.Settings</id>
+  <name>convertibled</name>
+  <summary>Native GNOME tablet workspace settings</summary>
+  <summary xml:lang="de">Native Einstellungen der GNOME-Tablet-Arbeitsfläche</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <launchable type="desktop-id">org.convertibled.Settings.desktop</launchable>
+  <description>
+    <p>Configure tablet profiles, local workspace widgets, rotation lock, verified
+    update preparation and local diagnostics. The first target is Fedora 44 and
+    GNOME 50 on Wayland. Physical device acceptance is still required.</p>
+  </description>
+  <url type="homepage">https://github.com/marius4lui/convertibled</url>
+  <url type="bugtracker">https://github.com/marius4lui/convertibled/issues</url>
+  <content_rating type="oars-1.1"/>
+  <supports><control>pointing</control><control>keyboard</control><control>touch</control></supports>
+</component>

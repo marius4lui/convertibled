@@ -1,0 +1,9 @@
+<schemalist>
+  <schema id="org.gnome.shell.extensions.convertibled" path="/org/gnome/shell/extensions/convertibled/">
+    <key name="widgets" type="as"><default>['clock', 'battery', 'actions']</default><summary>Ordered visible local widgets</summary></key>
+    <key name="split-ratio" type="s"><default>'half'</default><summary>Preferred split ratio</summary></key>
+    <key name="gesture-enabled" type="b"><default>true</default><summary>Enable internal touchscreen edge navigation</summary></key>
+    <key name="dock-autohide" type="b"><default>false</default><summary>Hide app strip while retaining visible navigation</summary></key>
+    <key name="touchscreen-device-node" type="s"><default>''</default><summary>Explicit current-session touchscreen approval; cleared on startup/removal</summary></key>
+  </schema>
+</schemalist>

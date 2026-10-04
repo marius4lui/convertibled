@@ -1,6 +1,33 @@
 # CI and releases
 
-There is no CI or release pipeline yet. This is the required design.
+The Product checks workflow builds/tests Linux services, GTK settings and the
+Shell extension, and validates documentation links. Checks use read-only token
+permissions and commit-pinned Actions. Passing Ubuntu compilation is not Fedora
+or physical-device acceptance. Public publishing remains separately gated.
+Distribution CI exercises signature failures, archive rejection, installation
+transactions and recovery in isolated temporary directories. Pull requests run
+once per update; branch pushes do not duplicate the same checks.
+Dependency gates check RustSec advisories, declared licenses and registry sources
+with a pinned cargo-deny version, plus npm's high-severity audit. These gates do
+not replace review of privileged code or a production signing-key procedure.
+
+Successful Fedora CI creates an internal candidate bundle with SHA256SUMS,
+source/version provenance and an SPDX 2.3 Rust dependency inventory. The current
+candidate uses an optimized release build; it is not a public production release.
+The inventory declares package licenses without file-level analysis or operating
+system components. Public release must use the exact accepted bytes and the
+record described in [physical acceptance](acceptance/README.md).
+
+`Prepare accepted release draft` is manual and runs only from main. It refuses
+environments without required reviewers, unsuccessful/non-main candidate runs,
+missing matching version tags, different artifact bytes, missing physical
+acceptance or an existing release. Configure the `release` environment with
+required reviewers, `RELEASE_SIGNING_KEY` and public `RELEASE_KEY_ID` only after
+key custody is established. The offline trust root never enters CI. API access
+to environment protection must be available; inability to verify it fails closed.
+The workflow signs accepted bytes and creates a draft only. Publishing remains
+an explicit maintainer action after reviewing metadata freshness and the deployed
+root-signed release keyring. It never rebuilds or overwrites a published version.
 
 ## Version policy
 

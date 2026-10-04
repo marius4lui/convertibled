@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<node name="/org/convertibled/Daemon1">
+  <interface name="org.convertibled.Daemon1">
+    <method name="GetStatus"><arg type="s" name="status_json" direction="out"/></method>
+    <method name="GetDevices"><arg type="s" name="devices_json" direction="out"/></method>
+    <method name="GetCapabilities"><arg type="s" name="capabilities_json" direction="out"/></method>
+    <method name="ReportShellHealth"><arg type="s" name="version" direction="in"/><arg type="b" name="healthy" direction="in"/></method>
+    <signal name="Changed"><arg type="s" name="status_json"/></signal>
+  </interface>
+</node>

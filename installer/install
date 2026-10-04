@@ -1,0 +1,20 @@
+#!/bin/sh
+# Run only from an independently verified project source/installer bundle.
+set -eu
+if [ "$(id -u)" -ne 0 ]; then
+    printf '%s\n' 'Run this reviewed bootstrap installer with administrator privileges.' >&2
+    exit 1
+fi
+automatic=on
+case "${1-}" in
+    '') ;;
+    --no-automatic-updates) automatic=off ;;
+    *) printf '%s\n' 'Usage: installer/install [--no-automatic-updates]' >&2; exit 2 ;;
+esac
+if [ "$#" -gt 1 ]; then exit 2; fi
+project=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+printf '%s\n' 'convertibled checks and prepares updates automatically by default.' >&2
+printf '%s\n' 'Activation waits for graphical logout; screen locking does not count.' >&2
+printf '%s\n' 'Use --no-automatic-updates now or automatic off later to opt out.' >&2
+/usr/bin/python3 -I "$project/installer/cli.py" automatic "$automatic"
+exec /usr/bin/python3 -I "$project/installer/cli.py" install

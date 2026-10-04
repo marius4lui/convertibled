@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "roots": {
+    "offline-root-1": "REPLACE_WITH_INDEPENDENTLY_VERIFIED_ED25519_PUBLIC_KEY_PEM"
+  },
+  "keyring_url": "https://github.com/REPLACE_OWNER/convertibled/releases/download/trust/keyring.json",
+  "channels": {
+    "stable": "https://github.com/REPLACE_OWNER/convertibled/releases/download/channels/stable.json",
+    "preview": "https://github.com/REPLACE_OWNER/convertibled/releases/download/channels/preview.json"
+  }
+}

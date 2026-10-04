@@ -1,0 +1,113 @@
+name: Product checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  dependencies:
+    name: Dependency advisories and licenses
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d
+        with:
+          toolchain: '1.99.0'
+      - run: cargo install cargo-deny --locked --version 0.20.2
+      - run: cargo deny --locked check
+  fedora:
+    name: Fedora 44 and GNOME 50 lifecycle
+    runs-on: ubuntu-24.04
+    container: fedora:44
+    env:
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - name: Install reference-platform build and nested-shell dependencies
+        run: dnf -y install git gcc gcc-c++ pkgconf-pkg-config gtk4-devel libadwaita-devel python3 openssl nodejs npm gnome-shell glib2 dbus-daemon mesa-dri-drivers tar gzip findutils which systemd
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d
+        with:
+          toolchain: '1.99.0'
+      - name: Root-owned admission and installer isolation tests
+        run: python3 -m unittest discover -s installer -t . -v
+      - run: cargo build --workspace --release --locked
+      - run: cargo test --workspace --locked
+      - run: npm ci && npm test
+        working-directory: extension
+      - name: Native Shell activation and cleanup
+        run: bash extension/tools/smoke-shell.sh extension/dist
+      - name: Build internal candidate with provenance and dependency inventory
+        run: |
+          glib-compile-schemas --strict extension/dist/schemas
+          python3 scripts/release/bundle.py --bin-dir target/release --extension-dir extension/dist --output artifacts/candidate/convertibled-fedora44-x86_64.tar.gz
+          python3 scripts/candidate-record.py --artifact artifacts/candidate/convertibled-fedora44-x86_64.tar.gz
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: fedora44-candidate
+          path: artifacts/candidate/
+  linux:
+    name: Linux services and GTK settings
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Install native build dependencies
+        run: sudo apt-get update && sudo apt-get install -y libgtk-4-dev libadwaita-1-dev pkg-config xvfb dbus-x11 imagemagick
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - run: cargo build --workspace --locked
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --locked
+      - run: timeout 90s dbus-run-session -- cargo test -p convertibled-session -- --ignored
+      - run: timeout 90s dbus-run-session -- cargo test -p convertibled -- --ignored
+      - name: Native GTK startup and missing-service rendering
+        run: dbus-run-session -- xvfb-run -a -s '-screen 0 1024x900x24' bash scripts/smoke-settings.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: native-settings-smoke
+          path: artifacts/
+          if-no-files-found: ignore
+  distribution:
+    name: Signed updates and recovery
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Ensure offline systemd unit verification is available
+        run: sudo apt-get update && sudo apt-get install -y systemd
+      - run: python3 -m unittest discover -s updater -t . -v
+      - run: python3 -m unittest discover -s installer -t . -v
+  shell:
+    name: Extension build and behavior
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: extension
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: extension/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Validate German gettext catalog
+        run: |
+          sudo apt-get update && sudo apt-get install -y gettext
+          msgfmt --check --output-file=/tmp/convertibled-de.mo po/de.po
+      - run: npm audit --audit-level=high
+  documentation:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - run: python3 scripts/check-docs.py
+      - run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+      - run: git diff --check

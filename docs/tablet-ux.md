@@ -2,10 +2,10 @@
 
 ## Design direction
 
-Use the selected desktop's typography, icons, spacing, navigation, dialogs,
-colors, dark mode, and accessibility conventions. Choose GTK/libadwaita for a
-GNOME-first app or Qt/Kirigami for a KDE-first app only after platform selection.
-No toolkit choice has been made. A replacement tablet shell is deferred.
+Use GNOME typography, symbolic icons, system colors, dialogs and dark mode.
+Settings use GTK4/libadwaita; the tablet workspace uses native Shell actors.
+Home sits behind applications and is opened through navigation; folding must
+keep the active app focused. Eligible main windows maximize; dialogs do not.
 
 ## Planned surfaces
 
@@ -18,8 +18,12 @@ No toolkit choice has been made. A replacement tablet shell is deferred.
 | Diagnostics | Health checks and explicit export of a sanitized report |
 | Native quick controls | Auto/manual profile, rotation lock, open settings |
 
-Exact shell placement requires the target desktop's supported integration.
-A generic tray icon is not automatically an acceptable native experience.
+A short bottom-edge touchscreen swipe reveals the dock, a longer swipe opens
+Home, and swipe-and-hold opens live overview. Visible Home/Overview controls
+provide equivalent actions. Preserve touchpad gestures and external displays.
+Split view supports half/third/two-thirds with vertical stacking in portrait;
+minimum sizes produce an explanation instead of forced geometry. Local widgets
+(clock/date, battery/status, quick actions) can be hidden and reordered.
 
 ## Touch and accessibility
 
@@ -46,7 +50,7 @@ OSK follows editable focus through the native desktop facility. Do not launch
 or dismiss it repeatedly during a transition, and ensure focused fields remain
 reachable. Unsupported OSK coordination is reported honestly.
 
-Scaling is opt-in, per-display, and deferred until restoration and failure
+Automatic scaling stays disabled and is deferred until restoration and failure
 handling are demonstrated. Show a preview/revert path before persistent changes.
 
 ## First-run and failure experience
@@ -68,3 +72,22 @@ Record target desktop and toolkit in `decisions.md` before coding the shell.
 Physically verify touch targets, text entry, OSK occlusion, rotation/touch mapping,
 focus, fold/unfold, docking, lock/unlock, suspend/resume, and reduced motion.
 Screenshots prove appearance only, not the complete interaction.
+
+## Initial settings design review
+
+The implementation plan uses a libadwaita PreferencesWindow with six named
+pages: overview, profiles, hardware, tablet, updates and diagnostics. Native
+preferences groups adapt to narrow widths; all controls retain labels and
+keyboard focus. Status rows distinguish detected, requested and applied state.
+Unavailable services show an explanation and retry, never invented success.
+Profiles offer automatic plus four manual choices and native rotation lock.
+Tablet settings expose only extension-owned preferences. Update preparation
+and logout-safe activation have separate labels; recovery needs explicit action.
+Diagnostics remain local until the user explicitly chooses an export path.
+System appearance follows libadwaita, with no forced font sizes or custom theme.
+This is the structural design review before coding; rendered portrait, dark,
+large-text and assistive-technology review remain acceptance tasks.
+
+Animation duration is approximately 200 ms using transforms/opacity; reduced
+motion disables decorative transitions. At 60 Hz at least 95 percent of
+reference-device animation frames must meet budget, without recurring stalls.

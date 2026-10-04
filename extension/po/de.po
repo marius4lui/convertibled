@@ -1,0 +1,95 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\nLanguage: de\nPlural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Search apps"
+msgstr "Apps suchen"
+
+msgid "No matching apps"
+msgstr "Keine passenden Apps"
+
+msgid "Home"
+msgstr "Start"
+
+msgid "Overview"
+msgstr "Übersicht"
+
+msgid "Back"
+msgstr "Zurück"
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "Add favorite"
+msgstr "Favorit hinzufügen"
+
+msgid "Remove favorite"
+msgstr "Favorit entfernen"
+
+msgid "Select for split"
+msgstr "Für Teilung auswählen"
+
+msgid "Split selected apps"
+msgstr "Ausgewählte Apps teilen"
+
+msgid "Select two apps for split"
+msgstr "Zwei Apps für die Teilung auswählen"
+
+msgid "Change split"
+msgstr "Teilung ändern"
+
+msgid "End split"
+msgstr "Teilung beenden"
+
+msgid "Automatic mode"
+msgstr "Automatik"
+
+msgid "Rotation lock"
+msgstr "Drehsperre"
+
+msgid "Battery status unavailable"
+msgstr "Akkustatus nicht verfügbar"
+
+msgid "Battery"
+msgstr "Akku"
+
+msgid "Laptop mode"
+msgstr "Laptop-Modus"
+
+msgid "Tablet mode"
+msgstr "Tablet-Modus"
+
+msgid "Stand mode"
+msgstr "Stand-Modus"
+
+msgid "Tent mode"
+msgstr "Zelt-Modus"
+
+msgid "Session service unavailable"
+msgstr "Sitzungsdienst nicht verfügbar"
+
+msgid "No windows on this display"
+msgstr "Keine Fenster auf diesem Bildschirm"
+
+msgid "Application"
+msgstr "Anwendung"
+
+msgid "These apps need more space for this split"
+msgstr "Diese Apps brauchen mehr Platz für die Teilung"
+
+msgid "Choose two resizable main windows on the internal display"
+msgstr "Zwei anpassbare Hauptfenster auf dem internen Bildschirm auswählen"
+
+msgid "Invalid window constraints"
+msgstr "Ungültige Fenstergrößen"
+
+msgid "Show more apps"
+msgstr "Weitere Apps anzeigen"
+
+msgid "Touch to enable gestures"
+msgstr "Berühren, um Gesten zu aktivieren"
+
+msgid "Split view failed. Previous window positions were restored."
+msgstr "Die Fensterteilung ist fehlgeschlagen. Die vorherigen Fensterpositionen wurden wiederhergestellt."
+
+msgid "Split view failed. Some window positions could not be restored."
+msgstr "Die Fensterteilung ist fehlgeschlagen. Einige Fensterpositionen konnten nicht wiederhergestellt werden."

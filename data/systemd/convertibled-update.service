@@ -1,0 +1,22 @@
+[Unit]
+Description=Prepare and safely activate verified convertibled updates
+After=network-online.target systemd-logind.service
+Wants=network-online.target
+ConditionPathExists=/etc/convertibled/trust.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -I /opt/convertibled/current/installer/cli.py scheduled
+TimeoutStartSec=15min
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/opt/convertibled /etc/convertibled /var/lib/convertibled /usr/bin /usr/share/gnome-shell/extensions /usr/share/polkit-1/actions /usr/share/applications /usr/share/icons/hicolor/scalable/apps /usr/share/metainfo /usr/share/dbus-1/system.d /usr/lib/systemd/system /usr/lib/systemd/user
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=yes
+

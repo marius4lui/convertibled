@@ -1,6 +1,6 @@
 # Contributing
 
-The project is currently a specification, not a working daemon. Start with
+The project is an experimental implementation without a public release. Start with
 `README.md`, `docs/README.md`, `ROADMAP.md`, and `docs/decisions.md`.
 Agents must additionally follow `AGENTS.md` in full.
 

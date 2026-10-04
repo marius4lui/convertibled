@@ -22,9 +22,11 @@ quality is part of functionality, not a final cosmetic pass.
 
 ## Scope
 
-First release platform: one explicitly selected desktop/version and a physical
-reference device. Backend design may be extensible without pretending that
-all desktops are supported.
+First release target: Fedora 44, GNOME 50, Wayland, x86_64 and ThinkPad X1 Yoga
+Gen 8. This identifies the acceptance target, not verified support. Native
+GTK4/libadwaita settings and a TypeScript/GJS Shell extension are selected.
+The first public release includes the complete workspace, services, CLI, own
+installer, signed updates and recovery; internal increments are experimental.
 
 Initial posture inference: laptop, folded, unknown. User profiles may be laptop,
 tablet, stand, or tent. Orientation is separate from posture. Manual selection
@@ -32,7 +34,9 @@ does not create fake sensor evidence.
 
 ## Boundaries
 
-The first product enhances the existing desktop. It does not replace its shell,
+The first product provides Home/search/favorites, dock, live window overview,
+portrait-aware split view (50/50, 1/3-2/3, 2/3-1/3), and local clock/battery/action
+widgets within GNOME Shell. It does not create another fullscreen app,
 manage unrelated machine settings, or redesign third-party applications.
 No telemetry by default. No network dependency for ordinary mode switching.
 No arbitrary privileged command hooks. No distro-package delivery as a
