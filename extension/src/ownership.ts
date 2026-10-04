@@ -15,6 +15,13 @@ export class OwnedState<K, T> {
         const record = this.records.get(key); return Boolean(record && this.equal(record.applied,current));
     }
     applied(key: K): T | undefined { return this.records.get(key)?.applied; }
+    checkpoint(key: K): () => void {
+        const record = this.records.get(key);
+        return () => {
+            if (record) this.records.set(key,record);
+            else this.records.delete(key);
+        };
+    }
     keys(): K[] { return [...this.records.keys()]; }
 }
 export class Cleanup {

@@ -253,3 +253,13 @@ disable and does not infer physical internal identity from vendor/name strings.
 Touch setup and End split live in the dock's horizontally scrollable strip,
 keeping Home/Overview reachable in portrait and large-text layouts. App refresh
 does not destroy the separate setup/action controls.
+
+Split placement snapshots both window states and their existing restoration
+ownership. A synchronous Mutter exception, including after the second window
+has already been unmaximized, rolls back every attempted window before returning
+failure. The divider and successful split state are created only after both
+placements succeed. A notification distinguishes successful rollback from an
+incomplete rollback; failed rollback drops that window's ownership rather than
+claiming restoration succeeded. A Node native-boundary regression injects the
+second placement exception and checks both positions, maximization and later
+laptop restoration. Actual asynchronous client geometry remains a device test.

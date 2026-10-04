@@ -87,3 +87,9 @@ msgstr "Weitere Apps anzeigen"
 
 msgid "Touch to enable gestures"
 msgstr "Berühren, um Gesten zu aktivieren"
+
+msgid "Split view failed. Previous window positions were restored."
+msgstr "Die Fensterteilung ist fehlgeschlagen. Die vorherigen Fensterpositionen wurden wiederhergestellt."
+
+msgid "Split view failed. Some window positions could not be restored."
+msgstr "Die Fensterteilung ist fehlgeschlagen. Einige Fensterpositionen konnten nicht wiederhergestellt werden."

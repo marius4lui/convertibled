@@ -32,6 +32,39 @@ export class WindowController {
         window.move_resize_frame(false, rect.x, rect.y, rect.width, rect.height);
         this.owned.remember(window, before, {rect:{...rect},maximized:0,monitor:before.monitor});
     }
+    placePair(first: any, firstRect: Rect, second: any, secondRect: Rect): 'applied' | 'restored' | 'failed' {
+        const checkpoints = [first,second].map(window => ({window,before:this.snapshot(window),
+            restoreOwnership:this.owned.checkpoint(window)}));
+        let attempted = 0;
+        try {
+            for (const [index,rect] of [firstRect,secondRect].entries()) {
+                // Include a window whose unmaximize succeeds but placement throws.
+                attempted = index + 1;
+                this.place(checkpoints[index]!.window,rect);
+            }
+            return 'applied';
+        } catch (error) {
+            console.error(`convertibled split placement: ${String(error)}`);
+            let restored = true;
+            // No await: roll back this synchronous operation before another UI action.
+            for (const checkpoint of checkpoints.slice(0,attempted).reverse()) {
+                const {window,before,restoreOwnership} = checkpoint;
+                try {
+                    if (window.get_monitor() !== before.monitor) throw new Error('Window changed monitor');
+                    window.unmaximize();
+                    const r = before.rect;
+                    window.move_resize_frame(false,r.x,r.y,r.width,r.height);
+                    if (before.maximized) window.set_maximize_flags(before.maximized);
+                    restoreOwnership();
+                } catch (rollbackError) {
+                    // Do not retain a successful ownership claim for a failed rollback.
+                    this.owned.forget(window); restored = false;
+                    console.error(`convertibled split rollback: ${String(rollbackError)}`);
+                }
+            }
+            return restored ? 'restored' : 'failed';
+        }
+    }
     minimum(window: any): {width: number; height: number} {
         const [known,width,height] = window.get_min_size();
         if (!known) return {width:0,height:0};

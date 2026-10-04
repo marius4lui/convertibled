@@ -30,6 +30,7 @@ export class Settings extends Emitter {
 }
 export const timers = new Map(); let timerId=0;
 export const pending=[];
+export const notifications=[];
 export const settings=new Settings();
 export const main={
     modalCount:0,overview:{visible:false},
@@ -39,7 +40,7 @@ export const main={
         getWorkAreaForMonitor(){return {x:0,y:0,width:800,height:600};}}),
     sessionMode:Object.assign(new Emitter(),{currentMode:'user',isLocked:false}),
     uiGroup:{set_child_below_sibling(){},set_child_above_sibling(){}},
-    activateWindow(){globalThis.focusChanges++;},notify(){},
+    activateWindow(){globalThis.focusChanges++;},notify(...args){notifications.push(args);},
 };
 export const system=Object.assign(new Emitter(),{get_installed:()=>[],get_running:()=>[]});
 export const favorites=Object.assign(new Emitter(),{getFavorites:()=>[],isFavorite:()=>false});

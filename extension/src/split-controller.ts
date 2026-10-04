@@ -21,8 +21,15 @@ export class SplitController {
         const ratio = ratios.includes(stored) ? stored : 'half';
         const layout = splitLayout(area,ratio,this.windows.minimum(first),this.windows.minimum(second));
         if ('error' in layout) { Main.notify('convertibled',_(layout.error)); return false; }
-        this.clear(); this.first = first; this.second = second; this.area = area;
-        this.windows.place(first,layout.first); this.windows.place(second,layout.second);
+        this.clear();
+        const placement = this.windows.placePair(first,layout.first,second,layout.second);
+        if (placement !== 'applied') {
+            Main.notify('convertibled',placement === 'restored'
+                ? _('Split view failed. Previous window positions were restored.')
+                : _('Split view failed. Some window positions could not be restored.'));
+            return false;
+        }
+        this.first = first; this.second = second; this.area = area;
         this.divider = new St.Button({style_class:'button convertibled-button',can_focus:true,reactive:true,
             accessible_name:_('Change split')});
         this.divider.set_child(new St.Icon({icon_name:'view-dual-symbolic',icon_size:24}));
