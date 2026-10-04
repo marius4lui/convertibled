@@ -57,3 +57,8 @@ SensorProxy accelerometer claims are limited to folded monitoring and released
 when laptop/unknown returns and on orderly shutdown. Shared claims preserve GNOME
 as rotation controller. Missing service, property/call failures and a two-second
 timeout return unknown orientation; the next sample retries after reconnection.
+
+Startup shell health now uses explicit Session1.ReportShellHealth(version,healthy),
+separate from action reports: normal laptop mode does not imply failed startup
+or prove a successful startup. Extension-provided matching metadata version is
+validated before the bounded relay to the system daemon.

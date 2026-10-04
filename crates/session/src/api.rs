@@ -100,25 +100,6 @@ impl Api {
         if applied.error.as_ref().is_some_and(|text| text.len() > 2048) {
             return Err(failed("Error exceeds 2048 bytes"));
         }
-        if let Ok(system) = zbus::Connection::system().await
-            && let Ok(daemon) = zbus::Proxy::new(
-                &system,
-                "org.convertibled.Daemon1",
-                "/org/convertibled/Daemon1",
-                "org.convertibled.Daemon1",
-            )
-            .await
-        {
-            let healthy = applied.status == "applied";
-            let result = tokio::time::timeout(
-                std::time::Duration::from_secs(3),
-                daemon.call::<_, _, ()>("ReportShellHealth", &(env!("CARGO_PKG_VERSION"), healthy)),
-            )
-            .await;
-            if let Ok(Err(error)) = result {
-                eprintln!("Shell health receipt unavailable: {error}");
-            }
-        }
         let mut state = self.state.write().await;
         if applied.tablet_workspace && (!state.active || state.locked) {
             return Err(failed(
@@ -149,6 +130,36 @@ impl Api {
                 .map_err(|e| zbus::fdo::Error::Failed(e.to_string()))?;
         }
         Ok(())
+    }
+    async fn report_shell_health(
+        &self,
+        version: &str,
+        healthy: bool,
+        #[zbus(connection)] connection: &Connection,
+        #[zbus(header)] header: Header<'_>,
+    ) -> zbus::fdo::Result<()> {
+        authorize(connection, &header).await?;
+        if version != env!("CARGO_PKG_VERSION") {
+            return Err(failed("Shell version differs from session service"));
+        }
+        let system = Connection::system()
+            .await
+            .map_err(|e| zbus::fdo::Error::Failed(e.to_string()))?;
+        let daemon = zbus::Proxy::new(
+            &system,
+            "org.convertibled.Daemon1",
+            "/org/convertibled/Daemon1",
+            "org.convertibled.Daemon1",
+        )
+        .await
+        .map_err(|e| zbus::fdo::Error::Failed(e.to_string()))?;
+        tokio::time::timeout(
+            std::time::Duration::from_secs(3),
+            daemon.call::<_, _, ()>("ReportShellHealth", &(version, healthy)),
+        )
+        .await
+        .map_err(|_| zbus::fdo::Error::Failed("Shell health report timed out".into()))?
+        .map_err(|e| zbus::fdo::Error::Failed(e.to_string()))
     }
     async fn reload(
         &self,
