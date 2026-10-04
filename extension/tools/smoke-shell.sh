@@ -4,17 +4,23 @@ set -euo pipefail
 bundle=${1:-"$(cd "$(dirname "$0")/.." && pwd)/dist"}
 test -f "$bundle/extension.js"
 test -f "$bundle/metadata.json"
-for command in gnome-shell gnome-extensions gsettings gdbus glib-compile-schemas dbus-run-session; do
+for command in gnome-shell gnome-extensions gsettings gdbus glib-compile-schemas dbus-run-session dbus-daemon; do
     command -v "$command" >/dev/null
 done
 gnome-shell --version | grep -E 'GNOME Shell 50([. ]|$)'
 task_root=$(mktemp -d "${TMPDIR:-/tmp}/convertibled-shell-smoke.XXXXXXXX")
-trap 'rm -rf -- "$task_root"' EXIT
+task_system_pid=''
+trap 'if test -n "$task_system_pid"; then kill "$task_system_pid" 2>/dev/null || true; fi; rm -rf -- "$task_root"' EXIT
 export XDG_DATA_HOME="$task_root/data" XDG_CONFIG_HOME="$task_root/config"
 export XDG_CACHE_HOME="$task_root/cache" XDG_RUNTIME_DIR="$task_root/runtime"
 export GSETTINGS_BACKEND=keyfile LIBGL_ALWAYS_SOFTWARE=1
 mkdir -p "$XDG_DATA_HOME/gnome-shell/extensions" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME" "$XDG_RUNTIME_DIR"
 chmod 700 "$XDG_RUNTIME_DIR"
+# A container has no logind/system bus. Provide an isolated transport rather
+# than exposing or mutating the host's actual system bus.
+mapfile -t task_bus < <(dbus-daemon --session --fork --print-address=1 --print-pid=1)
+export DBUS_SYSTEM_BUS_ADDRESS="${task_bus[0]}"
+task_system_pid="${task_bus[1]}"
 uuid=convertibled@convertibled.org
 cp -a "$bundle" "$XDG_DATA_HOME/gnome-shell/extensions/$uuid"
 glib-compile-schemas --strict "$XDG_DATA_HOME/gnome-shell/extensions/$uuid/schemas"

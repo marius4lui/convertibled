@@ -167,3 +167,8 @@ INACTIVE=2), avoiding translated CLI labels and renamed GNOME 50 states.
 Home keeps search outside one scrollable body containing favorites, widgets and
 the app grid. Narrow displays, large fonts and the OSK therefore cannot make
 the bottom widgets unreachable through fixed-height content accumulation.
+
+The headless smoke owns a second isolated D-Bus transport for system proxies;
+it never connects to the CI host's system bus. Fedora container startup required
+that transport for GNOME LoginManager/TimeLimits initialization. Absent actual
+logind/UPower services remain explicit container limitations.
