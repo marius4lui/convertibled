@@ -18,3 +18,4 @@ clap = { version = "4", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 zbus = "5"
 libc = "0.2"
+futures-lite = "2"

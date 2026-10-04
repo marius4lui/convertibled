@@ -1,5 +1,6 @@
 use crate::hardware::{self, Device};
 use convertibled_core::{Capabilities, Observation, Posture, debounce::Debouncer};
+use futures_lite::StreamExt;
 use std::{
     sync::Arc,
     time::{Duration, Instant},
@@ -60,10 +61,33 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let emitter = SignalEmitter::new(&connection, "/org/convertibled/Daemon1")?;
     let start = Instant::now();
     let mut debouncer = Debouncer::new(Duration::from_millis(config.debounce_ms));
+    let logind = zbus::Proxy::new(
+        &connection,
+        "org.freedesktop.login1",
+        "/org/freedesktop/login1",
+        "org.freedesktop.login1.Manager",
+    )
+    .await?;
+    let mut sleep_events = logind.receive_signal("PrepareForSleep").await?;
+    let mut terminate = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
     let mut interval = tokio::time::interval(Duration::from_millis(250));
     let mut sensor = crate::sensor::Sensor::default();
     loop {
-        tokio::select! { _ = tokio::signal::ctrl_c() => break, _ = interval.tick() => {} }
+        tokio::select! {
+            _=tokio::signal::ctrl_c()=>break,
+            _=terminate.recv()=>break,
+            signal=sleep_events.next()=>{
+                if let Some(signal)=signal
+                    && signal.body().deserialize::<(bool,)>().is_ok() {
+                        debouncer.invalidate();sensor.release(&connection).await;
+                        let mut state=data.write().await;state.observation=Observation::default();state.revision=state.revision.saturating_add(1);
+                        let json=serde_json::json!({"schema_version":1,"revision":state.revision,"observation":state.observation}).to_string();drop(state);
+                        Api::changed(&emitter,&json).await?;
+                }
+                continue;
+            },
+            _=interval.tick()=>{}
+        }
         // Rediscovery + fresh ioctl every tick covers initial, reconnect and resume.
         let devices = tokio::task::spawn_blocking(hardware::discover).await?;
         let available: Vec<bool> = devices

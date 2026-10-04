@@ -100,8 +100,9 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
     let emitter = SignalEmitter::new(&connection, "/org/convertibled/Session1")?;
     let mut interval = tokio::time::interval(Duration::from_millis(500));
+    let mut terminate = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
     loop {
-        tokio::select! { _ = tokio::signal::ctrl_c() => break, _ = interval.tick() => {} }
+        tokio::select! { _ = tokio::signal::ctrl_c() => break, _=terminate.recv()=>break, _ = interval.tick() => {} }
         let observed = observation(&system).await;
         let (active, locked) = session_state(&system).await;
         let mut status = state.write().await;

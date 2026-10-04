@@ -339,6 +339,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "convertibled-core",
+ "futures-lite",
  "libc",
  "serde",
  "serde_json",

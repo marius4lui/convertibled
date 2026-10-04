@@ -76,3 +76,8 @@ Applied action_outcomes retain separate rotation and OSK request/result/status/e
 records. Bounded report parsing rejects unknown actions/status values and oversized
 errors. A supported workspace can coexist with a failed native preference action;
 diagnostics must show the per-action outcome rather than assuming all succeeded.
+
+logind PrepareForSleep invalidates posture before sleep and on wake, releasing
+accelerometer claims before fresh switch sampling. Both services handle SIGTERM
+for systemd orderly stop in addition to Ctrl-C; the daemon releases sensor claims.
+Suspend/reconnect behavior remains subject to Linux and device integration checks.
