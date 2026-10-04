@@ -1,5 +1,5 @@
-use gtk::{gio, glib};
 use glib::variant::ToVariant;
+use gtk::{gio, glib};
 
 const NAME: &str = "org.convertibled.Session1";
 const PATH: &str = "/org/convertibled/Session1";
@@ -50,7 +50,9 @@ impl Client {
 
     pub async fn capabilities(&self) -> Result<serde_json::Value, String> {
         let result = self.call("GetCapabilities", ().to_variant()).await?;
-        let (json,) = result.get::<(String,)>().ok_or("Invalid capabilities reply")?;
+        let (json,) = result
+            .get::<(String,)>()
+            .ok_or("Invalid capabilities reply")?;
         crate::model::parse_status(&json)
     }
 }

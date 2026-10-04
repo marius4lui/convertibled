@@ -4,15 +4,15 @@ mod model;
 mod strings;
 
 #[cfg(target_os = "linux")]
-mod ui;
-#[cfg(target_os = "linux")]
 mod client;
+#[cfg(target_os = "linux")]
+mod hardware;
 #[cfg(target_os = "linux")]
 mod overview;
 #[cfg(target_os = "linux")]
 mod profiles;
 #[cfg(target_os = "linux")]
-mod hardware;
+mod ui;
 
 #[cfg(target_os = "linux")]
 fn main() -> gtk::glib::ExitCode {

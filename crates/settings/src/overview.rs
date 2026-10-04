@@ -15,21 +15,48 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
         ))
         .build();
     let definitions = [
-        (text.text("Detected posture", "Erkannte Haltung"), vec!["observation", "posture"]),
-        (text.text("Orientation", "Ausrichtung"), vec!["observation", "orientation"]),
-        (text.text("Selected profile", "Gewähltes Profil"), vec!["profile"]),
-        (text.text("Manual override", "Manuelle Auswahl"), vec!["manual_override"]),
-        (text.text("Requested workspace", "Gewünschte Arbeitsfläche"), vec!["desired", "tablet_workspace"]),
-        (text.text("Applied workspace", "Angewendete Arbeitsfläche"), vec!["applied", "tablet_workspace"]),
-        (text.text("Action result", "Aktionsergebnis"), vec!["applied", "status"]),
-        (text.text("Action details", "Aktionsdetails"), vec!["applied", "error"]),
+        (
+            text.text("Detected posture", "Erkannte Haltung"),
+            vec!["observation", "posture"],
+        ),
+        (
+            text.text("Orientation", "Ausrichtung"),
+            vec!["observation", "orientation"],
+        ),
+        (
+            text.text("Selected profile", "Gewähltes Profil"),
+            vec!["profile"],
+        ),
+        (
+            text.text("Manual override", "Manuelle Auswahl"),
+            vec!["manual_override"],
+        ),
+        (
+            text.text("Requested workspace", "Gewünschte Arbeitsfläche"),
+            vec!["desired", "tablet_workspace"],
+        ),
+        (
+            text.text("Applied workspace", "Angewendete Arbeitsfläche"),
+            vec!["applied", "tablet_workspace"],
+        ),
+        (
+            text.text("Action result", "Aktionsergebnis"),
+            vec!["applied", "status"],
+        ),
+        (
+            text.text("Action details", "Aktionsdetails"),
+            vec!["applied", "error"],
+        ),
     ];
-    let rows: Vec<_> = definitions.into_iter().map(|(title, path)| {
-        let row = adw::ActionRow::builder().title(title).subtitle("—").build();
-        row.set_subtitle_selectable(true);
-        group.add(&row);
-        (row, path)
-    }).collect();
+    let rows: Vec<_> = definitions
+        .into_iter()
+        .map(|(title, path)| {
+            let row = adw::ActionRow::builder().title(title).subtitle("—").build();
+            row.set_subtitle_selectable(true);
+            group.add(&row);
+            (row, path)
+        })
+        .collect();
     let refresh = gtk::Button::with_label(text.text("Refresh", "Aktualisieren"));
     refresh.set_height_request(44);
     group.set_header_suffix(Some(&refresh));
@@ -48,16 +75,25 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
         button.set_sensitive(false);
         glib::MainContext::default().spawn_local(async move {
             let result = async { Client::connect().await?.status().await }.await;
-            if weak_window.upgrade().is_none() { return; }
+            if weak_window.upgrade().is_none() {
+                return;
+            }
             match result {
                 Ok(status) => {
-                    for (row, path) in &rows { row.set_subtitle(&field(&status, path)); }
+                    for (row, path) in &rows {
+                        row.set_subtitle(&field(&status, path));
+                    }
                     health.set_subtitle(text.text("Connected", "Verbunden"));
                 }
                 Err(error) => {
                     // Remove stale values instead of presenting them as current state.
-                    for (row, _) in &rows { row.set_subtitle("—"); }
-                    health.set_subtitle(&format!("{}: {error}", text.text("Service unavailable", "Dienst nicht verfügbar")));
+                    for (row, _) in &rows {
+                        row.set_subtitle("—");
+                    }
+                    health.set_subtitle(&format!(
+                        "{}: {error}",
+                        text.text("Service unavailable", "Dienst nicht verfügbar")
+                    ));
                 }
             }
             button.set_sensitive(true);
