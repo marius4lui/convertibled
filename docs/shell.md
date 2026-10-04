@@ -105,3 +105,7 @@ Hidden surfaces opt out of LayoutManager's automatic fullscreen visibility
 tracking, which otherwise overrides an actor's hidden state. Home rests below
 the application group and is raised only on explicit navigation. Fullscreen
 entry hides navigation; leaving fullscreen restores it only in active tablet mode.
+
+Installed-app tiles provide explicit touch-sized add/remove favorite controls.
+These use GNOME's existing AppFavorites owner so Home, the tablet dock and the
+desktop favorites share one preference instead of maintaining divergent lists.
