@@ -29,6 +29,8 @@ Profiles and rotation lock are explicit requests over the session API. Merely
 opening settings never mutates a profile. Successful requests are described as
 requested, with Overview providing confirmation of applied state. Initial
 control values come from the service; automatic selection resets manual mode.
+When no explicit lock request exists, the rotation control reflects the reported
+native lock state rather than treating the default desired value as a request.
 
 Hardware presents service capability support and its explanation independently
 for the workspace, rotation, rotation lock, native OSK, split view, input

@@ -110,11 +110,12 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
         {
             let profile = status["manual_override"].as_str().unwrap_or("auto");
             selection.set_selected(PROFILES.iter().position(|p| *p == profile).unwrap_or(0) as u32);
-            lock.set_active(
-                status["desired"]["rotation_lock"]
-                    .as_bool()
-                    .unwrap_or(false),
-            );
+            let state = if status["desired"]["rotation_lock_requested"] == true {
+                &status["desired"]
+            } else {
+                &status["applied"]
+            };
+            lock.set_active(state["rotation_lock"].as_bool().unwrap_or(false));
         }
         selection.set_sensitive(true);
         lock.set_sensitive(true);
