@@ -25,6 +25,11 @@ Use disposable Linux environments for integration. Avoid live host mutation
 as a substitute for an isolated test. Rust host checks on Windows do not prove
 Linux device and desktop behavior.
 
+Archive permission tests use the update service's actual private `0077` umask.
+The verified candidate has traversable 0755 directories, executable 0755 binaries
+and readable 0644 assets/manifest while its outer staging directory stays private.
+File content, modes and directory entries are synced before atomic publication.
+
 ## Physical acceptance checklist
 
 - [ ] Laptop → folded → laptop; desired/applied state agrees
