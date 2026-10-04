@@ -1,5 +1,6 @@
 """Bounded configuration backup with no executable migration hooks."""
 import shutil
+import os
 from pathlib import Path
 from updater.model import UpdateError
 from .storage import atomic, read, sync_directory
@@ -58,6 +59,9 @@ def backup(layout):
         destination = target / source.relative_to(layout.config)
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, destination)
+        with destination.open("rb") as stream:
+            os.fsync(stream.fileno())
+        sync_directory(destination.parent)
     sync_directory(target)
 
 
@@ -73,4 +77,7 @@ def restore(layout):
         target = layout.config / path.relative_to(source)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(path, target)
+        with target.open("rb") as stream:
+            os.fsync(stream.fileno())
+        sync_directory(target.parent)
     sync_directory(layout.config)

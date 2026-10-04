@@ -40,3 +40,13 @@ class TransactionTests(unittest.TestCase):
             transaction = Transaction(layout, sessions=lambda: [])
             atomic(transaction.journal, {"schema": 1, "candidate": "0.2.0", "previous": "0.1.0", "phase": "awaiting_shell"})
             self.assertEqual(transaction.recover()["phase"], "awaiting_shell")
+
+    def test_prepared_interruption_never_stops_existing_service(self):
+        with tempfile.TemporaryDirectory() as root:
+            layout = Layout(root)
+            layout.initialize()
+            calls = []
+            transaction = Transaction(layout, sessions=lambda: [], run=calls.append)
+            atomic(transaction.journal, {"schema": 1, "candidate": "0.2.0", "previous": "0.1.0", "phase": "prepared"})
+            self.assertEqual(transaction.recover()["phase"], "rolled_back")
+            self.assertEqual(calls, [])

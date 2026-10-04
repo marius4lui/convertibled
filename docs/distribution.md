@@ -111,3 +111,7 @@ other extensions or accounts.
 directory. It uses the identical signature/freshness/replay/platform/hash/archive
 pipeline. It grants no arbitrary local file-read or extraction path arguments.
 `rollback` recovers a retained installed version without any network request.
+
+Ownership intent is persisted before host links are created. Configuration backup
+files and containing directories are fsynced. Interruption before selection
+does not stop/restart the unchanged previous service during recovery.

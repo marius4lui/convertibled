@@ -34,13 +34,15 @@ def install(layout):
                 raise UpdateError("Refusing to overwrite unrelated integration: " + destination)
         if not (layout.current / source).exists():
             raise UpdateError("Bundle lacks required integration: " + source)
+    # Journal ownership intent before creating links, so a power loss between
+    # link creation and journaling cannot leave an untracked project link.
+    owned["links"].update(LINKS)
+    atomic(layout.state / "owned.json", owned)
     for destination, source in LINKS.items():
         target = layout.root / destination
         target.parent.mkdir(parents=True, exist_ok=True)
         if not target.is_symlink():
             target.symlink_to(expected(layout, source), target_is_directory=destination.endswith(UUID))
-        owned["links"][destination] = source
-        atomic(layout.state / "owned.json", owned)
 
 
 def remove(layout):

@@ -57,8 +57,14 @@ class Transaction:
         self.require_logout()
         value = value or read(self.journal, {})
         previous = value.get("previous")
+        if value.get("phase") in ("backup", "prepared"):
+            self.record(value, "rolled_back")
+            return value
+        if not value.get("candidate") or value.get("phase") in (None, "rolled_back", "removed"):
+            raise UpdateError("No recoverable previous transaction")
         self.record(value, "rolling_back")
-        self.run(["systemctl", "stop", "convertibled.service"])
+        if (self.layout.root / "usr/lib/systemd/system/convertibled.service").exists():
+            self.run(["systemctl", "stop", "convertibled.service"])
         if previous:
             version(previous)
             self.layout.select(previous)
