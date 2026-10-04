@@ -249,3 +249,7 @@ native device can approve it; mouse/keyboard activation does nothing. The node
 key is an internal optional handoff, not the ordinary setup interface. This
 explicit physical confirmation grants the actual device object until removal or
 disable and does not infer physical internal identity from vendor/name strings.
+
+Touch setup and End split live in the dock's horizontally scrollable strip,
+keeping Home/Overview reachable in portrait and large-text layouts. App refresh
+does not destroy the separate setup/action controls.

@@ -10,6 +10,7 @@ export class Dock {
     private apps = new St.BoxLayout({style_class:'convertibled-grid'});
     private cleanup = new Cleanup();
     private strip: any;
+    private stripContent = new St.BoxLayout({style_class:'convertibled-grid'});
     private splitAction: any;
     private touchSetup: any;
     private approveTouch: ((event: any) => boolean) | null = null;
@@ -17,7 +18,7 @@ export class Dock {
         this.actor.add_child(button('Home', () => navigate('home'), 'go-home-symbolic'));
         this.actor.add_child(button('Overview', () => navigate('overview'), 'view-grid-symbolic'));
         this.strip = new St.ScrollView({x_expand:true,overlay_scrollbars:true});
-        this.strip.set_child(this.apps); this.actor.add_child(this.strip);
+        this.stripContent.add_child(this.apps); this.strip.set_child(this.stripContent); this.actor.add_child(this.strip);
         this.cleanup.signal(Favorites.getAppFavorites(), 'changed', () => this.refresh());
         this.cleanup.signal(Shell.AppSystem.get_default(), 'app-state-changed', () => this.refresh());
         this.refresh();
@@ -25,7 +26,7 @@ export class Dock {
     showApps(visible: boolean): void { this.strip.visible = visible; }
     setSplitAction(action: (() => void) | null): void {
         this.splitAction?.destroy(); this.splitAction = null;
-        if (action) { this.splitAction = button('End split',action,'view-restore-symbolic'); this.actor.add_child(this.splitAction); }
+        if (action) { this.splitAction = button('End split',action,'view-restore-symbolic'); this.stripContent.add_child(this.splitAction); }
     }
     setTouchSetup(action: ((event: any) => boolean) | null): void {
         this.approveTouch = action;
@@ -36,7 +37,7 @@ export class Dock {
             if (event.type() === Clutter.EventType.TOUCH_BEGIN && this.approveTouch?.(event)) return Clutter.EVENT_STOP;
             return Clutter.EVENT_PROPAGATE;
         });
-        this.actor.add_child(this.touchSetup);
+        this.stripContent.add_child(this.touchSetup);
     }
     refresh(): void {
         clear(this.apps);
