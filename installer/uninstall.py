@@ -64,6 +64,10 @@ def _uninstall(layout, run, sessions):
     remove_bootstrap(layout, run)
     pending(layout, True)
     atomic(layout.state / "transaction.json", {"schema": 1, "phase": "removing", "versions": [path.name for path, names in versions]})
+    # The durable removal journal now owns recovery. Consume any queued intent
+    # before deleting code so a later reinstall cannot inherit an old removal.
+    from .pending import clear as clear_pending
+    clear_pending(layout)
     run(["systemctl", "disable", "--now", "convertibled-update.timer", "convertibled.service"])
     remove(layout, preserve_admission=True)
     reload_users(run)

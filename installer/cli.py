@@ -20,7 +20,7 @@ from updater.model import UpdateError
 
 def parser():
     result = argparse.ArgumentParser(description="convertibled installation and verified updates")
-    result.add_argument("command", choices=("status", "check", "prepare", "offline-prepare", "install", "activate", "recover", "rollback", "uninstall", "automatic", "channel", "scheduled"))
+    result.add_argument("command", choices=("status", "check", "prepare", "offline-prepare", "install", "activate", "recover", "rollback", "uninstall", "request-uninstall", "request-rollback", "request-recover", "cancel-pending", "automatic", "channel", "scheduled"))
     result.add_argument("value", nargs="?", choices=("on", "off", "stable", "preview"))
     return result
 
@@ -35,7 +35,13 @@ def execute(args, layout):
     with layout.lock():
         manager = Manager(layout)
         transaction = Transaction(layout)
-        if args.command == "automatic":
+        if args.command.startswith("request-"):
+            from installer.pending import request
+            request(layout, args.command.removeprefix("request-"))
+        elif args.command == "cancel-pending":
+            from installer.pending import cancel
+            cancel(layout)
+        elif args.command == "automatic":
             if args.value not in ("on", "off"):
                 raise UpdateError("Automatic updates accept on/off")
             set_preferences(layout, automatic=args.value == "on")
@@ -63,6 +69,9 @@ def execute(args, layout):
             from installer.uninstall import uninstall
             uninstall(layout)
         elif args.command == "scheduled":
+            from installer.pending import process
+            if process(layout):
+                return publish(layout)
             from updater.schedule import due, quarantined
             if (layout.state / "admission.pending").exists():
                 # GDM may already register a graphical session while its Shell

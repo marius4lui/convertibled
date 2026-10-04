@@ -151,6 +151,27 @@ owned integration, configuration backups and removal, with simulated service
 commands. They cover clean install/health/remove, failed-service rollback and
 preserving added user files. Windows explicitly skips POSIX-only cases.
 
+## Desktop recovery and removal requests
+
+The privileged helper accepts fixed `request-recover`, `request-rollback`, and
+`request-uninstall` verbs. These persist a request bound to the currently selected
+version, then arm the existing update timer. `cancel-pending` cancels a waiting
+or failed request; an interrupted critical transaction must recover first.
+Immediate `recover`, `rollback`, and `uninstall` remain available for offline
+administrator recovery after logout.
+
+The timer processes explicit requests before automatic preparation, even when
+automatic updates are disabled. Graphical sessions, including locked sessions,
+block version changes and removal. A login/admission race defers safely. Failures
+remain visible without retry loops; repeating the same request explicitly retries
+it. Existing admission-marker crash recovery still runs without retrying the
+failed requested action. A different selected version invalidates the request
+and requires review.
+Public status includes `pending_action` and `pending_state`; queued phases are
+`waiting_for_logout` or `action_failed`, with a bounded failure explanation.
+Removal consumes the request after its durable recovery journal is written,
+preventing a later reinstall from inheriting an old removal request.
+
 ## Trust bootstrap and installation
 
 The reviewed installer now requests administrator authentication when started

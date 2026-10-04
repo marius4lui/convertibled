@@ -9,6 +9,13 @@ def publish(layout, error=None):
     available = read(layout.state / "available.json", {})
     prepared = read(layout.state / "prepared.json", {})
     value = {"schema": 1, "installed": layout.active(), "available": available.get("version"), "prepared": prepared.get("version"), "phase": transaction.get("phase", "idle"), "preferences": preferences(layout), "error": str(error)[:512] if error else None}
+    from .pending import requested
+    pending = requested(layout)
+    value["pending_action"] = pending["action"] if pending else None
+    value["pending_state"] = pending["state"] if pending else None
+    if pending:
+        value["phase"] = "action_failed" if pending["state"] == "failed" else "waiting_for_logout"
+        value["error"] = value["error"] or pending.get("error")
     # Root-owned state is traversable for this explicitly sanitized file only.
     layout.state.chmod(0o755)
     atomic(layout.state / "status.json", value)
