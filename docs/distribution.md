@@ -143,3 +143,27 @@ POSIX lifecycle tests use real version directories, archive extraction, symlinks
 owned integration, configuration backups and removal, with simulated service
 commands. They cover clean install/health/remove, failed-service rollback and
 preserving added user files. Windows explicitly skips POSIX-only cases.
+
+## Trust bootstrap and installation
+
+There is no production release key or downloadable supported release yet.
+An administrator must independently authenticate the initial reviewed installer
+source and the offline Ed25519 root fingerprint. A key downloaded beside an
+untrusted bundle is not a trust bootstrap. Keep private keys offline/outside
+the repository; only public PEM keys belong in `/etc/convertibled/trust.json`.
+`installer/trust.example.json` shows the contract with intentionally invalid
+placeholders. Review actual immutable artifact/channel URLs before provisioning
+that root-owned 0600 file. Never use curl-pipe-to-root installation.
+
+From a TTY after every graphical user logs out, run the independently verified
+source's `sudo sh installer/install` (or `--no-automatic-updates`). It explains
+the automatic default, prepares only authenticated assets, then activates the
+version. First login loads the installed session unit. Enable
+`convertibled@convertibled.org` for that user through GNOME Extensions; other users'
+settings are untouched. Reference-device first-login acceptance is still required.
+
+Subsequent fixed helper commands use
+`pkexec /opt/convertibled/current/installer/cli.py COMMAND`. Status is unprivileged:
+`python3 -I /opt/convertibled/current/installer/cli.py status`. A root TTY can run
+the same helper using `python3 -I` for offline prepare/activate/recover/rollback.
+Do not manually edit `current` or transaction journals during recovery.
