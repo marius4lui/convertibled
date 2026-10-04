@@ -212,3 +212,34 @@ class PendingActionTests(unittest.TestCase):
         self.transaction.return_value.rollback.assert_called_once_with()
         self.transaction.return_value.recover.assert_called_once_with()
         self.assertEqual(requested(self.layout)["state"], "failed")
+
+    def test_failed_request_does_not_starve_online_health_or_logout_recovery(self):
+        self.queue_activation()
+        value = requested(self.layout)
+        value.update(state="failed", error="Candidate changed")
+        atomic(self.layout.state / "pending-action.json", value)
+        atomic(self.layout.state / "transaction.json", {"phase": "awaiting_shell"})
+        self.tick([{"user": "1000"}])
+        self.transaction.return_value.observe_login.assert_called_once_with()
+        self.transaction.return_value.recover.assert_not_called()
+        self.tick()
+        self.transaction.return_value.recover.assert_called_once_with()
+        self.transaction.return_value.activate.assert_not_called()
+        self.assertEqual(requested(self.layout)["state"], "failed")
+
+    def test_waiting_action_allows_journal_only_acceptance_online(self):
+        request(self.layout, "uninstall", self.run)
+        atomic(self.layout.state / "transaction.json", {"phase": "awaiting_shell"})
+        self.tick([{"user": "1000"}])
+        self.transaction.return_value.observe_login.assert_called_once_with()
+        self.transaction.return_value.recover.assert_not_called()
+        self.remove.assert_not_called()
+
+    def test_next_activation_cannot_skip_failed_previous_trial(self):
+        self.queue_activation()
+        atomic(self.layout.state / "transaction.json", {"phase": "awaiting_shell"})
+        self.transaction.return_value.recover.side_effect = lambda: setattr(self.layout.active, "return_value", "0.0.9")
+        self.tick()
+        self.transaction.return_value.recover.assert_called_once_with()
+        self.transaction.return_value.activate.assert_not_called()
+        self.assertEqual(requested(self.layout)["state"], "failed")

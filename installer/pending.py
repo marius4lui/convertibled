@@ -88,9 +88,13 @@ def process(layout, sessions=graphical_sessions, transaction_type=Transaction, u
     if value["state"] == "failed":
         # A failed requested action must not suppress the existing crash-recovery
         # path or leave the admission gate closed. Never retry the action itself.
-        if (layout.state / "admission.pending").exists():
+        journal = read(layout.state / "transaction.json", {})
+        if (layout.state / "admission.pending").exists() or journal.get("phase") == "awaiting_shell":
             try:
-                transaction.recover()
+                if not (layout.state / "admission.pending").exists() and sessions():
+                    transaction.observe_login()
+                else:
+                    transaction.recover()
             except (UpdateError, OSError, ValueError) as exc:
                 if not isinstance(exc, UpdateError) or str(exc) not in WAITING:
                     value["error"] = "Interrupted transaction needs recovery: " + str(exc)[:450]
@@ -121,8 +125,14 @@ def process(layout, sessions=graphical_sessions, transaction_type=Transaction, u
         if layout.active() != value["version"]:
             raise UpdateError("Installed version changed; cancel and review the system action again")
         if sessions():
+            if journal.get("phase") == "awaiting_shell":
+                transaction.observe_login()
             return True
         if value["action"] == "activate":
+            if journal.get("phase") == "awaiting_shell":
+                transaction.recover()
+                if layout.active() != value["version"]:
+                    raise UpdateError("Installed version recovered; cancel and review activation again")
             prepared = read(layout.state / "prepared.json", {})
             if prepared.get("version") != value["candidate"] or prepared.get("channel") != value["channel"]:
                 raise UpdateError("Prepared version or channel changed; cancel and review activation again")
