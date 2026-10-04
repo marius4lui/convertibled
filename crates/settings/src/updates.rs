@@ -39,6 +39,14 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
             "phase",
             text.text("Transaction state", "Transaktionszustand"),
         ),
+        (
+            "pending_action",
+            text.text("Scheduled action", "Geplante Aktion"),
+        ),
+        (
+            "pending_state",
+            text.text("Scheduled action status", "Status der geplanten Aktion"),
+        ),
         ("error", text.text("Details", "Details")),
     ]
     .into_iter()
@@ -89,7 +97,7 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
     }
     page.add(&group);
     page.add(&crate::update_preferences::group(text));
-    page.add(&crate::recovery::group(window, text));
+    page.add(&crate::recovery::group(window, text, &refresh));
     refresh.emit_clicked();
     page
 }

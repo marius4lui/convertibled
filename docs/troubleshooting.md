@@ -52,8 +52,20 @@ resolved with authenticated assets. Do not bypass verification, manually change
 `/opt/convertibled/current`, or edit transaction journals. No configured production
 trust means updates cannot authenticate a release.
 
-For interrupted activation or a blocked subsequent login, use a TTY and the
-retained installed helper after graphical users have logged out:
+If the desktop is available, **Settings → Updates → Recovery and removal**
+can schedule recovery or restoration of the retained previous version. The
+equivalent `convertiblectl update recover` and `convertiblectl update rollback`
+requests wait until all graphical users log out, even with automatic updates
+disabled. Review the scheduled action, status and details before logging out.
+Waiting is not completion. A failed request stays visible and does not retry
+silently; repeat the reviewed request to retry or use
+`convertiblectl update cancel-pending` to cancel it. Cancellation cannot interrupt
+a running critical operation. A changed installed version requires a fresh
+reviewed request rather than applying maintenance to an unexpected version.
+
+For a blocked subsequent login, use a TTY and the retained installed helper
+after graphical users have logged out. These direct helper verbs perform
+immediate offline recovery rather than queueing a desktop request:
 
 ```sh
 sudo python3 -I /opt/convertibled/current/installer/cli.py recover

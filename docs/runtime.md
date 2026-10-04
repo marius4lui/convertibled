@@ -65,7 +65,8 @@ GetStatus/GetCapabilities/GetConfig expose snapshots. SetProfile, SetRotationLoc
 SaveConfig and Reload are authorized mutations; ReportApplied supplies actual outcomes.
 ReportShellHealth separately relays explicit matching-version extension startup health
 to the daemon. The daemon revalidates active local ownership and atomically writes
-`/var/lib/convertibled/health/shell-health.json` for update recovery. This authenticates
+`/var/lib/convertibled/health/shell-health.json` and `shell-health-UID.json` for
+update recovery and the consenting user's first-login acceptance. This authenticates
 session ownership and matching version, not cryptographic shell-code attestation.
 
 ## Configuration and CLI
@@ -87,10 +88,15 @@ rotation-lock, profiles, config validate/show/save, reload and update controls.
 Diagnostic commands support JSON. Doctor collects services independently and uses
 a typed export allowlist, omitting identifiers/source strings/arbitrary backend
 errors. Export is explicit. Update check/prepare/status/activate/recover/rollback,
-automatic on/off and channel stable/preview use fixed arguments to the isolated
+uninstall/cancel-pending, automatic on/off and channel stable/preview use fixed arguments to the isolated
 installed helper; mutations request pkexec authorization. Exit codes: 0 completed
 request, 2 usage/configuration error, 3 unavailable runtime, 4 denied authorization,
 5 updater failure. Request completion never proves desktop action success.
+
+The CLI's recover, rollback and uninstall commands queue fixed `request-*` verbs
+for graphical logout. Those explicit aliases are accepted too. `cancel-pending`
+cancels waiting or failed maintenance. The installed Python helper retains
+immediate recover/rollback/uninstall verbs for an administrator's offline TTY.
 
 `convertibled --check` validates Linux x86_64, the input subsystem and system config
 without claiming a bus name, modifying hardware or creating health receipts.

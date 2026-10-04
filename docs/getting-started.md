@@ -84,14 +84,38 @@ log out; locking or switching users is insufficient. New Shell code loads at the
 next login. The updater retains a previous version and recovers failed activation
 at a safe logout boundary. See [troubleshooting](troubleshooting.md) for recovery.
 
-For removal, each opted-in user should first disable the extension in their own
-GNOME session:
+For recovery or removal, open **Settings → Updates → Recovery and removal**.
+Review the action and confirm it, then authorize the administrator request.
+Removal is scheduled; it does not remove the running workspace immediately.
+The status shows the scheduled action and whether it is waiting, running or
+failed. Save your work and log out normally when ready. All graphical users
+must log out; these explicit requests also run when automatic updates are off.
+
+Equivalent CLI requests are:
+
+```sh
+convertiblectl update recover
+convertiblectl update rollback
+convertiblectl update uninstall
+convertiblectl update cancel-pending
+```
+
+The `request-recover`, `request-rollback` and `request-uninstall` aliases have
+the same queued behavior. **Cancel scheduled action** cancels a waiting or
+failed request. An action already running cannot be interrupted. A failed
+request remains visible for review; explicitly request it again to retry, or
+cancel before choosing another action. Requests bind the selected installed
+version so an intervening installation cannot silently change their target.
+
+Before removal, each opted-in user can disable the extension in their own
+GNOME session to restore their workspace preferences:
 
 ```sh
 sh /opt/convertibled/current/installer/finish-user.sh --disable
 ```
 
-After all graphical users log out, run from a TTY:
+If Settings is unavailable, immediate offline removal remains available from
+a TTY after all graphical users log out:
 
 ```sh
 sudo python3 -I /opt/convertibled/current/installer/cli.py uninstall

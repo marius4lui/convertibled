@@ -64,9 +64,12 @@ Update opt-out and stable/preview selection require an explicit save. Existing
 system values load before saving is enabled; partial save failures re-read the
 actual preferences rather than pretending the entire change was applied.
 
-Recovery and previous-version requests use native confirmation dialogs with
-Cancel as the default. The helper still enforces logout requirements; an error
-is displayed instead of forcing the user's current graphical session to stop.
+Recovery, previous-version restoration and removal use native confirmation
+dialogs with Cancel as the default. The helper queues the confirmed action for
+all graphical users' logout, even when automatic updates are off. Settings shows
+the pending action and distinguishes waiting from failure; a waiting or failed
+request can be cancelled before a critical transaction starts. Removal retains
+configuration and personal data. No action forcibly closes a session.
 
 Desktop launch metadata and a project-owned scalable icon live under `data/`.
 The installer owns their installation/removal; settings does not register itself

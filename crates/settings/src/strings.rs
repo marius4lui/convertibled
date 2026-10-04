@@ -50,6 +50,27 @@ impl Strings {
             "disabled" => self.text("Disabled", "Deaktiviert"),
             "unchanged" => self.text("Unchanged", "Unverändert"),
             "awaiting_shell" => self.text("Waiting for next login", "Wartet auf nächste Anmeldung"),
+            "waiting_for_logout" | "waiting" => self.text(
+                "Waiting for all graphical users to log out",
+                "Wartet auf die Abmeldung aller grafischen Benutzer",
+            ),
+            "action_failed" => self.text(
+                "Scheduled action failed — review details",
+                "Geplante Aktion fehlgeschlagen — Details prüfen",
+            ),
+            "running" => self.text(
+                "Applying scheduled action",
+                "Geplante Aktion wird ausgeführt",
+            ),
+            "uninstall" => self.text("Remove convertibled", "convertibled entfernen"),
+            "rollback" => self.text(
+                "Restore previous version",
+                "Vorherige Version wiederherstellen",
+            ),
+            "recover" => self.text(
+                "Recover interrupted transaction",
+                "Unterbrochene Transaktion wiederherstellen",
+            ),
             "complete" => self.text("Complete", "Abgeschlossen"),
             "rolled_back" => self.text(
                 "Previous version restored",
