@@ -1,5 +1,5 @@
 use crate::hardware::{self, Device};
-use convertibled_core::{Capabilities, Observation, Orientation, debounce::Debouncer};
+use convertibled_core::{Capabilities, Observation, Posture, debounce::Debouncer};
 use std::{
     sync::Arc,
     time::{Duration, Instant},
@@ -43,29 +43,6 @@ impl Api {
     #[zbus(signal)]
     async fn changed(emitter: &SignalEmitter<'_>, status: &str) -> zbus::Result<()>;
 }
-async fn orientation(connection: &Connection) -> Orientation {
-    let Ok(proxy) = zbus::Proxy::new(
-        connection,
-        "net.hadess.SensorProxy",
-        "/net/hadess/SensorProxy",
-        "net.hadess.SensorProxy",
-    )
-    .await
-    else {
-        return Orientation::Unknown;
-    };
-    match proxy
-        .get_property::<String>("AccelerometerOrientation")
-        .await
-        .as_deref()
-    {
-        Ok("normal") => Orientation::Normal,
-        Ok("left-up") => Orientation::LeftUp,
-        Ok("right-up") => Orientation::RightUp,
-        Ok("bottom-up") => Orientation::BottomUp,
-        _ => Orientation::Unknown,
-    }
-}
 pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let config = match std::fs::read_to_string("/etc/convertibled/config.toml") {
         Ok(text) => convertibled_core::config::Config::parse(&text)?,
@@ -84,6 +61,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
     let mut debouncer = Debouncer::new(Duration::from_millis(config.debounce_ms));
     let mut interval = tokio::time::interval(Duration::from_millis(250));
+    let mut sensor = crate::sensor::Sensor::default();
     loop {
         tokio::select! { _ = tokio::signal::ctrl_c() => break, _ = interval.tick() => {} }
         // Rediscovery + fresh ioctl every tick covers initial, reconnect and resume.
@@ -101,7 +79,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         let posture = debouncer.sample(samples, start.elapsed());
         let current = Observation {
             posture,
-            orientation: orientation(&connection).await,
+            orientation: sensor.sample(&connection, posture == Posture::Folded).await,
             source: if samples.is_empty() {
                 "unavailable"
             } else {
@@ -119,6 +97,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
             Api::changed(&emitter, &json).await?;
         }
     }
+    sensor.release(&connection).await;
     Ok(())
 }
 

@@ -17,3 +17,5 @@ fn main() {
 }
 #[cfg(target_os = "linux")]
 mod health;
+#[cfg(target_os = "linux")]
+mod sensor;

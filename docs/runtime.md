@@ -52,3 +52,8 @@ version mismatch, locked/ambiguous sessions and authorization timeout fail.
 convertibled --check is a bounded candidate preflight: Linux x86_64 input subsystem
 and whole system configuration validation. It starts no bus name, writes no
 receipt and cannot prove switch hardware or desktop acceptance.
+
+SensorProxy accelerometer claims are limited to folded monitoring and released
+when laptop/unknown returns and on orderly shutdown. Shared claims preserve GNOME
+as rotation controller. Missing service, property/call failures and a two-second
+timeout return unknown orientation; the next sample retries after reconnection.
