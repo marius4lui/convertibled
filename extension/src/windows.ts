@@ -20,14 +20,17 @@ export class WindowController {
     maximize(window: any, monitor: number): void {
         if (!this.eligible(window, monitor) || !window.can_maximize()) return;
         const before = this.snapshot(window);
+        if (before.maximized === Meta.MaximizeFlags.BOTH) return;
         window.maximize();
-        this.owned.remember(window, before, this.snapshot(window));
+        const r = window.get_work_area_current_monitor();
+        this.owned.remember(window, before, {rect:{x:r.x,y:r.y,width:r.width,height:r.height},
+            maximized:Meta.MaximizeFlags.BOTH,monitor});
     }
     place(window: any, rect: Rect): void {
         const before = this.snapshot(window);
         window.unmaximize();
         window.move_resize_frame(false, rect.x, rect.y, rect.width, rect.height);
-        this.owned.remember(window, before, this.snapshot(window));
+        this.owned.remember(window, before, {rect:{...rect},maximized:0,monitor:before.monitor});
     }
     minimum(window: any): {width: number; height: number} {
         const [known,width,height] = window.get_min_size();

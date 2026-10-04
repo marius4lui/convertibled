@@ -88,3 +88,8 @@ All mutation responses are finished even when no result callback is needed,
 so D-Bus failures are observed. Reconnecting a restarted session service sends
 fresh capabilities and applied state. Disable sends a bounded unavailable
 report independent of ordinary canceled operations.
+
+Window ownership now compares against requested geometry rather than an
+immediate snapshot before a Wayland client acknowledges resizing. Adapter tests
+simulate asynchronous maximize acknowledgement, later user moves, external
+outputs and dialog exclusion. They remain mocks, not compositor acceptance.
