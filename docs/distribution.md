@@ -190,3 +190,7 @@ be verified on Fedora 44; no SELinux protections are disabled by the installer.
 
 Malformed/deep JSON, oversized logind inventories and corrupt tar streams produce
 bounded actionable errors rather than escaping the transaction/error-status path.
+
+Bootstrap conflict checks recognize both authenticated `PKEXEC_UID` and sudo's
+`SUDO_UID`, so the TTY install also inspects the installing user's extensions.
+Low-space and competing-extension tests verify refusal preserves existing files.

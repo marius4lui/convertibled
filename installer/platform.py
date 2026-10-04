@@ -47,7 +47,7 @@ def preflight(layout, required_space):
     if shutil.disk_usage(layout.versions).free < required_space + 128 * 1024 * 1024:
         raise UpdateError("Insufficient disk space (including recovery reserve)")
     directories = [layout.root / "usr/share/gnome-shell/extensions"]
-    caller = os.environ.get("PKEXEC_UID", "")
+    caller = os.environ.get("PKEXEC_UID") or os.environ.get("SUDO_UID", "")
     if caller.isdecimal():
         import pwd
         try:
