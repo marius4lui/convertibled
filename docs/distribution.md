@@ -205,3 +205,11 @@ root-signed keyring, including root freshness and administrator-provisioned root
 trust. Learning a revocation through another channel invalidates a cached prepared
 release signed by that key. The installed candidate's artifact identity must also
 match the authenticated metadata; equal version strings alone do not bind bytes.
+
+Quiescing is journaled before stopping the daemon, so an interruption there
+restarts the unchanged previous version during recovery. Logout is rechecked
+after the potentially slow candidate preflight and again after daemon stop.
+These repeated logind observations do not provide an atomic login admission
+lock: a remaining TOCTOU window exists during selection/restart. No display
+manager is stopped, sessions forced out, or global login lock imposed. This
+integration limitation must be tested/reviewed before public release.

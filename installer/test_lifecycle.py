@@ -79,3 +79,39 @@ class LifecycleTests(unittest.TestCase):
             uninstall(self.layout, run=lambda args: self.calls.append(args), sessions=lambda: [])
         self.assertEqual(self.calls, [])
         self.assertEqual(self.layout.active(), "0.1.0")
+
+    @patch("installer.identity.ensure")
+    def test_interruption_after_daemon_stop_restores_service(self, identity):
+        self.candidate("0.1.0")
+        self.transaction.activate("0.1.0")
+        atomic(self.layout.state / "health/shell-health.json", {"version": "0.1.0", "healthy": True})
+        self.transaction.recover()
+        self.candidate("0.2.0")
+        def interrupt(args):
+            if args == ["systemctl", "stop", "convertibled.service"]:
+                raise KeyboardInterrupt("updater killed after stop")
+        self.transaction.run = interrupt
+        with self.assertRaises(KeyboardInterrupt):
+            self.transaction.activate("0.2.0")
+        self.assertEqual(read(self.transaction.journal)["phase"], "quiescing")
+        self.calls.clear()
+        self.transaction.run = lambda args: self.calls.append(args)
+        self.assertEqual(self.transaction.recover()["phase"], "rolled_back")
+        self.assertEqual(self.layout.active(), "0.1.0")
+        self.assertIn(["systemctl", "start", "convertibled.service"], self.calls)
+
+    @patch("installer.identity.ensure")
+    def test_login_during_preflight_blocks_mutation(self, identity):
+        self.candidate("0.1.0")
+        logged_in = [False]
+        def run(args):
+            self.calls.append(args)
+            if args[-1] == "--check":
+                logged_in[0] = True
+        self.transaction.run = run
+        self.transaction.sessions = lambda: [{"type": "wayland"}] if logged_in[0] else []
+        with self.assertRaises(UpdateError):
+            self.transaction.activate("0.1.0")
+        self.assertIsNone(self.layout.active())
+        self.assertEqual(read(self.transaction.journal)["phase"], "prepared")
+        self.assertFalse(any(args[0] == "systemctl" for args in self.calls))

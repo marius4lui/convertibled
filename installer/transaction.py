@@ -38,8 +38,12 @@ class Transaction:
             from .identity import ensure
             ensure(self.run)
             self.run([str(self.layout.versions / candidate / "bin/convertibled"), "--check"])
+            # Preflight may be slow. Recheck immediately before quiescing.
+            self.require_logout()
+            self.record(value, "quiescing")
             if previous:
                 self.run(["systemctl", "stop", "convertibled.service"])
+            self.require_logout()
             self.record(value, "switching")
             (self.layout.state / "health/shell-health.json").unlink(missing_ok=True)
             self.layout.select(candidate)
