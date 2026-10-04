@@ -133,3 +133,8 @@ preparation is throttled to six hours; explicit check/prepare remains immediate.
 Activation revalidates prepared channel, accepted release and metadata freshness.
 Stale shell receipts are cleared before selecting a candidate; explicit failure
 receipts trigger safe rollback even if a short first session escaped polling.
+
+Disposable pipeline tests perform real Ed25519 verification, offline bounded
+reads, deterministic archive extraction and immutable candidate preparation.
+They cover idempotence, corruption, architecture/expiry rejection, signed
+downgrades and replay. They do not start systemd or claim real GNOME acceptance.
