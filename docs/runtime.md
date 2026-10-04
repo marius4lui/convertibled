@@ -111,3 +111,7 @@ Hardware and logind reconciliation run concurrently with two-second deadlines.
 Timeouts immediately substitute unknown observation or inactive/locked session,
 so a stalled backend cannot retain cached authorization. Applied owner queries
 are bounded too. Profile actions become unchanged for inactive/locked sessions.
+
+All Rust bus services explicitly use zbus's Tokio executor, matching their timers
+and blocking workers. The private-bus contract test is internally bounded to
+15 seconds so an absent reply fails rather than hanging the integration job.
