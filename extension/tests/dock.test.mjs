@@ -16,6 +16,9 @@ test('dock fits sparse content, bounds portrait width and preserves navigation w
     dock.showApps(true);assert.equal(dock.divider.visible,true);
     const setup=dock.touchSetup;dock.refresh();assert.equal(dock.touchSetup,setup);
     assert.equal(setup.destroyed,false);assert.equal(setup.accessible_name,'Touch to enable gestures');
+    const normalWidth=setup.width;dock.resize(800,1.5);
+    assert.ok(setup.width>normalWidth);
+    assert.equal(setup.get_children()[0].get_children()[1].clutter_text.line_wrap,false);
     dock.setSuspended(true);assert.equal(dock.actor.opacity,0);assert.equal(dock.shelf.visible,false);
     dock.setSuspended(false);assert.equal(dock.shelf.visible,true);
     dock.destroy();

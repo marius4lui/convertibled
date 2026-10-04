@@ -340,3 +340,5 @@ leave room for localized captions without compressing the icon grid. The widget
 preference order is preserved within its section. Navigation, running apps and
 contextual actions form distinct groups in a dock sized to its content; running
 indicators remain separate from pressed and selected states.
+Dock action widths and reserved height adapt to native text scaling so localized
+labels stay on one line without spilling below the monitor edge.

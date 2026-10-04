@@ -19,6 +19,7 @@ export class Dock {
     private actions = new St.BoxLayout({style_class:'convertibled-dock-actions',y_align:Clutter.ActorAlign.CENTER});
     private divider = new St.Widget({style_class:'convertibled-dock-divider',y_align:Clutter.ActorAlign.CENTER});
     private width = 800;
+    private textScale = 1;
     private splitAction: any;
     private touchSetup: any;
     private approveTouch: ((event: any) => boolean) | null = null;
@@ -44,7 +45,9 @@ export class Dock {
         this.cleanup.signal(Shell.AppSystem.get_default(), 'app-state-changed', () => this.refresh());
         this.refresh();
     }
-    resize(width: number): void { this.width = width; this.layout(); }
+    resize(width: number,textScale = 1): void {
+        this.width = width; this.textScale = Math.max(1,textScale); this.layout();
+    }
     private layout(): void {
         const appCount = this.apps.get_n_children();
         const actionCount = this.actions.get_n_children();
@@ -52,8 +55,10 @@ export class Dock {
         this.actions.visible = actionCount > 0;
         this.divider.visible = this.strip.visible && appCount + actionCount > 0;
         // Fit the actual content: sparse favorites must not leave an empty tail.
-        const contentWidth = this.strip.visible ? appCount * 60 + actionCount * 112 + 20 : 0;
-        this.shelf.width = Math.min(Math.max(0,this.width - 32),184 + contentWidth);
+        const actionWidth = Math.ceil(112 * this.textScale);
+        for (const action of this.actions.get_children()) action.width = actionWidth;
+        const contentWidth = this.strip.visible ? appCount * 60 + actionCount * (actionWidth + 6) + 20 : 0;
+        this.shelf.width = Math.min(Math.max(0,this.width - 32),Math.ceil(184 * this.textScale) + contentWidth);
     }
     select(surface: string | null): void {
         for (const [name,item] of this.navigation) item.checked = name === surface;
@@ -87,8 +92,7 @@ export class Dock {
         const content = new St.BoxLayout({vertical:true,style_class:'convertibled-nav-content'});
         content.add_child(new St.Icon({icon_name:icon,icon_size:20,x_align:Clutter.ActorAlign.CENTER}));
         const caption = new St.Label({text:_(label),x_align:Clutter.ActorAlign.CENTER});
-        caption.clutter_text.line_wrap = true;
-        caption.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
+        caption.clutter_text.line_wrap = false;
         caption.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
         content.add_child(caption); item.set_child(content); item.connect('clicked',action);
         return item;

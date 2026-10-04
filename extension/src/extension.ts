@@ -275,16 +275,18 @@ export default class TabletExtension extends Extension {
             kx < area.x + area.width && kx + keyboard.width > area.x &&
             boxY >= this.monitor.y && boxY <= monitorBottom && ky >= area.y;
         const usableHeight = keyboardHere ? Math.min(area.height,Math.max(0,ky - area.y)) : area.height;
-        this.dock?.actor.set_position(area.x,area.y + Math.max(0,usableHeight - 88));
-        this.dock?.actor.set_size(area.width,88);
-        this.dock?.resize(area.width);
+        const textScale = this.animations.get_double('text-scaling-factor');
+        const dockHeight = 88 + Math.ceil(32 * Math.max(0,textScale - 1));
+        this.dock?.actor.set_position(area.x,area.y + Math.max(0,usableHeight - dockHeight));
+        this.dock?.actor.set_size(area.width,dockHeight);
+        this.dock?.resize(area.width,textScale);
         for (const actor of [this.home?.actor,this.overview?.actor]) {
-            actor?.set_position(area.x,area.y); actor?.set_size(area.width,Math.max(48,usableHeight - 88));
+            actor?.set_position(area.x,area.y); actor?.set_size(area.width,Math.max(48,usableHeight - dockHeight));
         }
-        this.home?.resize(area.width,usableHeight - 88,this.animations.get_double('text-scaling-factor'));
-        this.widgets?.resize(Math.min(1040,area.width - (area.width < 600 ? 40 : 80)),this.animations.get_double('text-scaling-factor'));
-        this.overview?.resize(area.width,usableHeight - 88,this.animations.get_double('text-scaling-factor'));
-        this.splitController?.resize({...area,height:Math.max(0,usableHeight - 88)},this.monitor.index);
+        this.home?.resize(area.width,usableHeight - dockHeight,textScale);
+        this.widgets?.resize(Math.min(1040,area.width - (area.width < 600 ? 40 : 80)),textScale);
+        this.overview?.resize(area.width,usableHeight - dockHeight,textScale);
+        this.splitController?.resize({...area,height:Math.max(0,usableHeight - dockHeight)},this.monitor.index);
     }
     private hideSurfaces(): void {
         this.dock?.select(null);
