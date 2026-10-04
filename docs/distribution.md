@@ -40,8 +40,11 @@ activation regardless of active/locked state; greeters do not count.
 Host integration uses an explicit fixed destination map. Links resolve through
 `current` and are journaled in `owned.json`; conflicting files are never replaced.
 Removal checks original link ownership and retains later user modifications.
-The extension is installed system-wide but must be explicitly enabled by the
-installing user's GNOME session. The helper never changes another user's settings.
+The extension is installed system-wide. Explicit installer consent records the
+authenticated installing user's UID; a GNOME autostart enables the extension
+unprivileged at that user's next Wayland login and opens Settings once. A per-user
+completion token preserves subsequent disabling. Declining setup revokes only
+that user's pending consent. Other users opt in separately.
 
 `updates.json` defaults to explained automatic checking/preparation with an
 opt-out and explicit stable/preview channel. Schema-1 configuration is backed up
@@ -173,16 +176,21 @@ authorization, explains the automatic default, prepares authenticated assets
 and schedules activation after ordinary graphical logout or reboot. A fixed
 root-owned timer executes only the verified candidate's bootstrap code. It
 reauthenticates the prepared version and uses the existing admission interlock;
-no session is forcibly closed. First login loads the installed session unit. Enable
-`convertibled@convertibled.org` for that user through GNOME Extensions or run
+no session is forcibly closed. First login loads the installed session unit.
+Accept the installer's workspace question or pass `--enable-workspace` to enable
+the workspace automatically for your account at that login. `--no-workspace`
+leaves it disabled. For later manual opt-in, use GNOME Extensions or run
 `sh /opt/convertibled/current/installer/finish-user.sh`. This explicit unprivileged
 onboarding verifies GNOME 50/Wayland and changes only the current user's project
 extension. Other users' settings are untouched. Reference-device first-login
 acceptance is still required. Before logout/removal, use the same script with
 `--disable`; the root remover never edits unrelated user preferences.
 
-The temporary `convertibled-install` service/timer are journaled before creation
-and removed only while their contents still match project ownership. Logout or
+The first installation waits for the consenting user's graphical login and
+matching per-UID daemon health receipt. Another user's session or receipt cannot
+prematurely complete or fail that acceptance. The temporary `convertibled-install`
+service/timer are journaled before creation and removed only while their contents
+still match project ownership. Logout or
 admission contention keeps the timer waiting; actual activation errors publish
 status and stop retries. An explicit installer rerun can authorize one retry of
 a previously rolled-back candidate. `bootstrap.py --cancel-install`, run with

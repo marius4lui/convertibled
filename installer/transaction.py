@@ -35,6 +35,10 @@ class Transaction:
         if not (self.layout.versions / candidate / "manifest.json").is_file():
             raise UpdateError("Candidate is not verified")
         value = {"schema": 1, "candidate": candidate, "previous": previous, "phase": "backup"}
+        if previous is None:
+            onboarding = read(self.layout.state / "onboarding.json", {})
+            if type(onboarding.get("pending_uid")) is int:
+                value["expected_uid"] = onboarding["pending_uid"]
         self.record(value, "backup")
         backup(self.layout)
         self.record(value, "prepared")
@@ -54,6 +58,8 @@ class Transaction:
             self.require_logout()
             self.record(value, "switching")
             (self.layout.state / "health/shell-health.json").unlink(missing_ok=True)
+            if "expected_uid" in value:
+                (self.layout.state / f"health/shell-health-{value['expected_uid']}.json").unlink(missing_ok=True)
             self.layout.select(candidate)
             self.record(value, "selected")
             install(self.layout)
@@ -134,6 +140,10 @@ class Transaction:
             return value
         if phase == "awaiting_shell":
             receipt = read(self.layout.state / "health/shell-health.json", {})
+            if "expected_uid" in value:
+                receipt = read(self.layout.state / f"health/shell-health-{value['expected_uid']}.json", {})
+            if "expected_uid" in value and receipt.get("uid") != value["expected_uid"]:
+                receipt = {}
             if receipt.get("version") == value["candidate"] and receipt.get("healthy") is True:
                 self.record(value, "complete")
                 pending(self.layout, False)
@@ -145,6 +155,9 @@ class Transaction:
 
     def observe_login(self):
         value = read(self.journal, {})
-        if value.get("phase") == "awaiting_shell" and self.sessions():
+        sessions = self.sessions()
+        if "expected_uid" in value:
+            sessions = [item for item in sessions if str(item.get("user")) == str(value["expected_uid"])]
+        if value.get("phase") == "awaiting_shell" and sessions:
             value["first_session_seen"] = True
             self.record(value, "awaiting_shell")

@@ -2,20 +2,30 @@
 # Run only from an independently verified project source/installer bundle.
 set -eu
 automatic=on
-case "${1-}" in
-    '') ;;
-    --no-automatic-updates) automatic=off ;;
-    *) printf '%s\n' 'Usage: installer/install [--no-automatic-updates]' >&2; exit 2 ;;
-esac
-if [ "$#" -gt 1 ]; then exit 2; fi
+workspace=ask
+for argument in "$@"; do
+    case "$argument" in
+        --no-automatic-updates) automatic=off ;;
+        --enable-workspace) workspace=yes ;;
+        --no-workspace) workspace=no ;;
+        *) printf '%s\n' 'Usage: installer/install [--no-automatic-updates] [--enable-workspace|--no-workspace]' >&2; exit 2 ;;
+    esac
+done
 project=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 printf '%s\n' 'convertibled checks and prepares updates automatically by default.' >&2
 printf '%s\n' 'Activation waits for graphical logout; screen locking does not count.' >&2
 printf '%s\n' 'Use --no-automatic-updates now or automatic off later to opt out.' >&2
+if [ "$workspace" = ask ] && [ -t 0 ] && [ "$(id -u)" -ne 0 ]; then
+    printf '%s' 'Enable the tablet workspace for your user at next login? [y/N] ' >&2
+    read -r answer
+    case "$answer" in y|Y|yes|Yes) workspace=yes ;; *) workspace=no ;; esac
+fi
+set -- "$automatic"
+if [ "$workspace" = yes ]; then set -- "$@" --enable-workspace; fi
 if [ "$(id -u)" -eq 0 ]; then
-    exec /usr/bin/python3 -I "$project/installer/bootstrap.py" "$automatic"
+    exec /usr/bin/python3 -I "$project/installer/bootstrap.py" "$@"
 elif command -v pkexec >/dev/null 2>&1; then
-    exec pkexec /usr/bin/python3 -I "$project/installer/bootstrap.py" "$automatic"
+    exec pkexec /usr/bin/python3 -I "$project/installer/bootstrap.py" "$@"
 else
-    exec sudo /usr/bin/python3 -I "$project/installer/bootstrap.py" "$automatic"
+    exec sudo /usr/bin/python3 -I "$project/installer/bootstrap.py" "$@"
 fi

@@ -5,6 +5,7 @@ from updater.model import UpdateError
 
 UUID = "convertibled@convertibled.org"
 LINKS = {
+    "etc/xdg/autostart/org.convertibled.Onboarding.desktop": "data/autostart/org.convertibled.Onboarding.desktop",
     "usr/bin/convertiblectl": "bin/convertiblectl",
     "usr/bin/convertibled-settings": "bin/convertibled-settings",
     "usr/share/gnome-shell/extensions/" + UUID: "share/gnome-shell/extensions/" + UUID,

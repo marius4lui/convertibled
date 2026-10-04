@@ -69,26 +69,33 @@ pub async fn record(
             "Invalid caller process".into(),
         ));
     }
-    let receipt = serde_json::json!({"schema":1,"version":version,"healthy":healthy});
+    let receipt = serde_json::json!({"schema":1,"version":version,"healthy":healthy,"uid":uid});
     let directory = std::path::Path::new("/var/lib/convertibled/health");
+    write_receipt(directory, &format!("shell-health-{uid}.json"), &receipt).map_err(failed)?;
+    write_receipt(directory, "shell-health.json", &receipt).map_err(failed)
+}
+fn write_receipt(
+    directory: &std::path::Path,
+    name: &str,
+    receipt: &serde_json::Value,
+) -> std::io::Result<()> {
     let temporary = directory.join(format!(".shell-health-{}.tmp", std::process::id()));
     let mut file = fs::OpenOptions::new()
         .write(true)
         .create_new(true)
         .mode(0o600)
-        .open(&temporary)
-        .map_err(failed)?;
+        .open(&temporary)?;
     let result = (|| -> std::io::Result<()> {
         file.write_all(receipt.to_string().as_bytes())?;
         file.sync_all()?;
-        fs::rename(&temporary, directory.join("shell-health.json"))?;
+        fs::rename(&temporary, directory.join(name))?;
         fs::File::open(directory)?.sync_all()?;
         Ok(())
     })();
     if result.is_err() {
         let _ = fs::remove_file(&temporary);
     }
-    result.map_err(failed)
+    result
 }
 fn failed(error: impl ToString) -> zbus::fdo::Error {
     zbus::fdo::Error::Failed(error.to_string())

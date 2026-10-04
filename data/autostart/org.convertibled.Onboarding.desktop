@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=convertibled first-login setup
+Exec=/usr/bin/python3 -I /opt/convertibled/current/installer/onboarding.py
+OnlyShowIn=GNOME;
+NoDisplay=true
+X-GNOME-Autostart-Phase=Applications

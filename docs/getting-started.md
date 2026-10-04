@@ -33,7 +33,9 @@ extracted directory:
 sh installer/install
 ```
 
-The installer requests administrator authentication. To opt out of automatic
+The installer asks whether to enable the tablet workspace for your account,
+then requests administrator authentication. Use `--enable-workspace` to record
+that choice explicitly or `--no-workspace` to leave it disabled. To opt out of automatic
 update checking and preparation, use `sh installer/install --no-automatic-updates`
 instead. Existing host trust is preserved. Compatibility and release signatures
 are checked before the version is installed. Review any reported error before
@@ -42,7 +44,11 @@ installer does not force logout.
 
 ## First login
 
-Log in to GNOME Wayland and, as your normal user, enable the installed extension:
+If you accepted workspace setup, your next GNOME Wayland login enables the
+extension for your account and opens Settings once. Later disabling the
+extension is respected. Other accounts are not opted in automatically.
+
+If you declined setup, enable it later as your normal user:
 
 ```sh
 sh /opt/convertibled/current/installer/finish-user.sh

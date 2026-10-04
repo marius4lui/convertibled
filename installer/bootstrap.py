@@ -44,9 +44,12 @@ def main():
     parser.add_argument("automatic", nargs="?", choices=("on", "off"))
     parser.add_argument("--finish-install", action="store_true")
     parser.add_argument("--cancel-install", action="store_true")
+    parser.add_argument("--enable-workspace", action="store_true")
     args = parser.parse_args()
     if sum((args.automatic is not None, args.finish_install, args.cancel_install)) != 1:
         parser.error("Choose installation, finish, or cancellation")
+    if args.enable_workspace and args.automatic is None:
+        parser.error("Workspace consent is only valid during installation")
     try:
         if os.name != "posix" or os.geteuid() != 0:
             raise UpdateError("Use installer/install to authorize installation")
@@ -61,6 +64,9 @@ def main():
                 print("Pending installation cancelled; verified files and configuration retained.")
                 return 0
             metadata = prepare(layout, Path(__file__).with_name("bootstrap-trust.json"), args.automatic == "on")
+            from installer.onboarding import consent, decline
+            user = os.environ.get("PKEXEC_UID") or os.environ.get("SUDO_UID", "")
+            (consent if args.enable_workspace else decline)(layout, user)
             schedule(layout, metadata["version"])
         print("Download verified. Log out all graphical users to finish installation automatically.")
         print("No session will be closed for you. The installer also resumes after reboot.")
