@@ -4,7 +4,7 @@ import hashlib
 import shutil
 import unittest
 from pathlib import Path
-from .test_crypto import CryptoTests
+from . import test_crypto
 from .manager import Manager
 from .offline import Offline
 from .model import canonical, UpdateError
@@ -13,7 +13,10 @@ from scripts.release.bundle import build
 
 
 @unittest.skipUnless(shutil.which("openssl"), "OpenSSL unavailable")
-class PipelineTests(CryptoTests):
+class PipelineTests(unittest.TestCase):
+    setUp = test_crypto.CryptoTests.setUp
+    tearDown = test_crypto.CryptoTests.tearDown
+    signed = test_crypto.CryptoTests.signed
     def setup_release(self, version="0.1.0", sequence=1):
         self.layout = Layout(self.directory / "host")
         self.layout.initialize()

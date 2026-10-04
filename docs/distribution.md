@@ -138,3 +138,8 @@ Disposable pipeline tests perform real Ed25519 verification, offline bounded
 reads, deterministic archive extraction and immutable candidate preparation.
 They cover idempotence, corruption, architecture/expiry rejection, signed
 downgrades and replay. They do not start systemd or claim real GNOME acceptance.
+
+POSIX lifecycle tests use real version directories, archive extraction, symlinks,
+owned integration, configuration backups and removal, with simulated service
+commands. They cover clean install/health/remove, failed-service rollback and
+preserving added user files. Windows explicitly skips POSIX-only cases.
