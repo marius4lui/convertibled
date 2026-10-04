@@ -69,6 +69,17 @@ to the daemon. The daemon revalidates active local ownership and atomically writ
 update recovery and the consenting user's first-login acceptance. This authenticates
 session ownership and matching version, not cryptographic shell-code attestation.
 
+The session service independently observes native `org.gnome.shell` settings
+(`enabled-extensions`, `disabled-extensions`, `disable-user-extensions`) on a
+dedicated GLib thread. It reports user intent using the separate daemon method
+`ReportShellExpectation(version, known, enabled)`, with bounded asynchronous
+retries. Missing settings or an oversized list report unknown, never disabled.
+The daemon validates the same active, unlocked local session credentials, derives
+the UID and unique logind session ID, and records the kernel boot ID. Intent is
+written to `shell-intent-UID.json`; health and intent are separate receipts.
+Both now carry version, UID, session and boot identity. This producer contract
+does not by itself turn disabled intent into a successful Shell health receipt.
+
 ## Configuration and CLI
 
 Built-in defaults merge `/etc/convertibled/config.toml`, then allowed user preferences

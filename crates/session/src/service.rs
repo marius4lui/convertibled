@@ -83,6 +83,7 @@ async fn observation(connection: &Connection) -> Observation {
 }
 pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let system = Connection::system().await?;
+    tokio::spawn(crate::expectation::report(system.clone()));
     let config = crate::config::load()?;
     let mut initial = Status::default();
     initial.desired.rotation_lock = config.rotation_lock.unwrap_or(false);

@@ -41,6 +41,21 @@ impl Api {
         .await
         .map_err(|_| zbus::fdo::Error::Failed("Authorization timed out".into()))?
     }
+    async fn report_shell_expectation(
+        &self,
+        version: &str,
+        known: bool,
+        enabled: bool,
+        #[zbus(connection)] connection: &Connection,
+        #[zbus(header)] header: zbus::message::Header<'_>,
+    ) -> zbus::fdo::Result<()> {
+        tokio::time::timeout(
+            Duration::from_secs(3),
+            crate::health::expectation(connection, &header, version, known, enabled),
+        )
+        .await
+        .map_err(|_| zbus::fdo::Error::Failed("Authorization timed out".into()))?
+    }
     #[zbus(signal)]
     async fn changed(emitter: &SignalEmitter<'_>, status: &str) -> zbus::Result<()>;
 }
