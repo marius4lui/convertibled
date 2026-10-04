@@ -32,6 +32,7 @@ export const timers = new Map(); let timerId=0;
 export const pending=[];
 export const settings=new Settings();
 export const main={
+    modalCount:0,overview:{visible:false},
     layoutManager:Object.assign(new Emitter(),{monitors:[{index:0,x:0,y:0,width:800,height:600}],
         keyboardBox:Object.assign(new Actor(),{visible:false}),chrome:[],
         addChrome(actor){this.chrome.push(actor);},removeChrome(actor){this.chrome=this.chrome.filter(a=>a!==actor);},
@@ -70,7 +71,7 @@ registerHooks({resolve(specifier,context,next){
 },load(url,context,next){
     if(url.startsWith('native:resource:')){
         let source;
-        if(url.endsWith('/main.js'))source='export const {layoutManager,sessionMode,uiGroup,activateWindow,notify}=globalThis.__main;';
+        if(url.endsWith('/main.js'))source='export const {layoutManager,sessionMode,uiGroup,activateWindow,notify,modalCount,overview}=globalThis.__main;';
         else if(url.endsWith('/appFavorites.js'))source='export const getAppFavorites=()=>globalThis.__favorites;';
         else source='export const Extension=globalThis.__Extension;export const gettext=s=>s;';
         return {format:'module',source,shortCircuit:true};

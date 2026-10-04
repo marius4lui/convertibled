@@ -6,5 +6,6 @@ declare module 'resource:///*' {
     export const wm: any; export const keyboard: any; export const uiGroup: any;
     export const getAppFavorites: any; export const activateWindow: any;
     export const notify: any; export const panel: any;
+    export const modalCount: number; export const actionMode: number;
 }
 declare const global: any;

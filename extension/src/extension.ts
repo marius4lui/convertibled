@@ -53,7 +53,8 @@ export default class TabletExtension extends Extension {
         this.splitController = new SplitController(this.windows,this.settings,
             active => this.dock?.setSplitAction(active ? () => this.splitController?.end(this.monitor!.index) : null));
         this.touch = new TouchNavigation(() => this.monitor,
-            () => this.active && this.settings.get_boolean('gesture-enabled'), surface => this.navigate(surface));
+            () => this.active && Main.modalCount === 0 && !Main.overview.visible && this.settings.get_boolean('gesture-enabled'),
+            surface => this.navigate(surface));
         this.cleanup.signal(global.stage,'captured-event', (_stage: any,event: any) => this.touch?.handle(event));
         this.animations = new Gio.Settings({schema_id:'org.gnome.desktop.interface'});
         this.rotation = new RotationLock(() => this.reportApplied());
@@ -177,7 +178,7 @@ export default class TabletExtension extends Extension {
         if (this.home) Main.uiGroup.set_child_below_sibling(this.home.actor,global.window_group);
     }
     private navigate(surface: 'home' | 'overview' | 'dock'): void {
-        if (!this.active) return;
+        if (!this.active || Main.modalCount > 0 || Main.overview.visible) return;
         this.hideSurfaces(); this.dock?.actor.show();
         this.dock?.showApps(true);
         const actor = surface === 'home' ? this.home?.actor : surface === 'overview' ? this.overview?.actor : null;

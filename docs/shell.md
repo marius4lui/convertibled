@@ -187,3 +187,8 @@ New application windows are handled once before redraw, after their compositor
 actor exists, rather than maximizing during early `window-created` setup.
 Pending compositor callbacks are canceled on disable and per-window errors stay
 bounded. Input focus and application text are never sampled for diagnostics.
+
+Gesture recognition and explicit navigation defer while GNOME holds a modal
+grab or its native global Overview is open. Authentication/system dialogs keep
+their existing input ownership; the extension creates no modal authentication
+surface and never replaces the lock/login workflow.
