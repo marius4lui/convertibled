@@ -9,6 +9,78 @@ from updater.model import UpdateError
 
 @unittest.skipUnless(os.name == "posix", "POSIX admission boundary")
 class TransactionTests(unittest.TestCase):
+    @patch("installer.transaction.install")
+    @patch("installer.identity.ensure")
+    def test_first_install_decline_completes_services_only_and_survives_logout(self, identity, integration):
+        with tempfile.TemporaryDirectory() as root:
+            layout = Layout(root)
+            layout.initialize()
+            atomic(layout.versions / "0.2.0/manifest.json", {})
+            atomic(layout.state / "onboarding.json", {"schema": 1, "users": {}, "shell_acceptance": "not_requested"})
+            calls = []
+            transaction = Transaction(layout, sessions=lambda: [], run=calls.append)
+            result = transaction.activate("0.2.0")
+            self.assertEqual(result["phase"], "complete")
+            self.assertEqual(result["shell_acceptance"], "not_requested")
+            self.assertIn([str(layout.versions / "0.2.0/bin/convertibled"), "--check"], calls)
+            self.assertIn(["systemctl", "is-active", "--quiet", "convertibled.service"], calls)
+            self.assertFalse((layout.state / "health/shell-health.json").exists())
+            transaction.sessions = lambda: [{"user": "1000"}]
+            transaction.observe_login()
+            transaction.sessions = lambda: []
+            self.assertEqual(transaction.recover()["phase"], "complete")
+            self.assertEqual(layout.active(), "0.2.0")
+
+    @patch("installer.transaction.install")
+    @patch("installer.identity.ensure")
+    def test_no_decline_inference_and_consent_still_requires_shell(self, identity, integration):
+        for onboarding in ({}, {"pending_uid": 1000}, {"pending_uid": 1000, "shell_acceptance": "not_requested"}):
+            with self.subTest(onboarding=onboarding), tempfile.TemporaryDirectory() as root:
+                layout = Layout(root)
+                layout.initialize()
+                atomic(layout.versions / "0.2.0/manifest.json", {})
+                if onboarding:
+                    atomic(layout.state / "onboarding.json", onboarding)
+                transaction = Transaction(layout, sessions=lambda: [], run=lambda args: None)
+                result = transaction.activate("0.2.0")
+                self.assertEqual(result["phase"], "awaiting_shell")
+                self.assertNotIn("shell_acceptance", result)
+                if "pending_uid" in onboarding:
+                    self.assertEqual(result["expected_uid"], 1000)
+
+    @patch("installer.transaction.install")
+    @patch("installer.identity.ensure")
+    def test_declined_shell_never_bypasses_failed_daemon_health(self, identity, integration):
+        with tempfile.TemporaryDirectory() as root:
+            layout = Layout(root)
+            layout.initialize()
+            atomic(layout.versions / "0.2.0/manifest.json", {})
+            atomic(layout.state / "onboarding.json", {"shell_acceptance": "not_requested"})
+            def run(args):
+                if args[:2] == ["systemctl", "is-active"]:
+                    raise UpdateError("daemon unhealthy")
+            transaction = Transaction(layout, sessions=lambda: [], run=run)
+            with patch.object(transaction, "rollback") as rollback:
+                with self.assertRaisesRegex(UpdateError, "daemon unhealthy"):
+                    transaction.activate("0.2.0")
+                rollback.assert_called_once()
+            self.assertNotEqual(read(transaction.journal)["phase"], "complete")
+
+    @patch("installer.transaction.install")
+    @patch("installer.identity.ensure")
+    def test_initial_decline_is_not_reused_as_update_intent(self, identity, integration):
+        with tempfile.TemporaryDirectory() as root:
+            layout = Layout(root)
+            layout.initialize()
+            atomic(layout.versions / "0.1.0/manifest.json", {})
+            atomic(layout.versions / "0.2.0/manifest.json", {})
+            layout.select("0.1.0")
+            atomic(layout.state / "onboarding.json", {"shell_acceptance": "not_requested"})
+            transaction = Transaction(layout, sessions=lambda: [], run=lambda args: None)
+            result = transaction.activate("0.2.0")
+            self.assertEqual(result["phase"], "awaiting_shell")
+            self.assertNotIn("shell_acceptance", result)
+
     def test_no_activation_while_locked_session_exists(self):
         with tempfile.TemporaryDirectory() as root:
             layout = Layout(root)

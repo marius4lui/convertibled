@@ -39,6 +39,8 @@ class Transaction:
             onboarding = read(self.layout.state / "onboarding.json", {})
             if type(onboarding.get("pending_uid")) is int:
                 value["expected_uid"] = onboarding["pending_uid"]
+            elif onboarding.get("shell_acceptance") == "not_requested":
+                value["shell_acceptance"] = "not_requested"
         self.record(value, "backup")
         backup(self.layout)
         self.record(value, "prepared")
@@ -67,7 +69,9 @@ class Transaction:
             reload_users(self.run)
             self.run(["systemctl", "enable", "--now", "convertibled.service", "convertibled-update.timer"])
             self.run(["systemctl", "is-active", "--quiet", "convertibled.service"])
-            self.record(value, "awaiting_shell")
+            # Explicitly declined first-login setup still requires real service
+            # checks above; it is not a claim that the Shell was exercised.
+            self.record(value, "complete" if value.get("shell_acceptance") == "not_requested" else "awaiting_shell")
             pending(self.layout, False)
             return value
         except Exception:

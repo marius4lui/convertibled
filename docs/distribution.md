@@ -89,6 +89,14 @@ version files, and retains configuration/state by default. Added/modified files
 abort removal before service shutdown. No broad `/opt` or home-directory deletion
 is performed. The dedicated service account is retained for safe reinstall.
 
+Removal also handles verified preparation before successful activation and
+repeated removal. Each project unit is skipped only when a successful systemd
+query proves `not-found`, `inactive`, and an empty fragment path; query errors and
+failed stops of present units remain fatal. Canonical enable aliases and wants
+links are removed only when they target a fixed managed unit/current path or an
+exact manifest-validated installed version. Foreign links and regular files are
+retained with an error, including after a failed first installation.
+
 `scripts/release/bundle.py --bin-dir ... --extension-dir ... --output ...`
 assembles all four ELF binaries, compiled GNOME extension schemas, Python
 helpers, units/policies and desktop entry into a deterministic tar.gz with
@@ -209,7 +217,11 @@ acceptance is still required. Before logout/removal, use the same script with
 
 The first installation waits for the consenting user's graphical login and
 matching per-UID daemon health receipt. Another user's session or receipt cannot
-prematurely complete or fail that acceptance. The temporary `convertibled-install`
+prematurely complete or fail that acceptance. Explicitly declining first-login
+workspace setup instead completes installation after the real daemon checks,
+recording `shell_acceptance: not_requested`; it does not claim Shell acceptance.
+An absent legacy consent record is not an explicit decline. Manual opt-in remains
+available later. The temporary `convertibled-install`
 service/timer are journaled before creation and removed only while their contents
 still match project ownership. Logout or
 admission contention keeps the timer waiting; actual activation errors publish

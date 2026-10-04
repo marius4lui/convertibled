@@ -1,8 +1,9 @@
 import tempfile
 import unittest
+import os
 from pathlib import Path
-from unittest.mock import Mock
-from installer.onboarding import onboarding, decline
+from unittest.mock import Mock, patch
+from installer.onboarding import onboarding, decline, consent
 from installer.storage import Layout, atomic, read
 from updater.model import UpdateError
 
@@ -42,7 +43,24 @@ class OnboardingTests(unittest.TestCase):
         decline(self.layout, "1001")
         self.assertIn("1000", read(self.layout.state / "onboarding.json")["users"])
         self.assertEqual(read(self.layout.state / "onboarding.json")["pending_uid"], 1000)
+        self.assertNotIn("shell_acceptance", read(self.layout.state / "onboarding.json"))
         decline(self.layout, "1000")
         self.assertNotIn("pending_uid", read(self.layout.state / "onboarding.json"))
         self.assertFalse(onboarding(self.layout, self.state, 1000, {"XDG_SESSION_TYPE": "wayland"}, self.run))
         self.run.assert_not_called()
+
+    def test_first_explicit_decline_is_recorded_without_existing_consent(self):
+        (self.layout.state / "onboarding.json").unlink()
+        decline(self.layout, "1000")
+        self.assertEqual(read(self.layout.state / "onboarding.json")["shell_acceptance"], "not_requested")
+        self.assertFalse(onboarding(self.layout, self.state, 1000, {"XDG_SESSION_TYPE": "wayland"}, self.run))
+        self.run.assert_not_called()
+
+    @unittest.skipUnless(os.name == "posix", "POSIX account lookup")
+    def test_later_consent_replaces_explicit_decline(self):
+        decline(self.layout, "1000")
+        with patch("pwd.getpwuid"):
+            consent(self.layout, "1000")
+        record = read(self.layout.state / "onboarding.json")
+        self.assertNotIn("shell_acceptance", record)
+        self.assertEqual(record["pending_uid"], 1000)

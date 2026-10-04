@@ -25,6 +25,7 @@ def consent(layout, user):
     record = read(layout.state / "onboarding.json", {"schema": 1, "users": {}})
     record["users"][str(int(user))] = secrets.token_hex(16)
     record["pending_uid"] = int(user)
+    record.pop("shell_acceptance", None)
     target = layout.state / "onboarding.json"
     atomic(target, record)
     target.chmod(0o644)
@@ -32,13 +33,13 @@ def consent(layout, user):
 
 def decline(layout, user):
     target = layout.state / "onboarding.json"
-    record = read(target)
-    if record is None:
-        return
+    record = read(target, {"schema": 1, "users": {}})
     if user.isdecimal():
         if record.get("pending_uid") == int(user):
             record.pop("pending_uid", None)
         record.get("users", {}).pop(str(int(user)), None)
+    if "pending_uid" not in record:
+        record["shell_acceptance"] = "not_requested"
     atomic(target, record)
     target.chmod(0o644)
 
