@@ -338,3 +338,13 @@ Normal success/failure removes only this invocation's temporary directories;
 unrelated staging entries, symlink destinations and late version collisions are
 preserved or rejected. A real POSIX test prepares a signed bundle with state and
 versions on different device IDs, alongside corruption and collision cases.
+
+Preparation journals creation intent and each temporary directory's device/inode
+identity before extraction. A following preparation or removal first validates
+and cleans that exact workspace. A retained archive must match the authenticated
+release hash before partial extracted files can be compared with its exact byte
+prefixes. Unknown entries, symlinks, hard links, modified bytes, changed ownership
+or replaced directories cause refusal without deleting retained evidence. Only
+empty directories at the journaled creation gap can be removed without a recorded
+inode. Tests kill a real subprocess during extraction and immediately after
+publication, then verify successful recovery and preservation of foreign files.

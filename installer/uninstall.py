@@ -46,6 +46,8 @@ def uninstall(layout, run=command, sessions=graphical_sessions):
 def _uninstall(layout, run, sessions):
     if sessions():
         raise UpdateError("Log out graphical sessions before removal")
+    from updater.preparation import cleanup as cleanup_preparation
+    cleanup_preparation(layout)
     versions = []
     journal = read(layout.state / "transaction.json", {})
     removing = journal.get("phase") == "removing"
