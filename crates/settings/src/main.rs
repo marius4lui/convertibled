@@ -6,6 +6,8 @@ mod strings;
 #[cfg(target_os = "linux")]
 mod client;
 #[cfg(target_os = "linux")]
+mod diagnostics;
+#[cfg(target_os = "linux")]
 mod hardware;
 #[cfg(target_os = "linux")]
 mod operations;

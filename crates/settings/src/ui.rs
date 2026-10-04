@@ -27,20 +27,7 @@ fn build_window(app: &adw::Application) {
     window.add(&crate::hardware::page(text));
     window.add(&crate::tablet::page(text));
     window.add(&crate::updates::page(text));
-    for (title, icon) in [("Diagnostics", "dialog-information-symbolic")] {
-        let page = adw::PreferencesPage::builder()
-            .title(title)
-            .icon_name(icon)
-            .build();
-        let group = adw::PreferencesGroup::builder().title(title).build();
-        let row = adw::ActionRow::builder()
-            .title("Service connection")
-            .subtitle("Connecting to the session service…")
-            .build();
-        group.add(&row);
-        page.add(&group);
-        window.add(&page);
-    }
+    window.add(&crate::diagnostics::page(&window, text));
     let quit = gio::SimpleAction::new("quit", None);
     let weak = app.downgrade();
     quit.connect_activate(move |_, _| {

@@ -42,3 +42,7 @@ Updates reads the helper's public status without privileges. Check and prepare
 invoke the fixed installed helper through Polkit asynchronously. The UI does
 not claim a prepared version is installed and does not force logout or terminate
 critical helper operations when the settings window closes.
+
+Diagnostics collects a bounded `convertiblectl --json doctor` response only
+when requested. Users can inspect it before an explicit native save dialog
+exports a private-permission file using asynchronous Gio IO. Nothing is uploaded.
