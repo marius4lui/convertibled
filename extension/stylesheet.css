@@ -1,8 +1,118 @@
-.convertibled-surface { border-radius: 20px; padding: 16px; spacing: 12px; }
-.convertibled-button { min-width: 28px; min-height: 28px; padding: 8px; border: 2px solid transparent; border-radius: 12px; }
-.convertibled-button:focus { border: 2px solid -st-accent-color; }
-.convertibled-app { min-width: 88px; min-height: 88px; padding: 8px; border-radius: 12px; }
+/* Native Shell surfaces. Geometry is shared by light and dark appearances. */
+.convertibled-surface {
+    background-color: #171e2b; color: #f3f5fb;
+    background-gradient-direction: vertical;
+    background-gradient-start: #222d40; background-gradient-end: #151c29;
+    border: none; border-radius: 0; box-shadow: none; padding: 28px 40px; spacing: 24px;
+}
+.convertibled-light.convertibled-surface {
+    background-color: #f5f7fb; color: #202c40;
+    background-gradient-start: #f5f7fc; background-gradient-end: #e7edf7;
+}
 .convertibled-grid { spacing: 12px; }
-.convertibled-widget { padding: 12px; border-radius: 12px; min-height: 48px; }
-.convertibled-button:checked { background-color: -st-accent-color; color: -st-accent-fg-color; }
-.convertibled-dock { padding-bottom: 24px; }
+.convertibled-button {
+    min-width: 28px; min-height: 28px; padding: 8px 12px;
+    border: 2px solid transparent; border-radius: 12px;
+    background-color: rgba(255,255,255,0.07); color: inherit;
+}
+.convertibled-button:hover { background-color: rgba(255,255,255,0.13); }
+.convertibled-button:active { background-color: rgba(255,255,255,0.20); }
+.convertibled-button:checked { background-color: #447dea; color: white; }
+.convertibled-button:insensitive { color: #a0aabb; background-color: rgba(255,255,255,0.035); }
+.convertibled-button:focus, .convertibled-app:focus, .convertibled-nav:focus,
+.convertibled-dock-app:focus, .convertibled-favorite-toggle:focus {
+    border-color: #8bb4ff; box-shadow: 0 0 0 2px rgba(100,156,255,0.22);
+}
+.convertibled-light .convertibled-button { background-color: rgba(42,64,104,0.07); }
+.convertibled-light .convertibled-button:hover { background-color: rgba(42,64,104,0.13); }
+.convertibled-light .convertibled-button:checked { background-color: #326bd4; color: white; }
+.convertibled-home-header { spacing: 6px; }
+.convertibled-home-title, .convertibled-overview-title { font-size: 28pt; font-weight: 700; }
+.convertibled-home-subtitle, .convertibled-overview-subtitle { color: #bec9dc; font-size: 11pt; }
+.convertibled-light .convertibled-home-subtitle, .convertibled-light .convertibled-overview-subtitle { color: #52627b; }
+.convertibled-search {
+    border-radius: 16px; padding: 12px 18px; min-height: 24px;
+    background-color: rgba(255,255,255,0.09); color: #f3f5fb;
+    border: 1px solid rgba(255,255,255,0.09); selection-background-color: #447dea;
+}
+.convertibled-search:focus { border-color: #8bb4ff; }
+.convertibled-light .convertibled-search { background-color: white; color: #202c40; border-color: #d6dfed; }
+.convertibled-home-content { spacing: 24px; }
+.convertibled-section-heading { font-size: 13pt; font-weight: 600; }
+.convertibled-section-tools { spacing: 12px; }
+.convertibled-app { background-color: transparent; border: 2px solid transparent; border-radius: 20px; padding: 12px 4px; min-height: 88px; }
+.convertibled-app:hover { background-color: rgba(255,255,255,0.07); }
+.convertibled-app:active { background-color: rgba(255,255,255,0.13); }
+.convertibled-light .convertibled-app:hover { background-color: rgba(42,64,104,0.07); }
+.convertibled-app StBoxLayout { spacing: 10px; }
+.convertibled-app StLabel { font-size: 10pt; }
+.convertibled-app-tile { spacing: 4px; }
+.convertibled-favorite-toggle { min-width: 28px; min-height: 28px; padding: 8px; border: 2px solid transparent; border-radius: 22px; }
+.convertibled-favorite-toggle:checked { color: #9fc1ff; background-color: rgba(89,147,247,0.18); }
+.convertibled-light .convertibled-favorite-toggle:checked { color: #275db8; }
+.convertibled-widgets { spacing: 16px; }
+.convertibled-widget {
+    padding: 20px; spacing: 8px; border-radius: 22px;
+    background-color: rgba(255,255,255,0.055); border: 1px solid rgba(255,255,255,0.085);
+}
+.convertibled-light .convertibled-widget { background-color: rgba(255,255,255,0.78); border-color: rgba(61,84,120,0.09); }
+.convertibled-widget-title { font-size: 10pt; color: #bec9dc; }
+.convertibled-widget-value { font-size: 24pt; font-weight: 600; }
+.convertibled-widget-detail { font-size: 10pt; color: #bec9dc; }
+.convertibled-light .convertibled-widget-title, .convertibled-light .convertibled-widget-detail { color: #52627b; }
+.convertibled-widget-actions { spacing: 8px; }
+.convertibled-dock { background-color: transparent; color: #f3f5fb; padding: 8px 16px; }
+.convertibled-shelf {
+    background-color: rgba(36,44,60,0.97); border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 24px; padding: 5px 10px; spacing: 8px;
+    box-shadow: 0 6px 20px 0 rgba(0,0,0,0.24);
+}
+.convertibled-light .convertibled-shelf { background-color: rgba(250,252,255,0.97); color: #202c40; border-color: #d3dce9; }
+.convertibled-nav { min-width: 56px; padding: 4px 8px; border: 2px solid transparent; border-radius: 16px; }
+.convertibled-nav-content { spacing: 3px; font-size: 8pt; }
+.convertibled-nav:hover, .convertibled-dock-app:hover { background-color: rgba(132,162,208,0.14); }
+.convertibled-nav:checked { background-color: rgba(98,155,255,0.18); color: #afcbff; }
+.convertibled-light .convertibled-nav:checked { background-color: #e0eafe; color: #245cba; }
+.convertibled-dock-app { min-width: 44px; min-height: 44px; padding: 3px; border: 2px solid transparent; border-radius: 15px; }
+.convertibled-dock-app:active { border-bottom-color: #9abaff; }
+.convertibled-setup { font-size: 9pt; padding: 6px 10px; background-color: transparent; }
+.convertibled-overview-header { spacing: 16px; }
+.convertibled-overview-status { font-size: 10pt; color: #bec9dc; }
+.convertibled-light .convertibled-overview-status { color: #52627b; }
+.convertibled-overview-grid-row { spacing: 24px; }
+.convertibled-overview-card { spacing: 12px; padding: 14px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.10); background-color: rgba(255,255,255,0.055); }
+.convertibled-light .convertibled-overview-card { background-color: rgba(255,255,255,0.78); border-color: #d6dfed; }
+.convertibled-overview-preview { border-radius: 14px; padding: 0; background-color: rgba(0,0,0,0.14); border: 2px solid transparent; }
+.convertibled-overview-preview:focus { border-color: #8bb4ff; }
+.convertibled-overview-card-footer { spacing: 12px; }
+.convertibled-overview-window-title { font-size: 11pt; font-weight: 600; }
+.convertibled-overview-select { font-size: 10pt; }
+.convertibled-overview-empty, .convertibled-home-empty { padding: 36px; spacing: 12px; color: #bec9dc; }
+.convertibled-light .convertibled-overview-empty, .convertibled-light .convertibled-home-empty { color: #52627b; }
+
+.convertibled-home-section { spacing: 12px; }
+.convertibled-app-row { spacing: 12px; }
+.convertibled-app-grid { spacing: 12px; }
+.convertibled-widget-heading { spacing: 8px; }
+.convertibled-clock-time { font-size: 34pt; font-weight: 500; }
+.convertibled-empty-state { spacing: 12px; padding: 32px; }
+.convertibled-empty-title { font-size: 14pt; font-weight: 600; }
+.convertibled-empty-detail { color: #bec9dc; }
+.convertibled-light .convertibled-empty-detail { color: #52627b; }
+.convertibled-overview-grid { spacing: 24px; }
+.convertibled-overview-select { min-width: 28px; min-height: 28px; padding: 8px; border: 2px solid transparent; border-radius: 14px; }
+.convertibled-overview-select:checked { background-color: #447dea; color: white; }
+.convertibled-overview-select:focus { border-color: #8bb4ff; }
+.convertibled-button:disabled { color: #a0aabb; background-color: rgba(255,255,255,0.035); }
+
+.convertibled-dock { background-color: #151c29; }
+.convertibled-light.convertibled-dock { background-color: #e7edf7; }
+.convertibled-widget-action { min-width: 56px; min-height: 48px; padding: 10px 6px; border: 2px solid transparent; border-radius: 16px; background-color: rgba(255,255,255,0.065); }
+.convertibled-widget-action-content { spacing: 8px; }
+.convertibled-widget-action-label { font-size: 8pt; }
+.convertibled-widget-action:hover { background-color: rgba(132,162,208,0.16); }
+.convertibled-widget-action:focus { border-color: #8bb4ff; }
+.convertibled-widget-action:checked { background-color: #447dea; color: white; }
+.convertibled-light .convertibled-widget-action { background-color: rgba(42,64,104,0.065); }
+.convertibled-light .convertibled-widget-action:checked { background-color: #326bd4; color: white; }
+.convertibled-overview-toolbar { spacing: 12px; }

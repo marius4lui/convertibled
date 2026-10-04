@@ -293,3 +293,8 @@ After compositor/bus shutdown, cleanup retries deletion up to 20 times with a
 quarter-second drain between attempts, covering short-lived cache writers.
 The original failing test status is retained; persistent cleanup failure also
 fails an otherwise successful test. Cleanup refuses unexpected root names.
+
+Home now uses a centered canvas with 64-pixel app icons, explicit favorite
+editing, a bounded favorite strip and compact local widgets. Search hides
+nonmatching sections. Unknown battery state remains visible without a fake
+percentage. Light/dark palettes retain the same focus and touch geometry.

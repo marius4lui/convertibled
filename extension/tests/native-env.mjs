@@ -54,8 +54,8 @@ globalThis.global={backend:{},display:new Emitter(),
     compositor:{get_laters:()=>({remove(){}})},
     workspace_manager:Object.assign(new Emitter(),{get_active_workspace:()=>({})}),get_window_actors:()=>[]};
 globalThis.__native={
-    St:{Button:Actor,BoxLayout:Actor,Label:Actor,Entry:Actor,ScrollView:Actor,Icon:Actor},
-    Clutter:{Clone:Actor,ActorAlign:{CENTER:0},AnimationMode:{EASE_OUT_QUAD:0},EVENT_PROPAGATE:0,EVENT_STOP:1,
+    St:{Button:Actor,BoxLayout:Actor,Label:Actor,Entry:Actor,ScrollView:Actor,Icon:Actor,Widget:Actor},
+    Clutter:{Clone:Actor,ActorAlign:{CENTER:0,START:1,FILL:2},AnimationMode:{EASE_OUT_QUAD:0},EVENT_PROPAGATE:0,EVENT_STOP:1,
         InputDeviceType:{TOUCHSCREEN_DEVICE:1},EventType:{TOUCH_BEGIN:1,TOUCH_UPDATE:2,TOUCH_END:3,TOUCH_CANCEL:4}},
     Shell:{AppSystem:{get_default:()=>system},AppState:{RUNNING:1}},
     Meta:{WindowType:{NORMAL:0},MaximizeFlags:{BOTH:3}},
