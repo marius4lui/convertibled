@@ -262,14 +262,19 @@ while the user works; it does not require a second logout.
 
 Updates obtain current per-user enablement from the independent native session
 observer, not from old onboarding consent. A bounded, strictly typed intent
-receipt must match the candidate version, UID, logind session and kernel boot ID.
+receipt used for acceptance must match the candidate version, UID, logind session
+and current kernel boot ID.
 Enabled intent requires actual matching healthy Shell evidence; missing or failed
 health triggers recovery only after graphical logout. Explicitly disabled intent
 completes service-only acceptance with `shell_acceptance: not_requested`; no
-healthy receipt is fabricated. Unknown, stale or legacy unbound intent stays
-pending. All observed users are evaluated, so one disabled user cannot hide
-another user's enabled failure. Later sessions supersede the same user's earlier
-trial; other users' unresolved trials remain. Successful journal-only acceptance
+healthy receipt is fabricated. Unknown or legacy unbound current-session intent
+stays pending. Current-boot observed users are evaluated separately, so one
+disabled user cannot hide another user's enabled failure. Later authenticated
+sessions can supersede the same user's earlier trial; other users' unresolved
+current-boot trials remain. Reboot retires old observations without accepting old
+positive health; explicit matched failure remains actionable until fresh intent.
+See [runtime acceptance](runtime.md) for stale and missed-session handling.
+Successful journal-only acceptance
 can complete online, while rollback and binary changes always require logout.
 
 The temporary `convertibled-install`
@@ -359,6 +364,12 @@ private journals/trust remain0600. They import no versioned project code. Change
 stable guard bytes require an explicit future migration; updates cannot silently
 replace the admission contract. First installation establishes the gate before
 selection. Active, numerically validated user managers receive daemon-reload.
+The unprivileged admission unit retains `NoNewPrivileges` but deliberately avoids
+`ProtectSystem`/`ProtectHome`: user-manager filesystem sandboxing implicitly creates
+a user namespace that maps host root to overflow UID65534 on Fedora44. The guard
+must see and verify actual host UID0; treating overflow ownership as trusted
+would also trust unrelated unmapped owners. Its read-only descriptor still
+rejects foreign owners, symlinks, nonregular files and group/world-writable locks.
 Local user-manager calls resolve each validated UID through the account database
 and use `runuser` with a fixed, cleared environment and that UID's runtime D-Bus
 socket. No user shell runs, including for the greeter's non-login account. A

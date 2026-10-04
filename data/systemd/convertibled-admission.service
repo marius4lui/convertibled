@@ -10,5 +10,6 @@ ExecStart=/usr/bin/python3 -I /var/lib/convertibled/admission.py
 TimeoutStartSec=infinity
 TimeoutStopSec=5
 NoNewPrivileges=yes
-ProtectSystem=strict
-ProtectHome=yes
+# User-manager filesystem sandboxing implicitly remaps host root to overflow
+# UID. Keep host identities visible for the guard's strict root-owner check;
+# accepting overflow ownership would also accept every unmapped foreign UID.

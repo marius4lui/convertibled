@@ -24,6 +24,36 @@ def reader(path, notify, started, marker=None):
 
 @unittest.skipUnless(os.name == "posix", "POSIX flock/notify admission")
 class AdmissionTests(unittest.TestCase):
+    def test_guard_unit_preserves_host_owner_identity(self):
+        import configparser
+        unit = configparser.ConfigParser()
+        unit.read(Path(__file__).resolve().parents[1] / "data/systemd/convertibled-admission.service")
+        service = unit["Service"]
+        self.assertEqual(service["NoNewPrivileges"], "yes")
+        for option in ("ProtectSystem", "ProtectHome", "PrivateUsers"):
+            self.assertNotIn(option, service)
+
+    @unittest.skipUnless(getattr(os, "geteuid", lambda: -1)() == 0, "Root required for authentic owner fixtures")
+    def test_real_descriptor_requires_root_not_overflow_or_foreign_owner(self):
+        from .admission import checked_descriptor
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "lock"
+            path.touch(mode=0o644)
+            descriptor = checked_descriptor(path)
+            os.close(descriptor)
+            for uid in (65534, 1000):
+                os.chown(path, uid, uid)
+                with self.assertRaisesRegex(RuntimeError, "root-owned"):
+                    checked_descriptor(path)
+            os.chown(path, 0, 0)
+            path.chmod(0o666)
+            with self.assertRaisesRegex(RuntimeError, "root-owned"):
+                checked_descriptor(path)
+            path.unlink()
+            path.mkdir()
+            with self.assertRaisesRegex(RuntimeError, "regular file"):
+                checked_descriptor(path)
+
     def test_login_ready_waits_for_update_and_blocks_next_update(self):
         import multiprocessing
         with tempfile.TemporaryDirectory() as root:
