@@ -100,27 +100,23 @@ impl Api {
         if applied.error.as_ref().is_some_and(|text| text.len() > 2048) {
             return Err(failed("Error exceeds 2048 bytes"));
         }
-        if let Ok(system) = zbus::Connection::system().await {
-            if let Ok(daemon) = zbus::Proxy::new(
+        if let Ok(system) = zbus::Connection::system().await
+            && let Ok(daemon) = zbus::Proxy::new(
                 &system,
                 "org.convertibled.Daemon1",
                 "/org/convertibled/Daemon1",
                 "org.convertibled.Daemon1",
             )
             .await
-            {
-                let healthy = applied.status == "applied";
-                let result = tokio::time::timeout(
-                    std::time::Duration::from_secs(3),
-                    daemon.call::<_, _, ()>(
-                        "ReportShellHealth",
-                        &(env!("CARGO_PKG_VERSION"), healthy),
-                    ),
-                )
-                .await;
-                if let Ok(Err(error)) = result {
-                    eprintln!("Shell health receipt unavailable: {error}");
-                }
+        {
+            let healthy = applied.status == "applied";
+            let result = tokio::time::timeout(
+                std::time::Duration::from_secs(3),
+                daemon.call::<_, _, ()>("ReportShellHealth", &(env!("CARGO_PKG_VERSION"), healthy)),
+            )
+            .await;
+            if let Ok(Err(error)) = result {
+                eprintln!("Shell health receipt unavailable: {error}");
             }
         }
         let mut state = self.state.write().await;
