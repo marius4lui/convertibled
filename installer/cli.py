@@ -54,10 +54,7 @@ def execute(args, layout):
             metadata = manager.prepare()
             transaction.activate(metadata["version"])
         elif args.command == "activate":
-            prepared = read(layout.state / "prepared.json", {})
-            if not prepared.get("version"):
-                raise UpdateError("No verified prepared release")
-            transaction.activate(prepared["version"])
+            transaction.activate(manager.activation_ready())
         elif args.command == "recover":
             transaction.recover()
         elif args.command == "rollback":
@@ -66,15 +63,18 @@ def execute(args, layout):
             from installer.uninstall import uninstall
             uninstall(layout)
         elif args.command == "scheduled":
+            from updater.schedule import due
             if graphical_sessions():
                 transaction.observe_login()
-                if preferences(layout)["automatic_updates"]:
+                if preferences(layout)["automatic_updates"] and due(layout):
                     manager.prepare()
             else:
                 transaction.recover()
                 if preferences(layout)["automatic_updates"]:
-                    metadata = manager.prepare()
-                    transaction.activate(metadata["version"])
+                    if due(layout):
+                        manager.prepare()
+                    if read(layout.state / "prepared.json"):
+                        transaction.activate(manager.activation_ready())
         return publish(layout)
 
 

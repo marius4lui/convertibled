@@ -41,6 +41,7 @@ class Transaction:
             if previous:
                 self.run(["systemctl", "stop", "convertibled.service"])
             self.record(value, "switching")
+            (self.layout.state / "health/shell-health.json").unlink(missing_ok=True)
             self.layout.select(candidate)
             self.record(value, "selected")
             install(self.layout)
@@ -94,7 +95,7 @@ class Transaction:
             if receipt.get("version") == value["candidate"] and receipt.get("healthy") is True:
                 self.record(value, "complete")
                 return value
-            if not value.get("first_session_seen"):
+            if not value.get("first_session_seen") and not (receipt.get("version") == value["candidate"] and receipt.get("healthy") is False):
                 return value
         return self.rollback(value)
 

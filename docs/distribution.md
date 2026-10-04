@@ -127,3 +127,9 @@ record, avoiding a crash between advancing a counter and saving its release.
 SemVer also rejects newly signed downgrades; explicit local rollback is separate.
 Fresh metadata may extend a version's validity only when artifact bytes retain
 the identical hash/size; immutable published bundle content never changes.
+
+The timer checks logout/recovery every two minutes while background network
+preparation is throttled to six hours; explicit check/prepare remains immediate.
+Activation revalidates prepared channel, accepted release and metadata freshness.
+Stale shell receipts are cleared before selecting a candidate; explicit failure
+receipts trigger safe rollback even if a short first session escaped polling.

@@ -93,3 +93,15 @@ class Manager:
             archive.unlink(missing_ok=True)
             if candidate.exists():
                 shutil.rmtree(candidate)
+
+    def activation_ready(self):
+        prepared = read(self.layout.state / "prepared.json", {})
+        channel = preferences(self.layout)["channel"]
+        if prepared.get("channel") != channel:
+            raise UpdateError("Prepared release is from another channel")
+        accepted = read(self.layout.state / "accepted.json", {})
+        metadata = accepted.get("channels", {}).get(channel)
+        if not metadata or metadata["version"] != prepared.get("version"):
+            raise UpdateError("Prepared release no longer matches accepted metadata")
+        release(metadata, channel, dt.datetime.now(dt.timezone.utc), metadata["sequence"] - 1)
+        return metadata["version"]
