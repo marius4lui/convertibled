@@ -11,10 +11,10 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
     hero.set_margin_top(12);
     hero.set_margin_bottom(12);
     let icon = gtk::Image::from_icon_name("computer-symbolic");
-    icon.set_pixel_size(64);
+    icon.set_pixel_size(48);
     icon.add_css_class("accent");
     let heading = gtk::Label::new(Some(text.text("Your convertible", "Dein Convertible")));
-    heading.add_css_class("title-1");
+    heading.add_css_class("title-2");
     heading.set_wrap(true);
     heading.set_justify(gtk::Justification::Center);
     let summary = gtk::Label::new(Some(text.text(
@@ -138,8 +138,7 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
         .collect();
     let refresh = gtk::Button::with_label(text.text("Refresh", "Aktualisieren"));
     refresh.set_height_request(44);
-    refresh.set_valign(gtk::Align::Center);
-    health.add_suffix(&refresh);
+    group.add(&crate::ui::actions(&[&refresh]));
     page.add(&detected);
     page.add(&workspace);
     page.add(&native);

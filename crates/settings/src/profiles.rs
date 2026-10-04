@@ -10,10 +10,10 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
     crate::ui::introduction(
         &page,
         "preferences-system-symbolic",
-        text.text("Make it yours", "So, wie du arbeitest"),
+        text.text("Profiles & rotation", "Profile und Drehung"),
         text.text(
-            "Follow your device naturally, or choose how you want to work.",
-            "Folge deinem Gerät automatisch oder wähle, wie du arbeiten möchtest.",
+            "Switch automatically with device posture, or select a profile.",
+            "Automatisch nach Gerätehaltung wechseln oder ein Profil auswählen.",
         ),
     );
     let group = adw::PreferencesGroup::builder()

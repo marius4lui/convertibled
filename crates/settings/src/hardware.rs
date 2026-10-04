@@ -10,10 +10,10 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
     crate::ui::introduction(
         &page,
         "input-tablet-symbolic",
-        text.text("Know your device", "Dein Gerät verstehen"),
+        text.text("Device capabilities", "Gerätefunktionen"),
         text.text(
-            "See what your session supports and what still needs attention.",
-            "Sieh, was deine Sitzung unterstützt und was noch Aufmerksamkeit braucht.",
+            "Check which features are available in this session.",
+            "Prüfe, welche Funktionen in dieser Sitzung verfügbar sind.",
         ),
     );
     let group = adw::PreferencesGroup::builder()
@@ -25,7 +25,9 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
         .build();
     let refresh = gtk::Button::with_label(text.text("Refresh", "Aktualisieren"));
     refresh.set_height_request(44);
-    group.set_header_suffix(Some(&refresh));
+    let refresh_group = adw::PreferencesGroup::new();
+    refresh_group.add(&crate::ui::actions(&[&refresh]));
+    page.add(&refresh_group);
     let rows: Vec<_> = [
         (
             "tablet_workspace",

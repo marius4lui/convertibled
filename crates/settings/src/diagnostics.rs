@@ -11,7 +11,7 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
     crate::ui::introduction(
         &page,
         "dialog-information-symbolic",
-        text.text("A clearer picture", "Ein klareres Bild"),
+        text.text("Session diagnostics", "Sitzungsdiagnose"),
         text.text(
             "Review a local report and share it only when you choose.",
             "Prüfe einen lokalen Bericht und teile ihn erst, wenn du dich dafür entscheidest.",

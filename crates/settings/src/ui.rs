@@ -1,24 +1,27 @@
 use adw::prelude::*;
 use gtk::{gio, glib};
 
-/// A quiet introduction using the desktop's typography and symbolic artwork.
+/// Compact page context; preserves space for controls on a narrow display.
 pub fn introduction(page: &adw::PreferencesPage, icon: &str, title: &str, description: &str) {
     let group = adw::PreferencesGroup::new();
-    let content = gtk::Box::new(gtk::Orientation::Vertical, 12);
-    content.set_margin_top(12);
-    content.set_margin_bottom(12);
+    let content = gtk::Box::new(gtk::Orientation::Vertical, 6);
+    let title_row = gtk::Box::new(gtk::Orientation::Horizontal, 12);
     let image = gtk::Image::from_icon_name(icon);
-    image.set_pixel_size(48);
+    image.set_pixel_size(24);
     image.add_css_class("accent");
-    content.append(&image);
+    title_row.append(&image);
     let heading = gtk::Label::new(Some(title));
-    heading.add_css_class("title-1");
+    heading.add_css_class("title-2");
     heading.set_wrap(true);
-    heading.set_justify(gtk::Justification::Center);
-    content.append(&heading);
+    heading.set_wrap_mode(gtk::pango::WrapMode::WordChar);
+    heading.set_hexpand(true);
+    heading.set_xalign(0.0);
+    title_row.append(&heading);
+    content.append(&title_row);
     let subtitle = gtk::Label::new(Some(description));
     subtitle.set_wrap(true);
-    subtitle.set_justify(gtk::Justification::Center);
+    subtitle.set_wrap_mode(gtk::pango::WrapMode::WordChar);
+    subtitle.set_xalign(0.0);
     subtitle.add_css_class("dim-label");
     content.append(&subtitle);
     group.add(&content);
@@ -38,6 +41,11 @@ pub fn actions(buttons: &[&gtk::Button]) -> gtk::FlowBox {
     for button in buttons {
         button.set_height_request(44);
         button.set_hexpand(true);
+        if let Some(label) = button.child().and_downcast::<gtk::Label>() {
+            label.set_wrap(true);
+            label.set_wrap_mode(gtk::pango::WrapMode::WordChar);
+            label.set_justify(gtk::Justification::Center);
+        }
         controls.insert(*button, -1);
     }
     controls

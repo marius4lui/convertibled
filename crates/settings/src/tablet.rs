@@ -28,10 +28,10 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
     crate::ui::introduction(
         &page,
         "view-grid-symbolic",
-        text.text("A workspace for touch", "Deine Tablet-Arbeitsfläche"),
+        text.text("Tablet workspace", "Tablet-Arbeitsfläche"),
         text.text(
-            "Shape your dock, gestures and the essentials on Home.",
-            "Gestalte dein Dock, die Gesten und das Wesentliche auf Start.",
+            "Set up the dock, touchscreen gestures and Home widgets.",
+            "Dock, Touchscreen-Gesten und Widgets auf Start einstellen.",
         ),
     );
     let group = adw::PreferencesGroup::builder()
@@ -127,7 +127,6 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
             "{title}: {}",
             text.text("move first", "nach vorne")
         )));
-        row.add_suffix(&first);
         row.add_suffix(&enabled);
         row.set_activatable_widget(Some(&enabled));
         let prefs = settings.clone();
@@ -163,6 +162,7 @@ pub fn page(text: Strings) -> adw::PreferencesPage {
             let _ = prefs.set_strv("widgets", current.as_slice());
         });
         widgets.add(&row);
+        widgets.add(&crate::ui::actions(&[&first]));
     }
     let message_copy = message.clone();
     settings.connect_changed(Some("widgets"), move |prefs, _| {

@@ -10,7 +10,7 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
     crate::ui::introduction(
         &page,
         "software-update-available-symbolic",
-        text.text("Ready when you are", "Bereit, wenn du es bist"),
+        text.text("Software updates", "Software-Updates"),
         text.text(
             "Verified updates prepare quietly and activate after you log out.",
             "Geprüfte Updates werden im Hintergrund vorbereitet und nach deiner Abmeldung aktiviert.",
