@@ -91,6 +91,15 @@ available compatible retained version; it is not arbitrary downgrade support.
 If no installed helper is available, use independently authenticated installer
 source and follow the [distribution recovery contract](distribution.md).
 
+## Reinstall after removal
+
+A completed uninstall retains configuration and recovery state. Run the trusted
+installer again to prepare and activate a verified version; the retained
+`removed` journal is a valid starting point when no version remains selected.
+Do not delete retained state to bypass an error. If removal is recorded while
+a version is still selected, installation stops for review instead of assuming
+that cleanup finished. Graphical logout and normal health checks still apply.
+
 ## Report a problem
 
 In **Settings → Diagnostics**, collect and review the report before explicitly

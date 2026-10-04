@@ -162,6 +162,41 @@ class LifecycleTests(unittest.TestCase):
         self.assertTrue(self.layout.config.exists())
 
     @patch("installer.identity.ensure")
+    def test_retained_state_reinstall_after_completed_removal(self, identity):
+        self.candidate("0.1.0")
+        self.transaction.activate("0.1.0")
+        atomic(self.layout.state / "health/shell-health.json", {"version": "0.1.0", "healthy": True})
+        self.transaction.recover()
+        config = self.layout.config / "config.toml"
+        config.write_text("# retained user configuration\n")
+        uninstall(self.layout, run=self.calls.append, sessions=lambda: [])
+        self.assertEqual(read(self.transaction.journal)["phase"], "removed")
+        self.assertIsNone(self.layout.active())
+        self.candidate("0.2.0")
+        result = self.transaction.activate("0.2.0")
+        self.assertEqual(result["phase"], "awaiting_shell")
+        self.assertIsNone(result["previous"])
+        self.assertEqual(self.layout.active(), "0.2.0")
+        self.assertEqual(config.read_text(), "# retained user configuration\n")
+        for destination in LINKS:
+            self.assertTrue((self.layout.root / destination).exists(), destination)
+        atomic(self.layout.state / "health/shell-health.json", {"version": "0.2.0", "healthy": True})
+        self.assertEqual(self.transaction.recover()["phase"], "complete")
+
+    def test_removed_journal_with_active_version_refuses_even_same_candidate(self):
+        self.candidate("0.1.0")
+        self.candidate("0.2.0")
+        self.layout.select("0.1.0")
+        journal = {"schema": 1, "phase": "removed"}
+        atomic(self.transaction.journal, journal)
+        for candidate in ("0.1.0", "0.2.0"):
+            with self.subTest(candidate=candidate), self.assertRaisesRegex(UpdateError, "still has a selected version"):
+                self.transaction.activate(candidate)
+            self.assertEqual(self.layout.active(), "0.1.0")
+            self.assertEqual(read(self.transaction.journal), journal)
+        self.assertEqual(self.calls, [])
+
+    @patch("installer.identity.ensure")
     def test_failed_new_service_restores_previous(self, identity):
         self.candidate("0.1.0")
         self.transaction.activate("0.1.0")

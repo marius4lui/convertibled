@@ -29,9 +29,12 @@ class Transaction:
         version(candidate)
         self.require_logout()
         previous = self.layout.active()
+        phase = read(self.journal, {}).get("phase")
+        if phase == "removed" and previous is not None:
+            raise UpdateError("Removed transaction still has a selected version; review installation state")
         if previous == candidate:
             return {"phase": "complete", "version": candidate}
-        if read(self.journal, {}).get("phase") not in (None, "complete", "rolled_back"):
+        if phase not in (None, "complete", "rolled_back", "removed"):
             raise UpdateError("Recover the pending transaction first")
         if not (self.layout.versions / candidate / "manifest.json").is_file():
             raise UpdateError("Candidate is not verified")
