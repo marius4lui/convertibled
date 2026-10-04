@@ -26,3 +26,9 @@ Session reload validates both whole configuration candidates before changing
 rotation preferences. User profile entries override system defaults; debounce
 and session authorization retain system ownership. Missing files use defaults;
 invalid startup configurations fail explicitly instead of silently accepting them.
+
+convertiblectl supports status/devices/capabilities, bounded watch, sanitized
+explicit doctor exports, manual profiles, rotation requests, schema validation,
+reload, and fixed updater commands. Updates use the installed isolated Python
+helper and pkexec for mutations. Exit 0 means the request/client check completed;
+applied status must still be inspected. Linux connection/backend errors exit 3.
