@@ -43,6 +43,29 @@ class LifecycleTests(unittest.TestCase):
         extract(archive, path, version)
         atomic(path / "release.json", {"version": version})
 
+    def test_prepared_only_and_repeated_removal_skip_absent_services(self):
+        self.candidate("0.1.0")
+        def run(args):
+            self.calls.append(args)
+            if args[:2] == ["systemctl", "show"]:
+                return "LoadState=not-found\nActiveState=inactive\nFragmentPath="
+        for _ in range(2):
+            self.assertTrue(uninstall(self.layout, run=run, sessions=lambda: [])["removed"])
+        self.assertEqual(list(self.layout.versions.iterdir()), [])
+        self.assertFalse(any(args[:2] == ["systemctl", "disable"] for args in self.calls))
+
+    def test_stop_failure_preserves_prepared_version_for_recovery(self):
+        self.candidate("0.1.0")
+        def run(args):
+            if args[:2] == ["systemctl", "show"]:
+                return "LoadState=loaded\nActiveState=active\nFragmentPath=/usr/lib/systemd/system/" + args[2]
+            if args[:2] == ["systemctl", "disable"]:
+                raise UpdateError("stop failed")
+        with self.assertRaisesRegex(UpdateError, "stop failed"):
+            uninstall(self.layout, run=run, sessions=lambda: [])
+        self.assertTrue((self.layout.versions / "0.1.0/manifest.json").exists())
+        self.assertEqual(read(self.transaction.journal)["phase"], "removing")
+
     @patch("installer.identity.ensure")
     def test_clean_install_health_and_uninstall(self, identity):
         self.candidate("0.1.0")

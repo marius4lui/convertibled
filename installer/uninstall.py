@@ -1,12 +1,62 @@
 """Remove only verified owned files; retain configuration by default."""
 import hashlib
+import os
 from pathlib import Path
 from .integration import remove
 from .platform import command, graphical_sessions
-from .storage import read, atomic
+from .storage import read, atomic, sync_directory
 from updater.archive import manifest
 from updater.model import UpdateError, version
 from .admission_control import exclusive, reload_users, pending
+
+UNITS = {
+    "convertibled-update.timer": "timers.target.wants",
+    "convertibled.service": "multi-user.target.wants",
+}
+
+
+def enable_links(layout, verified_versions=()):
+    owned = []
+    for name, directory in UNITS.items():
+        allowed = {layout.root / "usr/lib/systemd/system" / name,
+                   layout.current / "data/systemd" / name}
+        for installed in verified_versions:
+            allowed.add(layout.versions / version(installed) / "data/systemd" / name)
+        # systemctl --root emits host-absolute targets in disposable roots.
+        allowed |= {Path("/") / path.relative_to(layout.root) for path in allowed}
+        for relative in (Path(name), Path(directory) / name):
+            link = layout.root / "etc/systemd/system" / relative
+            if not link.exists() and not link.is_symlink():
+                continue
+            if not link.is_symlink():
+                raise UpdateError("Unrelated project enable entry retained: " + name)
+            target = Path(os.path.normpath(str(link.parent / link.readlink())))
+            if target not in allowed:
+                raise UpdateError("User-modified project enable link retained: " + name)
+            owned.append(link)
+    return owned
+
+
+def stop_units(layout, run, verified_versions=()):
+    links = enable_links(layout, verified_versions)
+    for name in UNITS:
+        result = run(["systemctl", "show", name, "-p", "LoadState", "-p", "ActiveState", "-p", "FragmentPath"])
+        # Injectable service fake only; command() always returns text. Real
+        # failures are never ignored, and absence requires all three properties.
+        if result is not None:
+            state = dict(line.split("=", 1) for line in result.splitlines() if "=" in line)
+            if state == {"LoadState": "not-found", "ActiveState": "inactive", "FragmentPath": ""}:
+                continue
+            if not {"LoadState", "ActiveState", "FragmentPath"} <= state.keys():
+                raise UpdateError("Ambiguous project service state: " + name)
+        run(["systemctl", "disable", "--now", name])
+    # systemctl may already remove these. Recheck ownership before clearing
+    # dangling links belonging to absent units (e.g. failed first activation).
+    enable_links(layout, verified_versions)
+    for link in links:
+        if link.is_symlink():
+            link.unlink()
+            sync_directory(link.parent)
 
 
 def owned_version(path, interrupted=False):
@@ -62,6 +112,8 @@ def _uninstall(layout, run, sessions):
         versions.append((path, owned_version(path, interrupted=removing)))
     if sessions():
         raise UpdateError("Graphical login appeared during removal preflight")
+    verified_versions = [path.name for path, names in versions] + recorded
+    enable_links(layout, verified_versions)
     from .deferred import remove as remove_bootstrap
     remove_bootstrap(layout, run)
     pending(layout, True)
@@ -70,7 +122,7 @@ def _uninstall(layout, run, sessions):
     # before deleting code so a later reinstall cannot inherit an old removal.
     from .pending import clear as clear_pending
     clear_pending(layout)
-    run(["systemctl", "disable", "--now", "convertibled-update.timer", "convertibled.service"])
+    stop_units(layout, run, verified_versions)
     remove(layout, preserve_admission=True)
     reload_users(run)
     layout.current.unlink(missing_ok=True)
