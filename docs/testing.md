@@ -46,6 +46,11 @@ missing-service view. The screenshot/log artifact aids review of native layout.
 This X11 software-rendered smoke check does not validate Wayland, touch, OSK,
 screenreader behavior or GNOME Shell integration; those remain physical gates.
 
+Reference-platform CI builds on Fedora 44 and starts a nested GNOME 50 Shell
+with software rendering to exercise extension enable/disable lifecycle. A
+virtual monitor deliberately does not impersonate the integrated touchscreen;
+this cannot mark physical gestures, display assignment or performance accepted.
+
 Resolve relative Markdown links, check mandatory reading targets, inspect UTF-8,
 run `git diff --check`, and review planned/current wording. Do not introduce
 application tests before implementation exists solely to mirror documentation.

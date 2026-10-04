@@ -9,6 +9,25 @@ concurrency:
   group: checks-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  fedora:
+    name: Fedora 44 and GNOME 50 lifecycle
+    runs-on: ubuntu-24.04
+    container: fedora:44
+    env:
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - name: Install reference-platform build and nested-shell dependencies
+        run: dnf -y install git gcc gcc-c++ pkgconf-pkg-config gtk4-devel libadwaita-devel python3 openssl nodejs npm gnome-shell glib2 dbus-daemon mesa-dri-drivers tar gzip findutils which
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d
+        with:
+          toolchain: '1.99.0'
+      - run: cargo build --workspace --locked
+      - run: cargo test --workspace --locked
+      - run: npm ci && npm test
+        working-directory: extension
+      - name: Native Shell activation and cleanup
+        run: bash extension/tools/smoke-shell.sh extension/dist
   linux:
     name: Linux services and GTK settings
     runs-on: ubuntu-24.04
