@@ -7,6 +7,7 @@ pub struct Api {
     pub state: Arc<RwLock<Status>>,
     pub capabilities: Arc<RwLock<Capabilities>>,
     pub config: Arc<RwLock<convertibled_core::config::Config>>,
+    pub report_owner: Arc<RwLock<Option<String>>>,
 }
 async fn authorize(connection: &Connection, header: &Header<'_>) -> zbus::fdo::Result<()> {
     let sender = header
@@ -99,6 +100,7 @@ impl Api {
                 "Workspace cannot be applied in inactive or locked session",
             ));
         }
+        *self.report_owner.write().await = header.sender().map(|name| name.as_str().to_owned());
         let changed = state.applied != applied;
         state.applied = applied;
         if let Some(report) = value.get("capabilities").and_then(|v| v.as_object()) {

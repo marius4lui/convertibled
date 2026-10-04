@@ -90,3 +90,8 @@ Windows cross checks compile this test but cannot execute its D-Bus assertions.
 Capabilities separately expose native rotation lock, focus-owned OSK preference
 and split view. Validated extension reports update each capability independently;
 sensor support is not mistaken for a supported display action.
+
+The session records the unique D-Bus sender of applied reports and checks that
+owner's lifetime. Disconnect resets applied state and capabilities to unavailable,
+then emits a new status; an old successful report cannot survive a dead reporter.
+Extension disable separately submits an explicit unavailable cleanup report.

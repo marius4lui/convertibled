@@ -19,6 +19,7 @@ mod tests {
                     state: state.clone(),
                     capabilities: Arc::new(RwLock::new(Capabilities::default())),
                     config: Arc::new(RwLock::new(Default::default())),
+                    report_owner: Arc::new(RwLock::new(None)),
                 },
             )
             .unwrap()

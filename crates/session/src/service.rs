@@ -86,13 +86,15 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let config = Arc::new(RwLock::new(config));
     let state = Arc::new(RwLock::new(initial));
     let capabilities = Arc::new(RwLock::new(Capabilities::default()));
+    let report_owner = Arc::new(RwLock::new(None::<String>));
     let connection = zbus::connection::Builder::session()?
         .name("org.convertibled.Session1")?
         .serve_at(
             "/org/convertibled/Session1",
             Api {
                 state: state.clone(),
-                capabilities,
+                capabilities: capabilities.clone(),
+                report_owner: report_owner.clone(),
                 config: config.clone(),
             },
         )?
@@ -105,8 +107,25 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         tokio::select! { _ = tokio::signal::ctrl_c() => break, _=terminate.recv()=>break, _ = interval.tick() => {} }
         let observed = observation(&system).await;
         let (active, locked) = session_state(&system).await;
+        let owner = report_owner.read().await.clone();
+        let disconnected = if let Some(owner) = owner.as_deref() {
+            let bus = zbus::fdo::DBusProxy::new(&connection).await?;
+            let name = zbus::names::BusName::try_from(owner)?;
+            !bus.name_has_owner(name).await.unwrap_or(false)
+        } else {
+            false
+        };
         let mut status = state.write().await;
-        if status.observation != observed || status.active != active || status.locked != locked {
+        if disconnected {
+            *report_owner.write().await = None;
+            status.applied = Default::default();
+            *capabilities.write().await = Capabilities::default();
+        }
+        if disconnected
+            || status.observation != observed
+            || status.active != active
+            || status.locked != locked
+        {
             status.observation = observed;
             status.active = active;
             status.locked = locked;
