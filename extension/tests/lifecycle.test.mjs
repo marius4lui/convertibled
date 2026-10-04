@@ -1,7 +1,22 @@
-import {main,timers} from './native-env.mjs';
+import {main,timers,seat,settings} from './native-env.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 const {default:Extension}=await import('../dist/extension.js');
+test('startup uses the GNOME 50 Clutter seat and releases touch approval on removal', () => {
+    assert.equal(global.backend.get_default_seat,undefined);
+    const device={get_device_type:()=>1,get_device_node:()=>'/dev/input/event42'};
+    seat.devices=[device];
+    const extension=new Extension();extension.enable();
+    assert.equal(extension.touchSource.seat,seat);
+    assert.equal(extension.touchSource.approveDevice(device),true);
+    assert.equal(extension.touchSource.allows(device),true);
+    settings.set_string('touchscreen-device-node','/dev/input/event42');
+    assert.equal(extension.touchSource.allows(device),true);
+    seat.devices=[];seat.emit('device-removed',device);
+    assert.equal(extension.touchSource.available,false);
+    assert.equal(settings.get_string('touchscreen-device-node'),'');
+    extension.disable();assert.equal(seat.signals.size,0);
+});
 test('startup, fold, lock and disable preserve focus and release resources', () => {
     const extension=new Extension();extension.enable();
     assert.equal(main.layoutManager.chrome.length,3);

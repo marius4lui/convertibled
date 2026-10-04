@@ -44,8 +44,13 @@ export const main={
 };
 export const system=Object.assign(new Emitter(),{get_installed:()=>[],get_running:()=>[]});
 export const favorites=Object.assign(new Emitter(),{getFavorites:()=>[],isFavorite:()=>false});
+export const seat=Object.assign(new Emitter(),{devices:[],list_devices(){return [...this.devices];}});
+export const clutterBackend={get_default_seat:()=>seat};
 globalThis.focusChanges=0;
-globalThis.global={display:new Emitter(),stage:new Emitter(),window_group:new Actor(),
+// Shell.Global.backend is Meta.Backend, which has no get_default_seat method.
+// GNOME 50 exposes Clutter.Backend through the stage's Clutter.Context.
+globalThis.global={backend:{},display:new Emitter(),
+    stage:Object.assign(new Emitter(),{context:{get_backend:()=>clutterBackend}}),window_group:new Actor(),
     compositor:{get_laters:()=>({remove(){}})},
     workspace_manager:Object.assign(new Emitter(),{get_active_workspace:()=>({})}),get_window_actors:()=>[]};
 globalThis.__native={

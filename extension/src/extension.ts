@@ -55,7 +55,7 @@ export default class TabletExtension extends Extension {
         this.cleanup = new Cleanup(); this.settings = this.getSettings();
         this.splitController = new SplitController(this.windows,this.settings,
             active => this.dock?.setSplitAction(active ? () => this.splitController?.end(this.monitor!.index) : null));
-        this.touchSource = new TouchSource(global.backend?.get_default_seat(),this.settings, () => {
+        this.touchSource = new TouchSource(global.stage.context.get_backend().get_default_seat(),this.settings, () => {
             this.touch?.cancel(); this.reportApplied();
         });
         this.touch = new TouchNavigation(() => this.monitor,

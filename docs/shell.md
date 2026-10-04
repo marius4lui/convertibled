@@ -263,3 +263,16 @@ incomplete rollback; failed rollback drops that window's ownership rather than
 claiming restoration succeeded. A Node native-boundary regression injects the
 second placement exception and checks both positions, maximization and later
 laptop restoration. Actual asynchronous client geometry remains a device test.
+
+The touchscreen gate obtains the Clutter seat through
+`global.stage.context.get_backend().get_default_seat()`, matching
+[GNOME Shell 50.5 keyboard.js](https://github.com/GNOME/gnome-shell/blob/50.5/js/ui/keyboard.js).
+`global.backend` is a Meta.Backend and does not expose that seat method. The
+native-boundary mock deliberately preserves this distinction so the incorrect
+access fails startup tests. Clutter 50.5
+[seat declarations](https://github.com/GNOME/mutter/blob/50.5/clutter/clutter/clutter-seat.h),
+[seat signals](https://github.com/GNOME/mutter/blob/50.5/clutter/clutter/clutter-seat.c)
+and [input device declarations](https://github.com/GNOME/mutter/blob/50.5/clutter/clutter/clutter-input-device.h)
+confirm `list_devices`, `device-removed`, `get_device_type` and `get_device_node`.
+The regression exercises seat discovery, approval and removal through extension
+startup; physical touchscreen acceptance remains separate.
