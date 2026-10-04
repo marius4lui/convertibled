@@ -66,6 +66,8 @@ export default class TabletExtension extends Extension {
         });
         this.cleanup.signal(Main.sessionMode,'updated', () => this.reconcile());
         this.cleanup.signal(Main.layoutManager,'monitors-changed', () => this.display?.refresh());
+        this.cleanup.signal(Main.layoutManager.keyboardBox,'notify::height', () => { if (this.active) this.position(); });
+        this.cleanup.signal(Main.layoutManager.keyboardBox,'notify::visible', () => { if (this.active) this.position(); });
         this.cleanup.signal(global.display,'window-created', (_d: any,window: any) => {
             if (this.active && this.monitor) this.windows.maximize(window,this.monitor.index);
         });
@@ -114,10 +116,15 @@ export default class TabletExtension extends Extension {
     private position(): void {
         if (!this.monitor) return;
         const area = Main.layoutManager.getWorkAreaForMonitor(this.monitor.index);
-        this.dock?.actor.set_position(area.x,area.y + area.height - 88);
+        const keyboard = Main.layoutManager.keyboardBox;
+        const [kx,ky] = keyboard.get_transformed_position();
+        const keyboardHere = keyboard.visible && keyboard.height > 0 &&
+            kx < area.x + area.width && kx + keyboard.width > area.x && ky >= area.y;
+        const usableHeight = keyboardHere ? Math.min(area.height,Math.max(0,ky - area.y)) : area.height;
+        this.dock?.actor.set_position(area.x,area.y + Math.max(0,usableHeight - 88));
         this.dock?.actor.set_size(area.width,88);
         for (const actor of [this.home?.actor,this.overview?.actor]) {
-            actor?.set_position(area.x,area.y); actor?.set_size(area.width,Math.max(100,area.height - 96));
+            actor?.set_position(area.x,area.y); actor?.set_size(area.width,Math.max(48,usableHeight - 96));
         }
         this.home?.resize(area.width);
         this.splitController?.resize(area,this.monitor.index);

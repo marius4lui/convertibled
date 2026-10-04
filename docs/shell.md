@@ -113,3 +113,8 @@ desktop favorites share one preference instead of maintaining divergent lists.
 Optional `dock-autohide` hides the application strip when app focus returns,
 while leaving labeled Home/Overview navigation visible. Bottom-edge navigation
 reveals the full app strip, and changing the preference updates it immediately.
+
+Surface allocation observes the native keyboard box and reserves its occupied
+internal-output height. Navigation moves above the OSK and Home stays scrollable;
+the extension never opens/closes the keyboard directly. GNOME owns editable
+focus, authentication, keyboard lifetime and third-party app occlusion handling.
