@@ -28,7 +28,7 @@ export class SplitController {
         },'view-dual-symbolic');
         this.divider.set_position(layout.divider.x,layout.divider.y);
         this.divider.set_size(layout.divider.width,layout.divider.height);
-        Main.layoutManager.addChrome(this.divider,{affectsStruts:false,trackFullscreen:true});
+        Main.layoutManager.addChrome(this.divider,{affectsStruts:false,trackFullscreen:false});
         this.cleanup.add(() => { Main.layoutManager.removeChrome(this.divider); this.divider.destroy(); });
         for (const window of [first,second]) {
             this.cleanup.signal(window,'unmanaged', () => this.clear());

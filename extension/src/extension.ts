@@ -53,9 +53,15 @@ export default class TabletExtension extends Extension {
         });
         this.home.actor.add_child(this.widgets.actor);
         for (const actor of [this.home.actor,this.dock.actor,this.overview.actor]) {
-            actor.hide(); Main.layoutManager.addChrome(actor,{affectsStruts:false,trackFullscreen:true});
+            actor.hide(); Main.layoutManager.addChrome(actor,{affectsStruts:false,trackFullscreen:false});
             this.cleanup.add(() => Main.layoutManager.removeChrome(actor));
         }
+        Main.uiGroup.set_child_below_sibling(this.home.actor,global.window_group);
+        this.cleanup.signal(global.display,'in-fullscreen-changed', () => {
+            const fullscreen = this.monitor && Main.layoutManager.monitors[this.monitor.index]?.inFullscreen;
+            if (fullscreen) { this.hideSurfaces(); this.dock?.actor.hide(); }
+            else if (this.active) this.dock?.actor.show();
+        });
         this.cleanup.signal(Main.sessionMode,'updated', () => this.reconcile());
         this.cleanup.signal(Main.layoutManager,'monitors-changed', () => this.display?.refresh());
         this.cleanup.signal(global.display,'window-created', (_d: any,window: any) => {
@@ -112,12 +118,16 @@ export default class TabletExtension extends Extension {
         this.home?.resize(area.width);
         this.splitController?.resize(area,this.monitor.index);
     }
-    private hideSurfaces(): void { this.home?.actor.hide(); this.overview?.actor.hide(); }
+    private hideSurfaces(): void {
+        this.home?.actor.hide(); this.overview?.actor.hide();
+        if (this.home) Main.uiGroup.set_child_below_sibling(this.home.actor,global.window_group);
+    }
     private navigate(surface: 'home' | 'overview' | 'dock'): void {
         if (!this.active) return;
         this.hideSurfaces(); this.dock?.actor.show();
         const actor = surface === 'home' ? this.home?.actor : surface === 'overview' ? this.overview?.actor : null;
         if (!actor) return;
+        if (surface === 'home') Main.uiGroup.set_child_above_sibling(actor,global.window_group);
         if (surface === 'overview') this.overview?.refresh();
         actor.show(); actor.opacity = 0;
         actor.ease({opacity:255,duration:this.animations.get_boolean('enable-animations') ? 200 : 0,

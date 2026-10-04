@@ -100,3 +100,8 @@ desired state carries `rotation_lock_requested` to distinguish this from an
 explicit unlock. Owned temporary changes restore on exit, while later native
 user changes retain ownership. Actual lock and read-only/absent failures are
 reported separately from requests. GNOME remains the rotation/touch mapper.
+
+Hidden surfaces opt out of LayoutManager's automatic fullscreen visibility
+tracking, which otherwise overrides an actor's hidden state. Home rests below
+the application group and is raised only on explicit navigation. Fullscreen
+entry hides navigation; leaving fullscreen restores it only in active tablet mode.
