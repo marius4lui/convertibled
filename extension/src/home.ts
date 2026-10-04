@@ -1,6 +1,7 @@
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import Shell from 'gi://Shell';
+import Pango from 'gi://Pango';
 import * as Favorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import {searchApps, gridColumns, type AppInfo} from './apps.js';
 import {Cleanup} from './ownership.js';
@@ -17,6 +18,9 @@ export class Home {
     private content = new St.BoxLayout({vertical:true,style_class:'convertibled-home-content',x_align:Clutter.ActorAlign.CENTER,y_align:Clutter.ActorAlign.START});
     private appHeading = new St.Label({text:_('All apps'),style_class:'convertibled-section-heading',x_expand:true,y_align:Clutter.ActorAlign.CENTER});
     private editButton: any;
+    private editCaption: any;
+    private heading = new St.BoxLayout({style_class:'convertibled-section-tools'});
+    private favoriteScroll: any;
     private widgets: any;
     private cleanup = new Cleanup();
     private width = 736;
@@ -29,15 +33,16 @@ export class Home {
         this.header.add_child(this.title);
         this.header.add_child(this.search); this.actor.add_child(this.header);
         this.favoriteSection.add_child(new St.Label({text:_('Favorites'),style_class:'convertibled-section-heading'}));
-        const favoriteScroll = scroll(this.favorites); favoriteScroll.y_expand = false;
-        favoriteScroll.height = 108;
-        this.favoriteSection.add_child(favoriteScroll); this.content.add_child(this.favoriteSection);
+        this.favoriteScroll = scroll(this.favorites); this.favoriteScroll.y_expand = false;
+        this.favoriteSection.add_child(this.favoriteScroll); this.content.add_child(this.favoriteSection);
         const apps = new St.BoxLayout({vertical:true,style_class:'convertibled-home-section'});
-        const heading = new St.BoxLayout({style_class:'convertibled-section-tools'});
-        heading.add_child(this.appHeading);
+        this.heading.add_child(this.appHeading);
         this.editButton = button('Edit favorites', () => { this.editing = !this.editing; this.refresh(); },'starred-symbolic');
-        this.editButton.toggle_mode = true; heading.add_child(this.editButton);
-        apps.add_child(heading); apps.add_child(this.grid); this.content.add_child(apps);
+        this.editCaption = this.editButton.get_children()[0].get_children().at(-1);
+        this.editCaption.clutter_text.line_wrap = true;
+        this.editCaption.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
+        this.editButton.toggle_mode = true; this.heading.add_child(this.editButton);
+        apps.add_child(this.heading); apps.add_child(this.grid); this.content.add_child(apps);
         this.actor.add_child(scroll(this.content));
         this.cleanup.signal(this.search.clutter_text, 'text-changed', () => { this.limit = 40; this.refresh(); });
         this.cleanup.signal(Shell.AppSystem.get_default(), 'installed-changed', () => { this.readApps(); this.refresh(); });
@@ -51,13 +56,20 @@ export class Home {
                 keywords:info.get_keywords?.() ?? []}));
     }
     resize(width: number,height = 800,textScale = 1): void {
-        const contentWidth = Math.min(1040,Math.max(160,width - 80));
-        const compact = height < 460, vertical = width < 900, scale = Math.max(1,textScale);
+        const padding = width < 600 ? 20 : 40;
+        const contentWidth = Math.min(1040,Math.max(160,width - padding * 2));
+        const compact = height < 460, vertical = width < 900 * textScale, scale = Math.max(1,textScale);
         if (this.width === contentWidth && this.compact === compact &&
             this.header.vertical === vertical && this.textScale === scale) return;
         this.width = contentWidth; this.textScale = scale; this.compact = compact;
+        this.actor.style = `padding: ${compact ? 12 : 24}px ${padding}px;`;
         this.title.visible = !this.compact;
         this.header.vertical = vertical;
+        this.heading.vertical = contentWidth < 440 * scale;
+        this.editButton.width = Math.min(contentWidth,230 * scale);
+        this.editCaption.width = Math.max(80,this.editButton.width - 64);
+        this.editButton.x_align = this.heading.vertical ? Clutter.ActorAlign.START : Clutter.ActorAlign.FILL;
+        this.favoriteScroll.height = Math.ceil(86 + 36 * scale);
         this.header.width = this.width; this.content.width = this.width; this.refresh();
     }
     private appButton(app: any, editable = false): any {
@@ -67,7 +79,10 @@ export class Home {
             accessible_name:app.get_name(),reactive:true,x_expand:true});
         const box = new St.BoxLayout({vertical:true,style_class:'convertibled-app-content'});
         const icon = app.create_icon_texture(editable ? 64 : 48); icon.x_align = Clutter.ActorAlign.CENTER; box.add_child(icon);
-        const label = new St.Label({text:app.get_name(),style_class:'convertibled-app-label',x_align:Clutter.ActorAlign.CENTER});
+        const label = new St.Label({text:app.get_name(),style_class:'convertibled-app-label',
+            width:Math.max(60,tile.width - 24),height:Math.ceil(36 * this.textScale),x_align:Clutter.ActorAlign.CENTER});
+        label.clutter_text.line_wrap = true; label.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
+        label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         box.add_child(label); result.set_child(box); result.connect('clicked', () => this.launch(app)); tile.add_child(result);
         if (editable && this.editing) {
             const favorite = Favorites.getAppFavorites();
@@ -104,8 +119,13 @@ export class Home {
         if (!filtered.length) {
             const empty = new St.BoxLayout({vertical:true,style_class:'convertibled-empty-state',x_expand:true});
             empty.add_child(new St.Icon({icon_name:'system-search-symbolic',icon_size:32,x_align:Clutter.ActorAlign.CENTER}));
-            empty.add_child(new St.Label({text:_(query ? 'No matching apps' : 'No apps available'),style_class:'convertibled-empty-title',x_align:Clutter.ActorAlign.CENTER}));
-            if (query) empty.add_child(new St.Label({text:_('Try another search'),style_class:'convertibled-empty-detail',x_align:Clutter.ActorAlign.CENTER}));
+            const addMessage = (text: string,style: string) => {
+                const label = new St.Label({text:_(text),style_class:style,width:Math.max(80,this.width - 64),x_align:Clutter.ActorAlign.CENTER});
+                label.clutter_text.line_wrap = true; label.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
+                empty.add_child(label);
+            };
+            addMessage(query ? 'No matching apps' : 'No apps available','convertibled-empty-title');
+            if (query) addMessage('Try another search','convertibled-empty-detail');
             this.grid.add_child(empty);
         }
     }

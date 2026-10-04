@@ -117,3 +117,7 @@
 .convertibled-light .convertibled-widget-action:checked { background-color: #326bd4; color: white; }
 .convertibled-overview-toolbar { spacing: 12px; }
 .convertibled-favorite-app { min-height: 72px; padding: 8px 4px; }
+
+.convertibled-widget-row { spacing: 16px; }
+.convertibled-overview-compact { padding: 16px; }
+.convertibled-overview-page { spacing: 20px; }

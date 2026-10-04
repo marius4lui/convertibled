@@ -8,9 +8,14 @@ export function fitWindowPreview(sourceWidth: number, sourceHeight: number,
     const width = sourceWidth * scale, height = sourceHeight * scale;
     return {width,height,x:(viewportWidth - width) / 2,y:(viewportHeight - height) / 2};
 }
-export function overviewLayout(width: number): {columns: number; cardWidth: number; previewHeight: number} {
-    const available = Math.max(160,width - 80);
-    const columns = Math.min(3,Math.max(1,Math.floor((available + 24) / 340)));
-    const cardWidth = Math.min(480,(available - (columns - 1) * 24) / columns);
-    return {columns,cardWidth,previewHeight:Math.round(Math.min(270,cardWidth * 0.625))};
+export function overviewLayout(width: number,count = 3,scale = 1,allocatedWidth?: number):
+    {columns: number; cardWidth: number; previewHeight: number; available: number; stackedToolbar: boolean; compact: boolean} {
+    const compact = width < 600;
+    const fallback = Math.max(1,width - (compact ? 32 : 80));
+    const available = Math.max(1,Math.min(fallback,allocatedWidth && allocatedWidth > 0 ? allocatedWidth : fallback));
+    const gap = 24, minimumCard = 300 * Math.max(1,scale);
+    const columns = Math.min(3,Math.max(1,count),Math.max(1,Math.floor((available + gap) / (minimumCard + gap))));
+    const cardWidth = Math.min(640,(available - (columns - 1) * gap) / columns);
+    return {columns,cardWidth,previewHeight:Math.round(Math.min(340,(cardWidth - 34) * 0.72)),available,
+        stackedToolbar:available < 540 * Math.max(1,scale),compact};
 }

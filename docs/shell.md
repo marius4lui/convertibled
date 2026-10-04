@@ -316,3 +316,8 @@ keyboard. Escape dismisses Home and Overview. Wide headers use a single row.
 App columns adapt to the native text scale. Repeated status/geometry updates
 with unchanged layout retain existing app actors and their keyboard focus.
 Split-selection accessible names include the window title and track renames.
+
+Narrow layouts reduce side padding, stack section controls and wrap bounded
+app captions. Widget rows adapt between three columns, two-plus-one and a single
+column. The window picker scrolls its header together with its cards, so short
+viewports do not leave unreachable actions. Actual allocations size previews.

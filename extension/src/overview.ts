@@ -1,12 +1,18 @@
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
+import Pango from 'gi://Pango';
 import {Cleanup} from './ownership.js';
 import {button, clear, scroll} from './ui.js';
 import {fitWindowPreview, overviewLayout} from './overview-layout.js';
 import {_} from './localized.js';
 export class WindowOverview {
     readonly actor = new St.BoxLayout({vertical:true,style_class:'popup-menu-content convertibled-surface convertibled-overview',reactive:true});
-    private content = new St.BoxLayout({vertical:true,style_class:'convertibled-overview-grid',y_align:Clutter.ActorAlign.START});
+    private content = new St.BoxLayout({vertical:true,style_class:'convertibled-overview-grid',x_expand:true,y_align:Clutter.ActorAlign.START});
+    private toolbar = new St.BoxLayout({style_class:'convertibled-overview-toolbar',x_expand:true});
+    private heading: any;
+    private view: any;
+    private scale = 1;
+    private allocatedWidth?: number;
     private cleanup = new Cleanup();
     private windowCleanup = new Cleanup();
     private selection: any[] = [];
@@ -17,25 +23,41 @@ export class WindowOverview {
     constructor(private windows: () => any[], private activate: (window: any) => void,
         private split: (a: any, b: any) => void, private close: () => void) {
         const header = new St.BoxLayout({vertical:true,style_class:'convertibled-overview-header'});
-        const toolbar = new St.BoxLayout({style_class:'convertibled-overview-toolbar'});
-        toolbar.add_child(button('Back', close, 'go-previous-symbolic'));
+        const back = button('Back',close,'go-previous-symbolic');
+        this.toolbar.add_child(back);
         const heading = new St.BoxLayout({vertical:true,x_expand:true});
-        heading.add_child(new St.Label({text:_('Open windows'),style_class:'convertibled-overview-title'}));
+        this.heading = new St.Label({text:_('Open windows'),style_class:'convertibled-overview-title',x_expand:true});
+        this.heading.clutter_text.line_wrap = true; this.heading.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+        heading.add_child(this.heading);
         this.status = new St.Label({text:_('Select two apps for split'),style_class:'convertibled-overview-status'});
-        this.status.clutter_text.line_wrap = true;
+        this.status.clutter_text.line_wrap = true; this.status.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
         heading.add_child(this.status); header.add_child(heading);
         this.splitButton = button('Split selected apps', () => {
             if (this.selection.length === 2) split(this.selection[0],this.selection[1]);
         },'view-dual-symbolic');
-        toolbar.add_child(this.splitButton); header.add_child(toolbar);
-        this.actor.add_child(header); this.actor.add_child(scroll(this.content));
+        for (const control of [back,this.splitButton]) {
+            control.x_expand = true;
+            const row = control.get_children()[0]; row.x_expand = true;
+            const children = row.get_children(); const label = children[children.length - 1];
+            label.x_expand = true; label.clutter_text.line_wrap = true; label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+        }
+        this.toolbar.add_child(this.splitButton); header.add_child(this.toolbar);
+        const page = new St.BoxLayout({vertical:true,style_class:'convertibled-overview-page',x_expand:true,y_align:Clutter.ActorAlign.START});
+        page.add_child(header); page.add_child(this.content);
+        this.view = scroll(page); this.actor.add_child(this.view);
+        this.cleanup.signal(this.view,'notify::allocation', () => {
+            if (this.view.width > 0 && Math.abs(this.view.width - (this.allocatedWidth ?? 0)) > 1) {
+                this.allocatedWidth = this.view.width;
+                if (this.actor.visible) this.refresh();
+            }
+        });
         this.updateSelection();
         this.cleanup.signal(global.display, 'window-created', () => { if (this.actor.visible) this.refresh(); });
         this.cleanup.signal(global.workspace_manager, 'active-workspace-changed', () => { if (this.actor.visible) this.refresh(); });
     }
-    resize(width: number): void {
-        if (this.width === width) return;
-        this.width = width;
+    resize(width: number,_height = 800,scale = 1): void {
+        if (this.width === width && this.scale === scale) return;
+        this.width = width; this.scale = scale; this.allocatedWidth = undefined;
         if (this.actor.visible) this.refresh();
     }
     private updateSelection(): void {
@@ -55,7 +77,11 @@ export class WindowOverview {
         this.windowCleanup.clear(); clear(this.content); this.selectionButtons.clear();
         const windows = this.windows().filter(window => window.get_compositor_private());
         this.selection = this.selection.filter(window => windows.includes(window));
-        const layout = overviewLayout(this.width);
+        const layout = overviewLayout(this.width,windows.length,this.scale,this.allocatedWidth);
+        const base = this.actor.style_class.replace(/\s*convertibled-overview-compact/g,'');
+        this.actor.style_class = base + (layout.compact ? ' convertibled-overview-compact' : '');
+        this.toolbar.vertical = layout.stackedToolbar;
+        this.content.width = layout.available;
         let row: any;
         windows.forEach((window,index) => {
             if (index % layout.columns === 0) {
@@ -68,7 +94,11 @@ export class WindowOverview {
                 accessible_name:window.get_title() ?? _('Application'),x_expand:true});
             // A fixed-layout viewport owns the clone allocation. Scaling a full-size
             // clone inside a Button lets St allocate it again and distorts the texture.
-            const viewport = new St.Widget({width:Math.max(1,layout.cardWidth - 34),height:layout.previewHeight,clip_to_allocation:true});
+            const previewWidth = Math.max(1,layout.cardWidth - 34);
+            const rect = window.get_frame_rect();
+            const sourceAspect = (source.width || rect.width) / Math.max(1,source.height || rect.height);
+            const previewHeight = Math.round(Math.min(420,Math.max(layout.previewHeight,previewWidth / Math.max(0.1,sourceAspect))));
+            const viewport = new St.Widget({width:previewWidth,height:previewHeight,clip_to_allocation:true});
             const clone = new Clutter.Clone({source,reactive:false}); viewport.add_child(clone);
             const updatePreview = () => {
                 const rect = window.get_frame_rect();
@@ -85,6 +115,7 @@ export class WindowOverview {
             const footer = new St.BoxLayout({style_class:'convertibled-overview-card-footer'});
             const title = new St.Label({text:window.get_title() ?? _('Application'),
                 style_class:'convertibled-overview-window-title',x_expand:true,y_align:Clutter.ActorAlign.CENTER});
+            title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
             footer.add_child(title);
             const select = new St.Button({can_focus:true,reactive:true,toggle_mode:true,
                 accessible_name:`${_('Select for split')}: ${window.get_title() ?? _('Application')}`,
@@ -107,8 +138,12 @@ export class WindowOverview {
             const empty = new St.BoxLayout({vertical:true,style_class:'convertibled-overview-empty',x_expand:true,
                 x_align:Clutter.ActorAlign.CENTER});
             empty.add_child(new St.Icon({icon_name:'view-grid-symbolic',icon_size:56}));
-            empty.add_child(new St.Label({text:_('No windows on this display'),style_class:'convertibled-overview-title'}));
-            empty.add_child(new St.Label({text:_('Open an app from Home to get started.')}));
+            for (const [text,style] of [[_('No windows on this display'),'convertibled-overview-title'],
+                [_('Open an app from Home to get started.'),'convertibled-overview-status']]) {
+                const label = new St.Label({text,style_class:style,x_expand:true});
+                label.clutter_text.line_wrap = true; label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+                empty.add_child(label);
+            }
             this.content.add_child(empty);
         }
         this.updateSelection();

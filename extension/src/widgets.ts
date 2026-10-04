@@ -1,5 +1,6 @@
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
+import Pango from 'gi://Pango';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import {Cleanup} from './ownership.js';
@@ -8,13 +9,16 @@ import {_} from './localized.js';
 export const widgetIds = ['clock','battery','actions'];
 export function validWidgets(ids: string[]): string[] { return [...new Set(ids.filter(id => widgetIds.includes(id)))]; }
 export class Widgets {
-    readonly actor = new St.BoxLayout({style_class:'convertibled-widgets',y_align:Clutter.ActorAlign.START,x_expand:true});
+    readonly actor = new St.BoxLayout({vertical:true,style_class:'convertibled-widgets',y_align:Clutter.ActorAlign.START,x_expand:true});
     private cleanup = new Cleanup();
     private battery: any;
     private cancel = new Gio.Cancellable();
     private labels = new Map<string,any>();
     private session: {profile: string | null; workspace: boolean; locked: boolean} = {profile:null,workspace:false,locked:false};
     private lockButton: any;
+    private width = 720;
+    private textScale = 1;
+    private actionWidth = 72;
     constructor(private settings: any, private actions: {auto: () => void; lock: () => void; settings: () => void}) {
         this.cleanup.signal(settings,'changed::widgets', () => this.refresh());
         const timer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT,30, () => { this.update(); return GLib.SOURCE_CONTINUE; });
@@ -31,23 +35,44 @@ export class Widgets {
             });
         this.refresh();
     }
-    resize(width: number): void { this.actor.vertical = width < 720; }
+    resize(width: number,textScale = 1): void {
+        const scale = Math.max(1,textScale);
+        if (this.width === width && this.textScale === scale) return;
+        this.width = Math.max(160,width); this.textScale = scale; this.refresh();
+    }
     private label(card: any,key: string,style: string): void {
-        const label = new St.Label({text:'',style_class:style,x_expand:true});
-        label.clutter_text.line_wrap = true; this.labels.set(key,label); card.add_child(label);
+        const label = new St.Label({text:'',style_class:style,width:Math.max(80,card.width - 40)});
+        label.clutter_text.line_wrap = true; label.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
+        this.labels.set(key,label); card.add_child(label);
     }
     private action(label: string,icon: string,action: () => void): any {
-        const control = new St.Button({style_class:'convertibled-widget-action',can_focus:true,reactive:true,x_expand:true,accessible_name:_(label)});
+        const control = new St.Button({style_class:'convertibled-widget-action',can_focus:true,reactive:true,
+            width:this.actionWidth,accessible_name:_(label)});
         const content = new St.BoxLayout({vertical:true,style_class:'convertibled-widget-action-content'});
         content.add_child(new St.Icon({icon_name:icon,icon_size:24,x_align:Clutter.ActorAlign.CENTER}));
-        const caption = new St.Label({text:_(label),style_class:'convertibled-widget-action-label',x_align:Clutter.ActorAlign.CENTER});
-        caption.clutter_text.line_wrap = true; content.add_child(caption);
+        const caption = new St.Label({text:_(label),style_class:'convertibled-widget-action-label',
+            width:Math.max(32,this.actionWidth - 16),x_align:Clutter.ActorAlign.CENTER});
+        caption.clutter_text.line_wrap = true; caption.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
+        content.add_child(caption);
         control.set_child(content); control.connect('clicked',action); return control;
     }
     refresh(): void {
         clear(this.actor); this.labels.clear(); this.lockButton = null;
-        for (const id of validWidgets(this.settings.get_strv('widgets'))) {
-            const card = new St.BoxLayout({vertical:true,style_class:`convertibled-widget convertibled-widget-${id}`,x_expand:true,y_align:Clutter.ActorAlign.FILL});
+        const ids = validWidgets(this.settings.get_strv('widgets'));
+        const columns = this.width >= 880 * this.textScale ? 3 : this.width >= 380 * this.textScale ? 2 : 1;
+        const groups: string[][] = [];
+        for (const id of ids) {
+            const last = groups.at(-1);
+            if (!last || last.length >= columns || (columns < 3 && (id === 'actions' || last.includes('actions')))) groups.push([id]);
+            else last.push(id);
+        }
+        for (const group of groups) {
+            const row = new St.BoxLayout({style_class:'convertibled-widget-row',x_expand:true}); this.actor.add_child(row);
+            const cardWidth = Math.floor((this.width - (group.length - 1) * 16) / group.length);
+            this.actionWidth = Math.max(44,Math.min(Math.ceil(112 * this.textScale),Math.floor((cardWidth - 40 - 16) / 3)));
+            for (const id of group) {
+            const card = new St.BoxLayout({vertical:true,style_class:`convertibled-widget convertibled-widget-${id}`,
+                width:cardWidth,y_align:Clutter.ActorAlign.FILL});
             if (id === 'clock') {
                 this.label(card,'clock-time','convertibled-widget-value convertibled-clock-time');
                 this.label(card,'clock-date','convertibled-widget-detail');
@@ -59,14 +84,18 @@ export class Widgets {
                 this.label(card,'battery-status','convertibled-widget-detail');
                 this.label(card,'battery-mode','convertibled-widget-detail');
             } else {
-                card.add_child(new St.Label({text:_('Quick actions'),style_class:'convertibled-widget-title'}));
+                const inline = cardWidth >= 600 * this.textScale;
+                card.vertical = !inline;
+                card.add_child(new St.Label({text:_('Quick actions'),style_class:'convertibled-widget-title',
+                    x_expand:inline,y_align:Clutter.ActorAlign.CENTER}));
                 const controls = new St.BoxLayout({style_class:'convertibled-widget-actions'});
                 controls.add_child(this.action('Automatic mode','view-refresh-symbolic',this.actions.auto));
                 this.lockButton = this.action('Rotation lock','rotation-locked-symbolic',this.actions.lock);
                 this.lockButton.toggle_mode = true; controls.add_child(this.lockButton);
                 controls.add_child(this.action('Settings','emblem-system-symbolic',this.actions.settings)); card.add_child(controls);
             }
-            this.actor.add_child(card);
+            row.add_child(card);
+            }
         }
         this.update();
     }

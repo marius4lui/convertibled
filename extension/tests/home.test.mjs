@@ -42,9 +42,30 @@ test('Home caps wide content, adapts narrow app rows and keeps pagination reacha
     assert.equal(count(),40);home.grid.children.at(-1).emit('clicked');assert.equal(count(),65);
     const normalColumns=home.grid.children[0].children.length;
     home.resize(1800,800,1.25);assert.ok(home.grid.children[0].children.length<normalColumns);
-    home.resize(360);assert.equal(home.content.width,280);assert.equal(home.grid.children[0].children.length,2);
+    home.resize(360);assert.equal(home.content.width,320);assert.equal(home.grid.children[0].children.length,2);
     home.search.text='01';home.search.clutter_text.emit('text-changed');assert.equal(home.limit,40);
     assert.equal(count(),1);home.destroy();system.get_installed=()=>[];
+});
+
+test('Home bounds translated controls and long captions across narrow and large-text allocations', () => {
+    const records=Array.from({length:12},(_,index)=>info(`${index}.desktop`,'An exceptionally long installed application name'));
+    system.get_installed=()=>records;system.lookup_app=id=>app(records.find(record=>record.get_id()===id));
+    const home=new Home(()=>{});
+    for (const scale of [1,1.25,1.5]) for (const width of [320,360,480,600,800,1024]) {
+        home.resize(width,800,scale);
+        assert.ok(home.header.width<=width);assert.ok(home.editButton.width<=home.content.width);
+        if (home.content.width<440*scale) assert.equal(home.heading.vertical,true);
+        for (const row of home.grid.children) {
+            const occupied=row.children.reduce((total,tile)=>total+tile.width,0)+(row.children.length-1)*12;
+            assert.ok(occupied<=home.content.width);
+            for (const tile of row.children) {
+                const launch=tile.children[0],label=launch.children[0].children[1];
+                assert.ok(label.width<tile.width);assert.equal(label.clutter_text.line_wrap,true);
+                assert.equal(launch.accessible_name,'An exceptionally long installed application name');
+            }
+        }
+    }
+    home.destroy();system.get_installed=()=>[];
 });
 
 test('keyboard-height Home preserves search and apps while removing ancillary sections', () => {

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {fitWindowPreview,overviewLayout} from '../dist/overview-layout.js';
 import {Actor,Emitter} from './native-env.mjs';
 globalThis.__native.St.Widget = Actor;
+globalThis.__native.Pango = {EllipsizeMode:{NONE:0,END:3}};
 const {WindowOverview} = await import('../dist/overview.js');
 function makeWindow(title='Editor',width=1200,height=800) {
     const source = new Actor({width,height});
@@ -54,6 +55,33 @@ test('overview adapts portrait and landscape card rows without oversized preview
     assert.equal(overviewLayout(1400).columns,3);
     for(const width of [320,550,800,1400]) {
         const layout=overviewLayout(width);assert.ok(layout.cardWidth*layout.columns<=width);
-        assert.ok(layout.previewHeight<=270);
+        assert.ok(layout.previewHeight<=340);
     }
+});
+
+test('narrow and scaled layouts fit complete rows and stack translated toolbar controls', () => {
+    for(const scale of [1,1.25,1.5]) for(const width of [320,480,800,1280]) {
+        const layout=overviewLayout(width,2,scale);
+        assert.ok(layout.columns*layout.cardWidth + (layout.columns - 1)*24 <= layout.available);
+        assert.ok(layout.previewHeight>0);
+        if(width<=480) {assert.equal(layout.columns,1);assert.equal(layout.stackedToolbar,true);}
+        assert.ok(layout.columns<=2);
+    }
+    assert.equal(overviewLayout(1280,2).columns,2);
+    assert.ok(overviewLayout(1280,2).cardWidth>500);
+});
+test('native scroll allocation refines cards without replacing selection and titles retain their full accessible names', () => {
+    const {window} = makeWindow('A very long application window title');
+    const overview=new WindowOverview(()=>[window],()=>{},()=>{},()=>{});
+    overview.resize(320,240,1.5);overview.refresh();
+    assert.equal(overview.toolbar.vertical,true);
+    assert.equal(overview.heading.clutter_text.line_wrap,true);
+    const select=cards(overview)[0].children[1].children[1];select.emit('clicked');
+    overview.view.width=260;overview.view.emit('notify::allocation');
+    const card=cards(overview)[0];assert.ok(card.width<=260);
+    assert.equal(card.children[1].children[0].clutter_text.ellipsize,3);
+    assert.equal(card.children[1].children[1].checked,true);
+    assert.equal(card.children[0].accessible_name,'A very long application window title');
+    assert.equal(overview.actor.children.length,1); // Header and cards share the reachable scroll body.
+    overview.destroy();
 });

@@ -9,6 +9,9 @@ export class Actor extends Emitter {
     children=[];visible=true;opacity=255;width=0;height=0;x=0;y=0;destroyed=false;
     constructor(properties={}){super();Object.assign(this,properties);this.clutter_text=new Emitter();}
     add_child(child){this.children.push(child);child.parent=this;}
+    remove_child(child){this.children=this.children.filter(value=>value!==child);child.parent=null;}
+    get_parent(){return this.parent;}
+    set_child_above_sibling(child,sibling){this.remove_child(child);this.insert_child_at_index(child,this.children.indexOf(sibling)+1);}
     insert_child_at_index(child,index){this.children.splice(index,0,child);child.parent=this;}
     get_children(){return [...this.children];} get_n_children(){return this.children.length;}
     set_child(child){this.add_child(child);} set_size(w,h){this.width=w;this.height=h;}
@@ -34,10 +37,12 @@ export const pending=[];
 export const notifications=[];
 export const settings=new Settings();
 export const main={
-    modalCount:0,overview:{visible:false},
+    modalCount:0,overview:Object.assign(new Emitter(),{visible:false}),
     layoutManager:Object.assign(new Emitter(),{monitors:[{index:0,x:0,y:0,width:800,height:600}],
+        _backgroundGroup:new Actor(),
         keyboardBox:Object.assign(new Actor(),{visible:false}),chrome:[],
         addChrome(actor){this.chrome.push(actor);},removeChrome(actor){this.chrome=this.chrome.filter(a=>a!==actor);},
+        trackChrome(actor){this.chrome.push(actor);},untrackChrome(actor){this.chrome=this.chrome.filter(a=>a!==actor);},
         getWorkAreaForMonitor(){return {x:0,y:0,width:800,height:600};}}),
     sessionMode:Object.assign(new Emitter(),{currentMode:'user',isLocked:false}),
     uiGroup:{set_child_below_sibling(){},set_child_above_sibling(){}},
@@ -56,6 +61,7 @@ globalThis.global={backend:{},display:new Emitter(),
     workspace_manager:Object.assign(new Emitter(),{get_active_workspace:()=>({})}),get_window_actors:()=>[]};
 globalThis.__native={
     St:{Button:Actor,BoxLayout:Actor,Label:Actor,Entry:Actor,ScrollView:Actor,Icon:Actor,Widget:Actor},
+    Pango:{WrapMode:{WORD_CHAR:2},EllipsizeMode:{NONE:0,END:3}},
     Clutter:{Clone:Actor,ActorAlign:{CENTER:0,START:1,FILL:2},AnimationMode:{EASE_OUT_QUAD:0},EVENT_PROPAGATE:0,EVENT_STOP:1,
         InputDeviceType:{TOUCHSCREEN_DEVICE:1},EventType:{TOUCH_BEGIN:1,TOUCH_UPDATE:2,TOUCH_END:3,TOUCH_CANCEL:4}},
     Shell:{AppSystem:{get_default:()=>system},AppState:{RUNNING:1}},
