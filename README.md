@@ -96,6 +96,7 @@ Licensed under [MIT](LICENSE).
 - [Native settings](docs/settings.md)
 - [Installer, updater and bootstrap](docs/distribution.md)
 - [Physical acceptance records](docs/acceptance/README.md)
+- [Interactive Windows scenario demo](demo/README.md)
 
 See the single implementation PR and its CI for current integration evidence.
 Local Windows tests cover portable models; Fedora/GNOME checks and physical
