@@ -2,8 +2,9 @@
 
 `crates/settings` is a Rust GTK4/libadwaita application targeting Fedora 44 and
 GNOME 50. Its preferences pages use native adaptive widgets, named icons,
-keyboard focus and the system appearance. The initial scaffold is not a
-connected settings implementation yet; following batches wire the services.
+keyboard focus and the system appearance. All six pages connect to actual
+session APIs, installed helper commands or extension-owned preferences. Missing
+components produce explicit unavailable states; there are no simulated results.
 
 The presentation model explicitly keeps missing applied state distinct from
 requested state. Windows can test the model but cannot validate GTK rendering.

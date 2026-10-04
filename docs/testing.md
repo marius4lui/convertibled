@@ -36,8 +36,6 @@ For each record: project commit/version, OS/kernel, desktop/version, device,
 procedure, actual result, and unresolved limitations. Never tick a checklist
 based only on intended behavior.
 
-## Documentation-only checks
-
 ## Headless settings check
 
 Linux CI starts the real GTK/libadwaita application under disposable Xvfb and
@@ -50,6 +48,8 @@ Reference-platform CI builds on Fedora 44 and starts a nested GNOME 50 Shell
 with software rendering to exercise extension enable/disable lifecycle. A
 virtual monitor deliberately does not impersonate the integrated touchscreen;
 this cannot mark physical gestures, display assignment or performance accepted.
+
+## Documentation checks
 
 Resolve relative Markdown links, check mandatory reading targets, inspect UTF-8,
 run `git diff --check`, and review planned/current wording. Do not introduce
