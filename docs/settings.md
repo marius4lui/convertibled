@@ -72,3 +72,6 @@ the active unlocked session service and use its atomic persistence path.
 While the settings window has focus, Overview refreshes every two seconds.
 Only one request runs at a time; the timer holds weak widget references and
 stops when the window is destroyed. Inactive windows do not poll the service.
+
+Rotation and native OSK requests expose separate outcome/error rows in Overview;
+a successfully shown workspace cannot conceal a failed native preference change.

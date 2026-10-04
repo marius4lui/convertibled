@@ -46,6 +46,9 @@ impl Strings {
             "failed" => self.text("Failed", "Fehlgeschlagen"),
             "unavailable" => self.text("Unavailable", "Nicht verfügbar"),
             "unsupported" => self.text("Unsupported", "Nicht unterstützt"),
+            "enabled" => self.text("Enabled", "Aktiviert"),
+            "disabled" => self.text("Disabled", "Deaktiviert"),
+            "unchanged" => self.text("Unchanged", "Unverändert"),
             "awaiting_shell" => self.text("Waiting for next login", "Wartet auf nächste Anmeldung"),
             "complete" => self.text("Complete", "Abgeschlossen"),
             "rolled_back" => self.text(

@@ -47,6 +47,30 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
             text.text("Action details", "Aktionsdetails"),
             vec!["applied", "error"],
         ),
+        (
+            text.text("Requested rotation", "Gewünschte Drehung"),
+            vec!["desired", "rotation"],
+        ),
+        (
+            text.text("Rotation result", "Drehungsergebnis"),
+            vec!["applied", "action_outcomes", "rotation", "status"],
+        ),
+        (
+            text.text("Rotation details", "Drehungsdetails"),
+            vec!["applied", "action_outcomes", "rotation", "error"],
+        ),
+        (
+            text.text("Requested screen keyboard", "Gewünschte Bildschirmtastatur"),
+            vec!["desired", "osk"],
+        ),
+        (
+            text.text("Screen keyboard result", "Bildschirmtastatur-Ergebnis"),
+            vec!["applied", "action_outcomes", "osk", "status"],
+        ),
+        (
+            text.text("Screen keyboard details", "Bildschirmtastatur-Details"),
+            vec!["applied", "action_outcomes", "osk", "error"],
+        ),
     ];
     let rows: Vec<_> = definitions
         .into_iter()
