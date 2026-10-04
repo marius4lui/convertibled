@@ -23,6 +23,12 @@ State writes fsync content and parent directory before proceeding. A nonblocking
 flock serializes mutations on Linux. The active symlink may point only to a direct
 child of the versions directory; directory/state symlinks are rejected.
 
+Lock contention is a typed busy result. Scheduled update and deferred-install
+runs leave the owner's progress untouched and retry at the next timer tick.
+Interactive operations still report that another transaction is running.
+Neither path writes public status without owning the transaction lock; actual
+operation failures remain errors and are never classified by matching text.
+
 Bundles contain only regular files, a bounded schema-1 `manifest.json`, and the
 exact manifest file set. Extraction rejects links, traversal, duplicate names,
 unexpected roots, oversized expansion and digest/size mismatches. Required four

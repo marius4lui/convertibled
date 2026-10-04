@@ -12,7 +12,7 @@ sys.dont_write_bytecode = True
 from installer.configuration import preferences, set_preferences
 from installer.platform import graphical_sessions
 from installer.status import public, publish
-from installer.storage import Layout, read
+from installer.storage import BusyError, Layout, read
 from installer.transaction import Transaction
 from updater.manager import Manager
 from updater.model import UpdateError
@@ -101,10 +101,18 @@ def main():
     try:
         print(json.dumps(execute(args, layout), sort_keys=True))
         return 0
+    except BusyError as exc:
+        if args.command == "scheduled":
+            # The owning transaction publishes its own result. The timer will
+            # retry normally; competing with that status would invent a failure.
+            return 0
+        print(json.dumps({"error": str(exc)[:512]}), file=sys.stderr)
+        return 1
     except (UpdateError, OSError, ValueError) as exc:
         if os.name == "posix" and os.geteuid() == 0:
             try:
-                publish(layout, exc)
+                with layout.lock():
+                    publish(layout, exc)
             except (UpdateError, OSError):
                 pass
         print(json.dumps({"error": str(exc)[:512]}), file=sys.stderr)

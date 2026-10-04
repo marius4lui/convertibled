@@ -9,7 +9,7 @@ from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.dont_write_bytecode = True
 from installer.configuration import set_preferences
-from installer.storage import Layout, atomic
+from installer.storage import BusyError, Layout, atomic
 from updater.manager import Manager, trust
 from updater.model import UpdateError
 
@@ -71,6 +71,11 @@ def main():
         print("Download verified. Log out all graphical users to finish installation automatically.")
         print("No session will be closed for you. The installer also resumes after reboot.")
         return 0
+    except BusyError as exc:
+        if args.finish_install:
+            return 0  # Another transaction owns progress; the timer retries.
+        print(str(exc)[:512], file=sys.stderr)
+        return 1
     except (UpdateError, OSError, ValueError) as exc:
         print(str(exc)[:512], file=sys.stderr)
         return 1
