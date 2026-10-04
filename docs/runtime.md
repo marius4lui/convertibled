@@ -48,3 +48,7 @@ the daemon. The session relays actual extension outcomes. The daemon writes an
 atomic private receipt under /var/lib/convertibled/health for recovery checking.
 This authenticates session ownership, not cryptographic shell-code attestation;
 version mismatch, locked/ambiguous sessions and authorization timeout fail.
+
+convertibled --check is a bounded candidate preflight: Linux x86_64 input subsystem
+and whole system configuration validation. It starts no bus name, writes no
+receipt and cannot prove switch hardware or desktop acceptance.

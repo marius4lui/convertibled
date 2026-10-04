@@ -121,3 +121,23 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     Ok(())
 }
+
+pub fn check() -> Result<(), Box<dyn std::error::Error>> {
+    if std::env::consts::ARCH != "x86_64" {
+        return Err("Release supports x86_64 only".into());
+    }
+    if !std::path::Path::new("/sys/class/input").is_dir() {
+        return Err("Linux input subsystem unavailable".into());
+    }
+    let config = match std::fs::read_to_string("/etc/convertibled/config.toml") {
+        Ok(text) => convertibled_core::config::Config::parse(&text)?,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Default::default(),
+        Err(error) => return Err(error.into()),
+    };
+    config.validate()?;
+    println!(
+        "{}",
+        serde_json::json!({"schema_version":1,"version":env!("CARGO_PKG_VERSION"),"platform":"linux-x86_64","configuration":"valid","physical_acceptance":false})
+    );
+    Ok(())
+}

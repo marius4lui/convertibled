@@ -5,6 +5,9 @@ mod service;
 #[cfg(target_os = "linux")]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if std::env::args().any(|arg| arg == "--check") {
+        return service::check();
+    }
     service::run().await
 }
 #[cfg(not(target_os = "linux"))]
