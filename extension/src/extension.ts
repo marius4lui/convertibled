@@ -154,6 +154,12 @@ export default class TabletExtension extends Extension {
     }
     private reportApplied(): void {
         this.widgets?.setSession(this.status?.profile ?? null,this.active,this.rotation?.locked ?? false);
+        this.dock?.setTouchSetup(this.touchSource?.available ? null : event => {
+            const device = event.get_source_device(); const [x,y] = event.get_coords(); const area = this.monitor;
+            if (!this.active || !area || x < area.x || x >= area.x + area.width || y < area.y || y >= area.y + area.height)
+                return false;
+            return this.touchSource?.approveDevice(device) ?? false;
+        });
         const rotationRequest = this.status?.desired.rotation_lock_requested
             ? this.status.desired.rotation_lock ? 'disabled' : 'enabled' : this.status?.desired.rotation ?? 'unchanged';
         const rotationActual = this.rotation?.locked ? 'disabled' : 'enabled';

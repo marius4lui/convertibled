@@ -242,3 +242,10 @@ native device object. Wrong/absent nodes remain unsupported and visible
 navigation works throughout. Reference-device setup must physically confirm the
 chosen source, and reconnect/login requires fresh approval. No input device is
 disabled and no keystrokes or raw event streams are recorded.
+
+Normal setup uses the visible internal-output dock target **Touch to enable
+gestures**. Only a real touchscreen TOUCH_BEGIN from a currently connected
+native device can approve it; mouse/keyboard activation does nothing. The node
+key is an internal optional handoff, not the ordinary setup interface. This
+explicit physical confirmation grants the actual device object until removal or
+disable and does not infer physical internal identity from vendor/name strings.

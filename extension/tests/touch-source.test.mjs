@@ -15,3 +15,11 @@ test('explicit device approval never grants a reused event node or external devi
     assert.equal(source.allows(reused),false);assert.equal(settings.get_string('touchscreen-device-node'),'');
     source.destroy();assert.equal(seat.signals.size,0);
 });
+test('visible touch confirmation grants only a currently connected real touchscreen object', () => {
+    const mouse={get_device_type:()=>0},touch={get_device_type:()=>1,get_device_node:()=>'/dev/input/event9'};
+    const seat=Object.assign(new Emitter(),{list_devices:()=>[mouse,touch]});
+    const source=new TouchSource(seat,new Settings(),()=>{});
+    assert.equal(source.approveDevice(mouse),false);assert.equal(source.approveDevice({...touch}),false);
+    assert.equal(source.approveDevice(touch),true);assert.equal(source.allows(touch),true);
+    source.destroy();
+});

@@ -26,6 +26,12 @@ export class TouchSource {
             : 'No approved currently connected touchscreen; visible navigation remains available';
         this.changed();
     }
+    approveDevice(device: any): boolean {
+        if (!this.seat?.list_devices().includes(device) ||
+            device.get_device_type() !== Clutter.InputDeviceType.TOUCHSCREEN_DEVICE) return false;
+        this.approved = device; this.reason = 'Explicit physical touch confirmation for this login';
+        this.changed(); return true;
+    }
     allows(device: any): boolean { return Boolean(this.approved && device === this.approved); }
     get available(): boolean { return this.approved !== null; }
     destroy(): void { this.cleanup.clear(); this.approved = null; this.settings.set_string('touchscreen-device-node',''); }

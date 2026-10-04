@@ -84,3 +84,6 @@ msgstr "Ungültige Fenstergrößen"
 
 msgid "Show more apps"
 msgstr "Weitere Apps anzeigen"
+
+msgid "Touch to enable gestures"
+msgstr "Berühren, um Gesten zu aktivieren"
