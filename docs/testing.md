@@ -66,6 +66,10 @@ with software rendering to exercise extension enable/disable lifecycle. A
 virtual monitor deliberately does not impersonate the integrated touchscreen;
 this cannot mark physical gestures, display assignment or performance accepted.
 
+The [full Fedora VM lifecycle record](testing-vm.md) separately documents real
+systemd/GDM installation, logout, update and next-login evidence, fixture hashes,
+and its remaining physical limitations.
+
 ## Documentation checks
 
 Resolve relative Markdown links, check mandatory reading targets, inspect UTF-8,
