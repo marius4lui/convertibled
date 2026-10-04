@@ -2,6 +2,17 @@
 
 ## Design direction
 
+The October 4 refinement uses a quiet, carefully proportioned workspace: a
+centered Home canvas, spacious app icons, compact information cards, and a
+floating navigation shelf. Content has a clear title/detail/action hierarchy;
+secondary controls do not compete with application launch targets. Window
+previews preserve aspect ratio and split selection remains explicit.
+Light and dark palettes share geometry, with restrained accent color, visible
+focus and readable muted text. Native toolkit behavior and accessible targets
+remain requirements. This supersedes the initial unstyled popup presentation.
+Review covers Home, overview, settings, failures, portrait and keyboard
+occlusion in the actual shared native demo; physical acceptance remains separate.
+
 Use GNOME typography, symbolic icons, system colors, dialogs and dark mode.
 Settings use GTK4/libadwaita; the tablet workspace uses native Shell actors.
 Home sits behind applications and is opened through navigation; folding must

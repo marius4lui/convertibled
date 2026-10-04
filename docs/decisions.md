@@ -29,6 +29,11 @@ within its Shell; a separate replacement desktop is outside this decision.
 
 ## Technical consequences
 
+The October 4 design refinement permits a project-owned Shell palette and
+surface styling while retaining native St/Clutter and GTK/libadwaita controls.
+The goal is consistent visual and interaction quality across the real product
+and its Windows-hosted native demo, without a second UI implementation.
+
 The Windows preview runs the actual GNOME Shell extension in an isolated Fedora
 44 / GNOME 50 WSLg session. A demo-only wrapper supplies a virtual internal
 monitor and scenario controls; production UI modules and stylesheet are reused
