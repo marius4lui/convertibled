@@ -4,6 +4,12 @@ No platform has been physically validated. Fedora 44, GNOME 50, Wayland and
 x86_64 ThinkPad X1 Yoga Gen 8 are the selected acceptance target. Other desktops
 and versions are deferred; selection is not a verified support matrix.
 
+The supported startup contract is the distribution's normal GNOME 50 session
+through GDM and its systemd user Shell service. Directly launched or custom
+Shell startup paths bypass the update admission contract and are unsupported.
+An isolated nested Shell in CI exercises extension lifecycle only; it does not
+claim coverage of GDM login admission.
+
 ## Evidence labels
 
 - **Planned:** design intent without acceptance evidence.

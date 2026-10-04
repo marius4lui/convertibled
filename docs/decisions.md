@@ -21,6 +21,7 @@
 | D015 | Automatic checking/preparation by default with explained opt-out; activate after graphical logout | No forced logout or replacing live Shell code |
 | D016 | First public release requires the entire product plus physical/update/recovery acceptance | Internal increments are experimental |
 | D017 | Rust 1.99 pinned toolchain and Linux x86_64 build target | Matches selected dependency MSRVs and checked toolchain |
+| D018 | Serialize update activation with the normal GNOME 50 GDM/systemd Shell startup path | A pre-Shell shared lease and exclusive updater lease close the login/check race; direct unmanaged Shell starts are unsupported |
 
 The October 2026 user mandate supersedes the original candidate GNOME/KDE,
 GTK/Qt and reference-device questions. The tablet workspace enhances GNOME
@@ -46,3 +47,12 @@ Maintainers must establish key custody/revocation operations and record actual
 Fedora system integration, touch/accessibility, performance, update and recovery
 acceptance. SSH/CLI results alone cannot establish touch usability. Other
 platforms or behavior need a new decision with rationale and evidence.
+
+The startup admission contract uses GNOME's actual `org.gnome.Shell@user.service`
+instance. The separate admission service must signal readiness only after taking
+its shared lease; it must not depend on the later graphical-session target.
+The updater holds an exclusive lease across its final logout check and version
+selection/restart. Existing graphical sessions still block activation. No
+display manager is stopped and no user session is forcibly terminated. The
+stable lock inode must survive version replacement and recovery. Real GDM
+startup, competing login and logout/update acceptance remain release gates.
