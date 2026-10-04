@@ -21,6 +21,8 @@ def command(args, timeout=15):
 def graphical_sessions():
     # Locked and inactive graphical sessions still load the installed extension.
     sessions = json.loads(command(["loginctl", "list-sessions", "--json=short", "--no-pager"]))
+    if not isinstance(sessions, list) or len(sessions) > 512 or any(not isinstance(entry, dict) for entry in sessions):
+        raise UpdateError("Unexpected or oversized logind session inventory")
     affected = []
     for entry in sessions:
         identifier = str(entry.get("session", ""))

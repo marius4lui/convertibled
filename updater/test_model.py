@@ -16,6 +16,10 @@ class MetadataTests(unittest.TestCase):
             with self.assertRaises(UpdateError):
                 decode(raw)
 
+    def test_excessive_json_depth_is_reported(self):
+        with self.assertRaises(UpdateError):
+            decode(b"[" * 2000 + b"0" + b"]" * 2000)
+
     def test_unsafe_versions_denied(self):
         for value in ("../1", "01.0.0", "1.2", "1.0.0;id", "1.0.0-beta.0"):
             with self.assertRaises(UpdateError):

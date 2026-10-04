@@ -187,3 +187,6 @@ logout/update/failure loop. A newer version or an explicit administrator
 `activate` can retry. Service sandbox write paths include only the complete fixed
 integration destinations. SELinux enforcing installation/activation must still
 be verified on Fedora 44; no SELinux protections are disabled by the installer.
+
+Malformed/deep JSON, oversized logind inventories and corrupt tar streams produce
+bounded actionable errors rather than escaping the transaction/error-status path.

@@ -2,6 +2,7 @@
 import datetime as dt
 import os
 import shutil
+import tarfile
 from pathlib import Path
 from .archive import extract
 from .crypto import ed25519_public, envelope, keyring
@@ -86,7 +87,10 @@ class Manager:
                 self.network(artifact["url"], maximum=artifact["size"], target=stream, expected_hash=artifact["sha256"], expected_size=artifact["size"])
                 stream.flush()
                 os.fsync(stream.fileno())
-            extract(archive, candidate, metadata["version"])
+            try:
+                extract(archive, candidate, metadata["version"])
+            except (tarfile.TarError, EOFError) as exc:
+                raise UpdateError("Release bundle archive is corrupt") from exc
             atomic(candidate / "release.json", metadata)
             os.replace(candidate, installed)
             sync_directory(self.layout.versions)

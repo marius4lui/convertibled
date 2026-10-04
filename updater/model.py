@@ -40,10 +40,28 @@ def decode(raw, maximum=262144):
     if len(raw) > maximum:
         raise UpdateError("Metadata exceeds size limit")
     try:
+        text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
+        depth, quoted, escaped = 0, False, False
+        for character in text:
+            if quoted:
+                if escaped:
+                    escaped = False
+                elif character == "\\":
+                    escaped = True
+                elif character == '"':
+                    quoted = False
+            elif character == '"':
+                quoted = True
+            elif character in "[{":
+                depth += 1
+                if depth > 64:
+                    raise UpdateError("JSON nesting exceeds limit")
+            elif character in "]}":
+                depth -= 1
         def invalid_constant(_):
             raise UpdateError("Non-finite JSON number")
         return json.loads(raw, object_pairs_hook=unique_object, parse_constant=invalid_constant)
-    except (ValueError, UnicodeError) as exc:
+    except (ValueError, UnicodeError, RecursionError) as exc:
         raise UpdateError("Invalid JSON metadata") from exc
 
 

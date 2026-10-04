@@ -17,3 +17,9 @@ class SessionTests(unittest.TestCase):
         with patch("installer.platform.command", return_value='[{"session":"--help"}]'):
             with self.assertRaises(UpdateError):
                 graphical_sessions()
+
+    def test_malformed_session_inventory_denied(self):
+        for inventory in ("{}", "[null]", "[1]"):
+            with patch("installer.platform.command", return_value=inventory):
+                with self.assertRaises(UpdateError):
+                    graphical_sessions()
