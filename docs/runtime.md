@@ -80,6 +80,17 @@ written to `shell-intent-UID.json`; health and intent are separate receipts.
 Both now carry version, UID, session and boot identity. This producer contract
 does not by itself turn disabled intent into a successful Shell health receipt.
 
+Update acceptance retires prior-boot observations, so another user's old login
+cannot indefinitely block a later boot. Prior-boot positive health never counts
+as current evidence. An explicit matching failed trial remains a failure across
+reboot until that user supplies fresh intent; recovery still waits for logout.
+For current-boot logins, the consumer snapshots existing intent identity when it
+first observes each session. A mismatched receipt already present then cannot
+satisfy that login. A subsequently replaced authenticated identity may establish
+a short later login missed between timer ticks, while other users' unresolved
+observations continue to block completion. Missing prior-boot health cannot prove
+a failure: fresh evidence is required rather than inferring success or rollback.
+
 ## Configuration and CLI
 
 Built-in defaults merge `/etc/convertibled/config.toml`, then allowed user preferences

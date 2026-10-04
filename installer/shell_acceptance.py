@@ -76,11 +76,28 @@ def receipt(path, candidate):
         return None
 
 
-def observe(value, sessions):
+def intent_baselines(value):
+    result = value.get("intent_baselines", {})
+    if not isinstance(result, dict) or len(result) > 512:
+        raise UpdateError("Invalid Shell acceptance intent inventory")
+    for uid, who in result.items():
+        if not isinstance(uid, str) or not uid.isdecimal() or len(uid) > 10 or (who is not None and (identity(who) != who or str(who["uid"]) != uid)):
+            raise UpdateError("Invalid Shell acceptance intent identity")
+    return result
+
+
+def observe(value, sessions, layout=None):
     boot = boot_id()
     observed = [identity(item) for item in value.get("observed_sessions", [])]
     if len(observed) > 512 or any(item is None for item in observed) or len(sessions) > 512:
         raise UpdateError("Invalid Shell acceptance session inventory")
+    observed = [item for item in observed if item["boot_id"] == boot]
+    baselines = intent_baselines(value)
+    baselines = {str(item["uid"]): baselines.get(str(item["uid"])) for item in observed}
+    latest = {}
+    if layout is not None:
+        latest = {item["uid"]: identity(item) for path in files(layout)
+                  if (item := receipt(path, value["candidate"])) is not None and "expected" in item}
     current = []
     value["unidentified_sessions"] = False
     for item in sessions:
@@ -91,10 +108,17 @@ def observe(value, sessions):
             value["unidentified_sessions"] = True
             continue
         current.append(who)
+        if who not in observed:
+            # A receipt already present before observing this new login cannot
+            # later impersonate its success. A changed authenticated identity
+            # can prove a subsequent short login missed by the timer.
+            baselines[str(who["uid"])] = latest.get(who["uid"])
     # A later login for the same user supersedes their earlier trial session;
     # another user's unresolved expectation is retained independently.
     current_users = {item["uid"] for item in current}
     value["observed_sessions"] = [item for item in observed if item["uid"] not in current_users] + current
+    value["intent_baselines"] = baselines
+    value["observed_boot_id"] = boot
     if len(value["observed_sessions"]) > 512:
         raise UpdateError("Shell acceptance session inventory exceeds supported size")
 
@@ -107,13 +131,27 @@ def evaluate(layout, value):
     observed = [identity(item) for item in value.get("observed_sessions", [])]
     if len(observed) > 512 or any(item is None for item in observed):
         raise UpdateError("Invalid Shell acceptance session inventory")
-    users = {item["uid"] for item in observed}
+    observed = [item for item in observed if item["boot_id"] == boot]
+    baselines = intent_baselines(value)
+    users = {item["uid"]: item for item in observed}
     # A short login may finish between timer ticks. An authenticated, fresh
     # intent receipt is positive evidence of that session, never fabricated login.
-    observed += [identity(item) for uid, item in intents.items() if uid not in users and item["boot_id"] == boot]
+    for uid, item in intents.items():
+        who = identity(item)
+        if item["boot_id"] != boot:
+            # Reboot retires observations, not a positively recorded failed trial.
+            actual = health.get(uid)
+            if item["expected"] is True and actual is not None and identity(actual) == who and actual["healthy"] is False:
+                return "failed"
+            continue
+        previous = users.get(uid)
+        if previous is None or who == previous or baselines.get(str(uid)) != who:
+            users[uid] = who
+    observed = list(users.values())
     if len(observed) > 512:
         raise UpdateError("Shell acceptance session inventory exceeds supported size")
-    unknown, enabled = not observed or value.get("unidentified_sessions", False), False
+    unknown = not observed or (value.get("observed_boot_id", boot) == boot and value.get("unidentified_sessions", False))
+    enabled = False
     for who in observed:
         intent = intents.get(who["uid"])
         if who["boot_id"] != boot or intent is None or identity(intent) != who or intent["expected"] is None:

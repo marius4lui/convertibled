@@ -184,7 +184,7 @@ class Transaction:
         sessions = self.sessions()
         if value.get("phase") == "awaiting_shell" and value.get("shell_acceptance") == "pending_intent":
             from .shell_acceptance import observe
-            observe(value, sessions)
+            observe(value, sessions, self.layout)
             self.record(value, "awaiting_shell")
             self.acceptance(value)
             return

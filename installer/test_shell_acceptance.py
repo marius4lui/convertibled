@@ -5,6 +5,7 @@ from unittest.mock import patch
 from .storage import Layout, atomic, read
 from .transaction import Transaction
 from .shell_acceptance import evaluate, observe, reset, receipt
+from updater.model import UpdateError
 
 BOOT = "11111111-1111-1111-1111-111111111111"
 OTHER_BOOT = "22222222-2222-2222-2222-222222222222"
@@ -32,7 +33,7 @@ class ShellAcceptanceTests(unittest.TestCase):
         return path
 
     def seen(self, uid=1000, session="c1"):
-        observe(self.value, [{"user": str(uid), "session": session}])
+        observe(self.value, [{"user": str(uid), "session": session}], self.layout)
 
     def test_no_receipt_or_unknown_intent_never_means_disabled(self):
         self.assertEqual(evaluate(self.layout, self.value), "pending_intent")
@@ -74,10 +75,67 @@ class ShellAcceptanceTests(unittest.TestCase):
 
     def test_stale_or_foreign_intent_does_not_complete(self):
         self.seen()
-        for changes in ({"boot_id": OTHER_BOOT}, {"session": "c2"}, {"version": "0.1.0"}):
+        for changes in ({"boot_id": OTHER_BOOT}, {"version": "0.1.0"}):
             with self.subTest(changes=changes):
                 self.write("expected", False, **changes)
                 self.assertEqual(evaluate(self.layout, self.value), "pending_intent")
+
+    def test_prior_boot_observation_neither_blocks_new_user_nor_counts_as_health(self):
+        with patch("installer.shell_acceptance.boot_id", return_value=OTHER_BOOT):
+            self.seen()
+        self.write("expected", True, boot_id=OTHER_BOOT)
+        self.write("healthy", True, boot_id=OTHER_BOOT)
+        self.assertEqual(evaluate(self.layout, self.value), "pending_intent")
+        self.seen(1001, "c2")
+        self.write("expected", False, 1001, "c2")
+        self.assertEqual(evaluate(self.layout, self.value), "not_requested")
+        self.assertEqual([item["uid"] for item in self.value["observed_sessions"]], [1001])
+
+    def test_prior_boot_explicit_failed_trial_survives_observation_retirement(self):
+        with patch("installer.shell_acceptance.boot_id", return_value=OTHER_BOOT):
+            self.seen()
+        self.write("expected", True, boot_id=OTHER_BOOT)
+        self.write("healthy", False, boot_id=OTHER_BOOT)
+        self.seen(1001, "c2")
+        self.write("expected", False, 1001, "c2")
+        self.assertEqual(evaluate(self.layout, self.value), "failed")
+        # Same user explicitly disables in a fresh session; old failure does
+        # not override their newly authenticated choice.
+        self.write("expected", False, 1000, "c3")
+        self.assertEqual(evaluate(self.layout, self.value), "not_requested")
+
+    def test_fresh_short_session_supersedes_same_user_but_not_other_unresolved_user(self):
+        self.write("expected", None)
+        self.seen()
+        self.write("expected", True, session="c2")
+        self.write("healthy", True, session="c2")
+        self.assertEqual(evaluate(self.layout, self.value), "verified")
+        self.seen(1001, "c3")
+        self.assertEqual(evaluate(self.layout, self.value), "pending_intent")
+
+    def test_existing_stale_same_boot_receipt_cannot_complete_new_observed_login(self):
+        self.write("expected", False, session="old")
+        self.seen()
+        self.assertEqual(evaluate(self.layout, self.value), "pending_intent")
+        self.seen()
+        self.assertEqual(evaluate(self.layout, self.value), "pending_intent")
+        self.write("expected", False, session="c2")
+        self.assertEqual(evaluate(self.layout, self.value), "not_requested")
+
+    def test_prior_boot_failed_trial_requests_recovery_at_safe_logout(self):
+        self.write("expected", True, boot_id=OTHER_BOOT)
+        self.write("healthy", False, boot_id=OTHER_BOOT)
+        atomic(self.layout.state / "transaction.json", self.value)
+        transaction = Transaction(self.layout, sessions=lambda: [])
+        with patch.object(transaction, "rollback") as rollback:
+            transaction.recover()
+            rollback.assert_called_once()
+
+    def test_invalid_baseline_identity_fails_closed(self):
+        self.value["intent_baselines"] = {"1000": {"uid": 1001}}
+        self.write("expected", False)
+        with self.assertRaises(UpdateError):
+            evaluate(self.layout, self.value)
 
     def test_short_login_receipt_is_evidence_but_prior_boot_is_not(self):
         self.write("expected", False, boot_id=OTHER_BOOT)
