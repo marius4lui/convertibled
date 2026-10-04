@@ -131,6 +131,20 @@ mod tests {
                 state.read().await.profile,
                 convertibled_core::Profile::Tablet
             );
+            let connected=serde_json::json!({"tablet_workspace":true,"rotation_lock":false,"status":"applied","error":null,
+                "capabilities":{"tablet_workspace":true,"rotation_lock":true,"osk":true,"split_view":true}}).to_string();
+            proxy.call::<_,_,()>("ReportApplied",&(connected,)).await.unwrap();
+            let raw:String=proxy.call("GetCapabilities",&()).await.unwrap();
+            let caps:Capabilities=serde_json::from_str(&raw).unwrap();
+            assert!(caps.rotation.supported);assert!(caps.osk.supported);
+            let revision=state.read().await.revision;
+            let malformed=serde_json::json!({"tablet_workspace":false,"rotation_lock":false,"status":"applied","error":null,"capabilities":{"osk":"true"}}).to_string();
+            assert!(proxy.call::<_,_,()>("ReportApplied",&(malformed,)).await.is_err());
+            assert!(state.read().await.applied.tablet_workspace);assert_eq!(state.read().await.revision,revision);
+            let cleanup=serde_json::json!({"tablet_workspace":false,"rotation_lock":false,"status":"unavailable","error":"GNOME extension disabled","capabilities":{"tablet_workspace":false}}).to_string();
+            proxy.call::<_,_,()>("ReportApplied",&(cleanup,)).await.unwrap();
+            let raw:String=proxy.call("GetCapabilities",&()).await.unwrap();
+            assert_eq!(serde_json::from_str::<Capabilities>(&raw).unwrap(),Capabilities::default());
             authoritative.write().await.locked = true;
             assert!(
                 proxy

@@ -116,3 +116,11 @@ test covers idempotent claim, release, loss and service-owner replacement. These
 checks do not establish physical ThinkPad fold, rotation/touch mapping, input
 recovery, focus, GNOME interaction quality or installer acceptance. Input suppression
 and automatic scaling remain disabled; production signing keys are not in this repo.
+
+Capability normalization maps Shell rotation_lock support to the same native
+rotation preference used by profile actions; it does not claim direct control of
+orientation/touch mapping. Unavailable cleanup clears every extension capability
+even while GNOME's shared bus sender survives. Malformed capability types are
+rejected atomically; capability-only changes also increment revision and signal.
+Touchscreen gesture support is separate and false until an integrated source is
+approved; its bounded explanation is retained without promoting other input support.

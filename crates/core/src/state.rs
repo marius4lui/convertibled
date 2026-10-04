@@ -172,12 +172,12 @@ impl Status {
         Ok(())
     }
 }
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Capability {
     pub supported: bool,
     pub reason: String,
 }
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Capabilities {
     pub schema_version: u32,
     pub tablet_workspace: Capability,
@@ -185,6 +185,7 @@ pub struct Capabilities {
     pub rotation_lock: Capability,
     pub osk: Capability,
     pub split_view: Capability,
+    pub touchscreen_gestures: Capability,
     pub internal_input_suppression: Capability,
     pub scaling: Capability,
 }
@@ -197,10 +198,13 @@ impl Default for Capabilities {
         Self {
             schema_version: 1,
             tablet_workspace: unavailable("GNOME extension not connected"),
-            rotation: unavailable("GNOME owns display rotation"),
+            rotation: unavailable("Native GNOME rotation preference not reported"),
             rotation_lock: unavailable("GNOME extension not connected"),
             osk: unavailable("GNOME extension not connected"),
             split_view: unavailable("GNOME extension not connected"),
+            touchscreen_gestures: unavailable(
+                "Integrated touchscreen source has not been approved",
+            ),
             internal_input_suppression: unavailable(
                 "Requires physical assignment and crash recovery proof",
             ),

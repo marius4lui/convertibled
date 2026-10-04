@@ -117,29 +117,14 @@ impl Api {
                 "Workspace cannot be applied in inactive or locked session",
             ));
         }
+        let mut caps = self.capabilities.write().await;
+        let candidate =
+            convertibled_core::report::capabilities_report(&value, &caps).map_err(failed)?;
+        let changed = state.applied != applied || *caps != candidate;
         *self.report_owner.write().await = header.sender().map(|name| name.as_str().to_owned());
-        let changed = state.applied != applied;
         state.applied = applied;
-        if let Some(report) = value.get("capabilities").and_then(|v| v.as_object()) {
-            let mut caps = self.capabilities.write().await;
-            let caps = &mut *caps;
-            for (key, target) in [
-                ("tablet_workspace", &mut caps.tablet_workspace),
-                ("rotation_lock", &mut caps.rotation_lock),
-                ("osk", &mut caps.osk),
-                ("split_view", &mut caps.split_view),
-            ] {
-                if let Some(supported) = report.get(key).and_then(|v| v.as_bool()) {
-                    target.supported = supported;
-                    target.reason = if supported {
-                        "GNOME extension reports native support"
-                    } else {
-                        "GNOME capability unavailable"
-                    }
-                    .into();
-                }
-            }
-        }
+        *caps = candidate;
+        drop(caps);
         if changed {
             state.revision = state.revision.saturating_add(1);
             let json = serde_json::to_string(&*state).map_err(failed)?;
