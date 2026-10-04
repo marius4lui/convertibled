@@ -40,6 +40,10 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
             text.text("Transaction state", "Transaktionszustand"),
         ),
         (
+            "shell_acceptance",
+            text.text("Desktop check", "Desktop-Prüfung"),
+        ),
+        (
             "pending_action",
             text.text("Scheduled action", "Geplante Aktion"),
         ),
@@ -59,23 +63,40 @@ pub fn page(window: &adw::PreferencesWindow, text: Strings) -> adw::PreferencesP
     let refresh = gtk::Button::with_label(text.text("Refresh", "Aktualisieren"));
     let check = gtk::Button::with_label(text.text("Check", "Prüfen"));
     let prepare = gtk::Button::with_label(text.text("Prepare", "Vorbereiten"));
+    let install =
+        gtk::Button::with_label(text.text("Install after logout", "Nach Abmeldung installieren"));
     prepare.add_css_class("suggested-action");
-    let buttons = crate::ui::actions(&[&refresh, &check, &prepare]);
+    let buttons = crate::ui::actions(&[&refresh, &check, &prepare, &install]);
     group.add(&buttons);
     for (button, command) in [
         (&refresh, "status"),
         (&check, "check"),
         (&prepare, "prepare"),
+        (&install, "request-activate"),
     ] {
         let rows = rows.clone();
         let controls = buttons.downgrade();
+        let window = window.downgrade();
         button.connect_clicked(move |_| {
             let rows = rows.clone();
             let Some(controls) = controls.upgrade() else {
                 return;
             };
             controls.set_sensitive(false);
+            let window = window.clone();
             glib::MainContext::default().spawn_local(async move {
+                if command == "request-activate" {
+                    let Some(window) = window.upgrade() else { controls.set_sensitive(true); return; };
+                    let dialog = gtk::AlertDialog::builder()
+                        .message(text.text("Install after logout", "Nach Abmeldung installieren"))
+                        .detail(text.text(
+                            "Install the prepared version after all graphical users log out. Nobody is logged out automatically. Automatic updates stay unchanged. You can cancel this request while it is waiting.",
+                            "Die vorbereitete Version wird nach der Abmeldung aller grafischen Benutzer installiert. Niemand wird automatisch abgemeldet. Automatische Updates bleiben unverändert. Solange die Anfrage wartet, kannst du sie abbrechen.",
+                        ))
+                        .buttons([text.text("Go back", "Zurück"), text.text("Schedule installation", "Installation planen")])
+                        .cancel_button(0).default_button(0).build();
+                    if dialog.choose_future(Some(&window)).await != Ok(1) { controls.set_sensitive(true); return; }
+                }
                 match helper(command, None).await {
                     Ok(status) => {
                         for (key, row) in &rows {

@@ -75,8 +75,18 @@ or opt out of automatic preparation. The equivalent CLI commands are:
 convertiblectl update status
 convertiblectl update check
 convertiblectl update prepare
+convertiblectl update activate
 convertiblectl update automatic off
 ```
+
+With automatic updates off, **Install after logout** explicitly schedules the
+prepared version without enabling automatic updates. Review its confirmation,
+then log out when ready; nobody is logged out automatically. The equivalent
+`convertiblectl update activate` (alias `request-activate`) also queues the
+operation. The request binds the installed version, prepared candidate and
+channel; a changed candidate requires review. Signatures and freshness are
+checked again before activation. **Cancel scheduled action** also cancels this
+request while it is waiting.
 
 Mutating update operations request administrator authentication. Prepared is
 different from installed. Activation waits for all affected graphical users to

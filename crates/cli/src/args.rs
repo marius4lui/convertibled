@@ -55,6 +55,8 @@ pub enum UpdateCommand {
     Check,
     Prepare,
     Status,
+    /// Install the prepared version after all graphical users log out.
+    #[command(alias = "request-activate")]
     Activate,
     /// Queue recovery after all graphical users log out.
     #[command(alias = "request-recover")]
@@ -82,7 +84,7 @@ impl UpdateCommand {
             Self::Check => vec!["check"],
             Self::Prepare => vec!["prepare"],
             Self::Status => vec!["status"],
-            Self::Activate => vec!["activate"],
+            Self::Activate => vec!["request-activate"],
             Self::Recover => vec!["request-recover"],
             Self::Rollback => vec!["request-rollback"],
             Self::Uninstall => vec!["request-uninstall"],
@@ -109,6 +111,8 @@ mod tests {
     #[test]
     fn maintenance_queues_only_fixed_verbs_without_arguments() {
         for (verb, expected) in [
+            ("activate", "request-activate"),
+            ("request-activate", "request-activate"),
             ("recover", "request-recover"),
             ("request-recover", "request-recover"),
             ("rollback", "request-rollback"),

@@ -97,3 +97,13 @@ Overview places the selected profile and confirmed workspace summary first,
 then groups device observations, workspace state and expandable rotation/OSK
 outcomes. Unavailable sessions hide stale detail groups and retain retry.
 Actions use native suggested-action styling and at least 44-pixel height.
+
+Updates includes **Install after logout**, with a native confirmation and fixed
+`request-activate` helper verb. It explicitly schedules the authenticated prepared
+version even when automatic updates are off, without changing that preference.
+All graphical users must log out themselves. The public scheduled action is
+translated separately from the transaction result; changed candidates/channels,
+expired metadata and failed activation require review rather than silent retry.
+The separate **Desktop check** row distinguishes a pending desktop check,
+actual enabled-workspace health, and a workspace that was not
+requested. A services-only success never claims Shell health.

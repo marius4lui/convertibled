@@ -63,6 +63,21 @@ impl Strings {
                 "Geplante Aktion wird ausgeführt",
             ),
             "uninstall" => self.text("Remove convertibled", "convertibled entfernen"),
+            "pending_intent" => {
+                self.text("Waiting for desktop check", "Desktop-Prüfung ausstehend")
+            }
+            "verified" => self.text(
+                "Enabled workspace reported healthy",
+                "Aktivierter Workspace hat Bereitschaft bestätigt",
+            ),
+            "not_requested" => self.text(
+                "Workspace not requested; services checked",
+                "Workspace nicht angefordert; Dienste geprüft",
+            ),
+            "activate" => self.text(
+                "Install prepared version",
+                "Vorbereitete Version installieren",
+            ),
             "rollback" => self.text(
                 "Restore previous version",
                 "Vorherige Version wiederherstellen",
@@ -130,6 +145,9 @@ mod tests {
         let de = Strings::for_locale("de_DE");
         assert_eq!(de.value("failed"), "Fehlgeschlagen");
         assert_eq!(de.value("true"), "Ja");
+        assert_eq!(de.value("activate"), "Vorbereitete Version installieren");
+        assert_eq!(de.value("pending_intent"), "Desktop-Prüfung ausstehend");
+        assert!(de.value("not_requested").contains("nicht angefordert"));
         assert_eq!(de.value("specific device error"), "specific device error");
     }
 
