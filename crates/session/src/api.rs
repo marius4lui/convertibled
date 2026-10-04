@@ -163,6 +163,42 @@ impl Api {
         .map_err(|_| zbus::fdo::Error::Failed("Shell health report timed out".into()))?
         .map_err(|e| zbus::fdo::Error::Failed(e.to_string()))
     }
+    async fn get_config(&self) -> zbus::fdo::Result<String> {
+        self.config.read().await.to_toml().map_err(failed)
+    }
+    async fn save_config(
+        &self,
+        input: &str,
+        #[zbus(connection)] connection: &Connection,
+        #[zbus(header)] header: Header<'_>,
+        #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
+    ) -> zbus::fdo::Result<()> {
+        authorize(connection, &header).await?;
+        if input.len() > 65536 {
+            return Err(failed("Configuration exceeds 64 KiB"));
+        }
+        let mut state = self.state.write().await;
+        if !state.active || state.locked {
+            return Err(zbus::fdo::Error::AccessDenied(
+                "Session is inactive or locked".into(),
+            ));
+        }
+        let input = input.to_owned();
+        let candidate = tokio::task::spawn_blocking(move || crate::config::save(&input))
+            .await
+            .map_err(failed)?
+            .map_err(failed)?;
+        state.desired.rotation_lock = candidate.rotation_lock.unwrap_or(false);
+        state.desired.rotation_lock_requested = candidate.rotation_lock.is_some();
+        state.reconcile();
+        state.apply_config(&candidate);
+        *self.config.write().await = candidate;
+        let json = serde_json::to_string(&*state).map_err(failed)?;
+        drop(state);
+        Self::changed(&emitter, &json)
+            .await
+            .map_err(|e| zbus::fdo::Error::Failed(e.to_string()))
+    }
     async fn reload(
         &self,
         #[zbus(connection)] connection: &Connection,

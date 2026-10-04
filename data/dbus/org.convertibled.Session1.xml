@@ -7,6 +7,8 @@
     <method name="SetRotationLock"><arg type="b" name="locked" direction="in"/></method>
     <method name="ReportApplied"><arg type="s" name="report_json" direction="in"/></method>
     <method name="ReportShellHealth"><arg type="s" name="version" direction="in"/><arg type="b" name="healthy" direction="in"/></method>
+    <method name="GetConfig"><arg type="s" name="toml" direction="out"/></method>
+    <method name="SaveConfig"><arg type="s" name="toml" direction="in"/></method>
     <method name="Reload"/>
     <signal name="Changed"><arg type="s" name="status_json"/></signal>
   </interface>

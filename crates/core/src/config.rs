@@ -53,6 +53,19 @@ impl Config {
         candidate.validate()?;
         Ok(candidate)
     }
+    pub fn to_toml(&self) -> Result<String, String> {
+        toml::to_string_pretty(self).map_err(|e| e.to_string())
+    }
+    pub fn merge_user(&self, user: Self) -> Result<Self, String> {
+        user.validate()?;
+        let mut merged = self.clone();
+        if user.rotation_lock.is_some() {
+            merged.rotation_lock = user.rotation_lock;
+        }
+        merged.profiles.extend(user.profiles);
+        merged.validate()?;
+        Ok(merged)
+    }
     pub fn validate(&self) -> Result<(), String> {
         if self.schema_version != 1 {
             return Err("Unsupported configuration schema; expected 1".into());
@@ -114,5 +127,19 @@ mod tests {
                 .rotation_lock,
             Some(false)
         );
+    }
+    #[test]
+    fn user_merge_retains_system_debounce_and_unspecified_profiles() {
+        let system=Config::parse("schema_version=1\ndebounce_ms=800\nrotation_lock=true\n[profiles.laptop]\nosk='disabled'").unwrap();
+        let user = Config::parse(
+            "schema_version=1\ndebounce_ms=50\n[profiles.tablet]\nrotation='enabled'",
+        )
+        .unwrap();
+        let merged = system.merge_user(user).unwrap();
+        assert_eq!(merged.debounce_ms, 800);
+        assert_eq!(merged.rotation_lock, Some(true));
+        assert_eq!(merged.profiles["laptop"].osk, Action::Disabled);
+        assert_eq!(merged.profiles["tablet"].rotation, Action::Enabled);
+        assert!(Config::parse(&merged.to_toml().unwrap()).is_ok());
     }
 }

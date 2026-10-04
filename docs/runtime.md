@@ -66,3 +66,8 @@ validated before the bounded relay to the system daemon.
 Selected profile TOML actions now resolve to desired rotation/osk tri-state fields.
 Defaults remain unchanged; switching profiles recomputes actions and never infers
 applied success. Unsupported input/scaling directives still fail validation.
+
+GetConfig exposes the merged TOML; authorized SaveConfig validates up to 64 KiB,
+backs up the previous user file and writes atomically with private permissions.
+System debounce is retained during merge. Reset a profile to unchanged actions
+explicitly to override system defaults; failed saves leave state unchanged.
