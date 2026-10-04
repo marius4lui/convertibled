@@ -11,6 +11,13 @@ Dependency gates check RustSec advisories, declared licenses and registry source
 with a pinned cargo-deny version, plus npm's high-severity audit. These gates do
 not replace review of privileged code or a production signing-key procedure.
 
+Successful Fedora CI creates an internal candidate bundle with SHA256SUMS,
+source/version provenance and an SPDX 2.3 Rust dependency inventory. The current
+candidate uses the tested debug build; it is not a public production release.
+The inventory declares package licenses without file-level analysis or operating
+system components. Public release must use the exact accepted bytes and the
+record described in [physical acceptance](acceptance/README.md).
+
 ## Version policy
 
 Use SemVer with `vX.Y.Z` tags; previews may use `-alpha.N` or `-beta.N`.
